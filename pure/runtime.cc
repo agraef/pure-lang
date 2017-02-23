@@ -13559,7 +13559,7 @@ size_t pure_mpz_sizeinbase(mpz_t z, int b)
 extern "C"
 int pure_mpfr_get_prec(mpfr_ptr x)
 {
-  return pure_mpfr_get_prec(x);
+  return mpfr_get_prec(x);
 }
 
 extern "C"
