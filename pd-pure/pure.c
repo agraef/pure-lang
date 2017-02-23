@@ -1927,7 +1927,10 @@ static int pure_loader(t_canvas *canvas, const char *name,
     }
 #ifdef EAGER
     /* Force eager compilation. */
+    pure_start_logging();
     pure_interp_compile(interp, pure_sym(fun_name_s(name)));
+    pure_stop_logging();
+    pure_printmsgs(0);
 #endif
     /* Create the object class. */
     class_setup(name, dirbuf);
