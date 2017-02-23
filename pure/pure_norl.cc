@@ -3,7 +3,7 @@
    is provided to be used freely under a BSD-style license, see below, as a
    starting point for your own interpreter frontends. */
 
-/* Copyright (c) 2009-2016 by Albert Graef <aggraef@gmail.com>.
+/* Copyright (c) 2009-2017 by Albert Graef <aggraef@gmail.com>.
 
    All rights reserved.
 
@@ -60,7 +60,7 @@ using namespace std;
 #define PURELIB "/usr/local/lib/pure-" PACKAGE_VERSION
 #endif
 
-#define COPYRIGHT "Copyright (c) 2008-2016 by Albert Graef"
+#define COPYRIGHT "Copyright (c) 2008-2017 by Albert Graef"
 #define USAGE \
 "Usage:            pure [options ...] [-x] script [args ...]\n\
                   pure [options ...] [-b|-c|-i] [script ...] [-- args ...]\n\
