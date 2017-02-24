@@ -1,6 +1,6 @@
 
 PURE - The Pure programming language.
-==== = ==============================
+=====================================
 
 Pure is a functional programming language based on term rewriting. It has a
 modern syntax featuring curried function applications, lexical closures and
@@ -11,7 +11,7 @@ backend to do JIT compilation, hence programs run blazingly fast and
 interfacing to C modules is easy.
 
 WHERE TO GET IT
------ -- --- --
+---------------
 
 You can find tarballs, binary packages and the source repository at
 http://purelang.bitbucket.org.
@@ -19,7 +19,7 @@ http://purelang.bitbucket.org.
 COPYING
 -------
 
-Unless explicitly stated otherwise, this software is Copyright (c) 2008-2013
+Unless explicitly stated otherwise, this software is Copyright (c) 2008-2017
 by Albert Graef. Please see the source for the copyright and license notes
 pertaining to individual source files.
 
@@ -27,8 +27,8 @@ Pure comes with a fairly liberal license which lets you distribute your own
 Pure programs and extensions under a license of your choice and permits
 linking of commercial applications against the Pure runtime and the Pure
 standard library without requiring special permission. Moreover, the Pure
-interpreter (the 'pure' main program), the Pure runtime library ('libpure')
-and the Pure standard library (the Pure scripts in the 'lib' folder) are
+interpreter (the `pure` main program), the Pure runtime library (`libpure`)
+and the Pure standard library (the Pure scripts in the `lib` folder) are
 distributed as free software, and you are welcome to modify and redistribute
 them under the appropriate license terms, as detailed below.
 
@@ -56,7 +56,7 @@ license terms. Online copies of the GPL and LGPL are also available at
 http://www.gnu.org/licenses/.
 
 LINKING WITH GPLV2 SOFTWARE
-------- ---- ----- --------
+---------------------------
 
 In addition to the above license conditions we also grant the special
 permission to link code distributed under GPLv2 *only* (that is, version 2 of
@@ -69,7 +69,7 @@ Gnumeric), and may be revoked in future Pure releases when all relevant
 software has migrated to GPLv3-compatible licenses.
 
 NON-COPYLEFTED MATERIALS
--------------- ---------
+------------------------
 
 The distribution also contains some non-copylefted sources which can be used
 in both open source and commercial applications, usually under the terms of
@@ -86,10 +86,10 @@ Please also check the corresponding source files for additional licensing
 information and pertaining copyrights.
 
 LLVM LICENSE
----- -------
+------------
 
 Pure uses LLVM (http://llvm.org) as its compiler backend. LLVM is under
-Copyright (c) 2003-2011 by the University of Illinois at Urbana-Champaign,
+Copyright (c) 2003-2016 by the University of Illinois at Urbana-Champaign,
 and is licensed under a 3-clause BSD-style license, please read COPYING.LLVM
 included in the distribution for the exact licensing terms. You can also find
 the LLVM license at http://llvm.org.
@@ -98,53 +98,56 @@ INSTALLATION
 ------------
 
 Please see the INSTALL file for detailed instructions. On most Unix-like
-systems, './configure --enable-release && make && sudo make install' should do
-the trick. This requires GNU make and g++. For other setups, you'll probably
-have to fiddle with the Makefile and the sources. You'll also need LLVM for
-the compiler backend. LLVM 2.5 or later is required with recent Pure versions.
-For your convenience, instructions for installing LLVM are also included in
-the INSTALL file.
+systems, `./configure --enable-release && make && sudo make install` should do
+the trick. This requires GNU make and g++ or clang++. For other setups, you'll
+probably have to fiddle with the Makefile and the sources. You'll also need
+LLVM for the compiler backend. LLVM versions from 2.5 up to 3.5 are supported
+right now (we recommend LLVM 3.0 or later; note that LLVM 3.6 and later are
+*not* supported yet).
 
 After installing the interpreter, you should also install the online
-documentation to make the 'help' command work in the interpreter. If you have
-a working internet connection and the 'wget' program, this can be done with
-the command 'sudo make install-docs'. Again, please check the INSTALL file for
+documentation to make the `help` command work in the interpreter. If you have
+a working internet connection and the `wget` program, this can be done with
+the command `sudo make install-docs`. Again, please check the INSTALL file for
 details.
 
 USING PURE
------ ----
+----------
 
-To start the Pure interpreter, just type 'pure' at the command prompt. You'll
+To start the Pure interpreter, just type `pure` at the command prompt. You'll
 be greeted with a sign-on message, after which the interpreter leaves you at
 its prompt and you can start typing definitions and expressions to be
-evaluated. Use the 'quit' command to exit the interpreter (on most systems you
+evaluated. Use the `quit` command to exit the interpreter (on most systems you
 can also just type EOF a.k.a. Ctrl-D at the beginning of the interpreter's
 command line). For instance:
 
-Pure 0.47 (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
-(Type 'help' for help, 'help copying' for license information.)
-Loaded prelude from /usr/local/lib/pure/prelude.pure.
+     __ \  |   |  __| _ \    Pure 0.65 (x86_64-unknown-linux-gnu)
+     |   | |   | |    __/    Copyright (c) 2008-2017 by Albert Graef
+     .__/ \__,_|_|  \___|    (Type 'help' for help, 'help copying'
+    _|                       for license information.)
 
-> fact n = if n>0 then n*fact (n-1) else 1;
-> map fact (1..10);
-[1,2,6,24,120,720,5040,40320,362880,3628800]
-> quit
+    Loaded prelude from /usr/local/lib/pure/prelude.pure.
+
+    > fact n = if n>0 then n*fact (n-1) else 1;
+    > map fact (1..10);
+    [1,2,6,24,120,720,5040,40320,362880,3628800]
+    > quit
 
 Of course, you can also put your definitions into a script and run that script
 from the command line:
 
-$ pure -x factorial.pure
+    $ pure factorial.pure
 
 Add the -i option to force interactive mode when executing a script, and -q to
 suppress the sign-on message:
 
-$ pure -i -q -x factorial.pure
-> 
+    $ pure -i -q factorial.pure
+    > 
 
 Or you can compile your script to a native executable:
 
-$ pure -c factorial.pure -o factorial
-$ ./factorial
+    $ pure -c factorial.pure -o factorial
+    $ ./factorial
 
 Pure scripts are just ordinary text files, which can be created with any text
 editor. The distribution contains some language definition files and
@@ -161,9 +164,9 @@ files.
 Online documentation is available in the form of a (brief) Unix manual page
 and an extensive manual in html format which contains detailed information on
 the Pure language, the interpreter, the standard library and all available
-addon modules and libraries. You can invoke the manpage with 'man pure' after
-installation, and the online manual by using the 'help' command inside the
-interpreter. The former needs the 'man' program, the latter a html browser,
+addon modules and libraries. You can invoke the manpage with `man pure` after
+installation, and the online manual by using the `help` command inside the
+interpreter. The former needs the `man` program, the latter a html browser,
 w3m by default. See the INSTALL file or the manpage for details. Or just point
 your browser at the following URL to read the manual on the web:
 
@@ -185,11 +188,11 @@ http://groups.google.com/group/pure-lang
 Enjoy! :)
 
 
-Albert Graef
-Dept. of Computer Music
-Johannes Gutenberg University of Mainz
-Germany
+Albert Graef  
+Dept. of Computer Music  
+Johannes Gutenberg University (JGU)  
+Mainz, Germany
 
-<Dr.Graef at t-online.de>
-http://purelang.bitbucket.org
+<aggraef@gmail.com>  
+http://purelang.bitbucket.org  
 http://groups.google.com/group/pure-lang
