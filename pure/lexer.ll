@@ -40,6 +40,9 @@
 # undef yywrap
 # define yywrap() 1
 
+// Yet more flex breakage (2.6.3). :(
+#define YY_SKIP_YYWRAP
+
 /* Some newer Flex versions define yyleng as type size_t which leads to
    warnings about signed-unsigned comparisons even in Flex's own scanner
    skeleton. Silence these. */
@@ -151,7 +154,7 @@ T& ILS<T>::operator()()
 }
 %}
 
-%option noyywrap debug
+%option debug
 
  /* Special extended Unicode symbols. Contributed by John Cowan. */
 
