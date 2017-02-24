@@ -14354,6 +14354,19 @@ Value *interpreter::builtin_codegen(expr x)
   }
 }
 
+/* XXXKLUDGE: Note that in the short-circuit logical operations
+   (logical_tailcall and logical_funcall below) we need to compile the second
+   operand x.xval2() twice, causing snafus later if this expression contains a
+   'with' subterm. The corresponding FMap then won't be properly reset after
+   the first compile, tripping an assertion when codegen() is invoked on the
+   same expression again, because it can't find the proper function
+   environment any more. Unfortunately, we don't have a truly satisfactory
+   solution to this right now. We don't want to complicate the generated code
+   here and, as the 'with' expression may be deeply nested (and there might
+   actually be many of them), it would need an insane amount of plumbing to
+   tell exactly where and when this situation occurs. So we just deal with it
+   on the fly in the codegen() EXPR::WITH branch right now. */
+
 bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x,
 				   const rule *rp)
 {
@@ -15257,9 +15270,29 @@ Value *interpreter::codegen(expr x, bool quote)
     Env& act = act_env();
     // first create all function entry points, so that we properly handle
     // mutually recursive definitions
+    int lastidx = act.fmap.lastidx;
     act.fmap.push();
     for (p = fe->begin(); p != fe->end(); p++) {
       int32_t ftag = p->first;
+      if (act.fmap.act().find(ftag) == act.fmap.act().end()) {
+	/* XXXPANIC: We've lost our function environment. This will happen, in
+	   particular, if we're the second operand of a short-circuit logical
+	   expression (cf. logical_tailcall and logical_funcall), in which
+	   case we'll be asked to compile the same expression twice which
+	   messes up the FMap actidx. It's hard to detect that situation in
+	   advance, so we just deal with it right on the spot. Presumably we
+	   still have the proper environment index in lastidx (which should
+	   then point to a function named ftag with some code already
+	   generated for it), so we can just make that the FMap actidx again.
+	   Either we have then found the proper environment and can proceed
+	   with fingers crossed, or something has gone terribly wrong and we
+	   give up (one of the assertions below will surely catch that
+	   condition). */
+	act.fmap.idx = lastidx;
+	assert(lastidx >= 0 &&
+	       act.fmap.act().find(ftag) != act.fmap.act().end() &&
+	       act.fmap.act()[ftag]->f);
+      }
       assert(act.fmap.act().find(ftag) != act.fmap.act().end());
       Env& e = *act.fmap.act()[ftag];
       push("with", &e);
