@@ -597,6 +597,10 @@ main(int argc, char *argv[])
 	cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
 	     << COPYRIGHT << '\n';
 	cout << "Compiled for LLVM " << LLVM_VERSION << " (http://llvm.org)\n";
+#ifdef GITREVISION
+	if (strcmp(GITREVISION, "unknown"))
+	  cout << "Revision " << GITREVISION << '\n';
+#endif
 	return 0;
       } else if (strcmp(arg, "-b") == 0) {
 	batch = true; force_interactive = false;

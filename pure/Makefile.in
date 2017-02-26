@@ -113,6 +113,17 @@ else
 tmfiles = @tmfiles@
 endif
 
+# Git revision, if available. XXXFIXME: Currently this is a bit brittle, since
+# we just check whether the parent dir of the source directory is a git
+# repo. This might also be true by accident, so better do your builds either
+# inside a pure-lang clone or make sure that the parent is *not* a git repo.
+
+gitrevision := $(shell if test -d $(srcdir)/../.git; then printf "r%s.%s" "$$(git rev-list --count HEAD)" "$$(git rev-parse --short HEAD)"; else echo unknown; fi)
+
+ifneq ($(gitrevision), unknown)
+AUXDEFS += -DGITREVISION='"$(gitrevision)"'
+endif
+
 # Location of the Pure library directory. Depends on whether we're doing a
 # versioned install. This enables you to install different versions of the
 # Pure interpreter on the same system. Versioning is disabled by default, you
@@ -128,7 +139,7 @@ else
 purelib_vers = $(purelib_base)
 endif
 
-AUXDEFS = -DPURELIB='"$(libdir)/$(purelib_vers)"'
+AUXDEFS += -DPURELIB='"$(libdir)/$(purelib_vers)"'
 
 # Pure library name. As of Pure 0.21, we use the standard $(major).$(minor)
 # versioning scheme, which is independent of the Pure version number and the
