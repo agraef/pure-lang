@@ -11,14 +11,12 @@ Gnumeric/Pure is a Gnumeric_ extension which lets you use Pure_ functions in
 Gnumeric, the Gnome spreadsheet. It offers better execution speed than the
 existing Perl and Python plugins, and provides some powerful features not
 found in other Gnumeric scripting plugins, such as asynchronous data sources
-created from Pure streams and OpenGL rendering in Gnumeric frame widgets via
-Pure's OpenGL module.
+created from Pure streams.
 
 .. _Gnumeric: http://www.gnumeric.org/
 .. _Pure: http://purelang.bitbucket.org/
 .. _MATLAB: http://www.mathworks.com/
 .. _Octave: http://www.octave.org/
-.. _OpenGL: http://www.opengl.org/
 
 .. contents::
 .. sectnum::
@@ -44,9 +42,6 @@ plugins:
 * Pure also provides a bridge to Octave_ so that you can call arbitrary Octave
   functions using this extension.
 
-* Gnumeric/Pure offers support for rendering OpenGL_ scenes in Gnumeric frame
-  widgets, via Pure's own OpenGL interface.
-
 * Pure also has built-in support for lazy data structures and thus allows you
   to handle potentially infinite amounts of data such as the list of all prime
   numbers. Gnumeric/Pure lets you turn such lazy values into asynchronous data
@@ -69,8 +64,7 @@ started with Gnumeric/Pure fairly quickly.
 For more advanced uses, Gnumeric/Pure also provides a programming interface
 which lets you do various special tasks such as modifying entire ranges of
 cells with one Pure call, calling Gnumeric functions from Pure, and setting up
-asynchronous data sources and OpenGL frames. The manual explains all this in
-detail.
+asynchronous data sources. The manual explains all this in detail.
 
 .. note:: This manual assumes that you're already familiar with Gnumeric as
    well as the Pure language and its programming environment. If not then you
@@ -79,7 +73,7 @@ detail.
 Copying
 =======
 
-Copyright (c) 2009-2013 by Albert Graef.
+Copyright (c) 2009-2017 by Albert Graef.
 
 Gnumeric/Pure is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -100,7 +94,8 @@ Installation
 Obviously, you need to have both Pure and Gnumeric installed. Pure 0.36 and
 Gnumeric 1.9.13 or later are known to work. The current release of this module
 will work with the latest, GTK3-based versions of Gnumeric (Gnumeric 1.11 and
-later, 1.12.23 has been tested).
+later, various versions starting from 1.12.23 have been tested and are known
+to work).
 
 Please note that the Gnumeric plugin interface is a moving target, which means
 that from time to time the gnumeric-pure module sources are updated to
@@ -110,20 +105,6 @@ gnumeric-pure. In particular, if you are still running Gnumeric 1.10 or
 earlier then you should use version 0.12 of the module instead:
 
   https://bitbucket.org/purelang/pure-lang/downloads/gnumeric-pure-0.12.tar.gz
-
-In the 0.12 version of the module, the Makefile is set up to build
-Gnumeric/Pure with OpenGL support, which requires that you have the OpenGL
-libraries as well as GtkGLExt_ (the Gtk OpenGL extension) for GTK2 installed.
-These should be readily available on most systems, but you can also disable
-this feature by invoking ``make`` as ``make GLDEPS=``.
-
-.. _GtkGLExt: http://gtkglext.sourceforge.net
-
-For version 0.13 and later, you'll need a GTK3-compatible version of GtkGLExt
-which can be found at https://github.com/tdz/gtkglext. The OpenGL support
-under GTK3 is still under development and currently has some issues, however,
-so it is disabled by default. If you want to give it a try then you'll have to
-uncomment the ``GLDEPS`` line at the beginning of the Makefile.
 
 Run ``make`` to compile the software. You might have to adjust the settings at
 the beginning of the Makefile to make this work. Once the compile goes
@@ -158,10 +139,9 @@ generate the ``plugin.xml`` files used by Gnumeric to load a plugin; see
 `Defining Your Own Functions`_ for details.)
 
 If ``make install`` doesn't work for some reason, you can also just copy the
-``pure-func``, ``pure-glfunc`` and ``pure-loader`` directories manually to
-your Gnumeric plugin directory. You can still run ``make install`` in the
-``pure-gnm`` subdirectory to get the ``pure-gnm`` script installed in this
-case.
+``pure-func`` and ``pure-loader`` directories manually to your Gnumeric plugin
+directory. You can still run ``make install`` in the ``pure-gnm`` subdirectory
+to get the ``pure-gnm`` script installed in this case.
 
 Setup
 =====
@@ -170,10 +150,7 @@ Once Gnumeric/Pure has been properly installed, you should see it in
 Gnumeric's Tools/Plug-ins dialog. There are actually two main entries, one
 labelled "Pure functions" and the other one labelled "Pure plugin loader". You
 need to enable both before you can start using Pure functions in your Gnumeric
-spreadsheets. There's also a third entry labelled "Pure OpenGL functions"
-which you might want to enable if you want to try the OpenGL capabilities
-(this will only work if you built Gnumeric/Pure with OpenGL support and have
-Pure's OpenGL module installed; see `OpenGL Interface`_ for details).
+spreadsheets.
 
 Gnumeric doesn't provide much in the way of GUI customization options right
 now, but at least it's possible for plugins to install and configure
@@ -1128,134 +1105,4 @@ See the ``widgets.gnumeric`` spreadsheet in the distribution for an example.
 Possible uses of this facility are left to your imagination. Using Gnumeric's
 internal APIs and Pure's Gtk interface, you might manipulate the GUI widgets
 in various ways (add icons to buttons or custom child widgets to frames,
-etc.). One particularly useful case, for which Gnumeric/Pure has built-in
-support, is rendering an OpenGL scene in a Gnumeric frame widget, see below.
-
-OpenGL Interface
-----------------
-
-Gnumeric/Pure provides special support for rendering OpenGL scenes into
-Gnumeric frame widgets. To actually use this, you must have Pure's OpenGL
-module installed. The following function is provided to equip a Gnumeric frame
-with the OpenGL rendering capability::
-
-  extern expr *pure_gl_window(char *name, int timeout,
-                              expr *setup_cb, expr *config_cb,
-                              expr *display_cb, expr *timer_cb,
-                              expr *user_data) = gl_window;
-
-The meaning of the parameters is as follows:
-
-* ``name`` is a string which specifies the label of the frame widget into
-  which the scene is to be rendered.
-
-* ``timeout`` is a time value in milliseconds (an integer) which specifies the
-  period for invocations of the ``timer_cb`` callback, see below. If this
-  value is zero or negative then the timer callback is disabled.
-
-* ``setup_cb``, ``config_cb``, ``display_cb`` and ``timer_cb`` are the Pure
-  callback functions which are invoked by ``gl_window`` to actually render the
-  scene. The callbacks are all invoked with two arguments: the ``user_data``
-  parameter that ``gl_window`` was invoked with, and a second parameter with
-  callback-specific information as described below.
-
-* ``user_data`` is any information that the caller wants to be passed as the
-  first argument to the callback functions.
-
-The different callbacks are:
-
-* ``setup_cb`` is called for initializing the scene. It receives the
-  ``GtkDrawingArea`` widget as the second argument. Typically this is used to
-  set the initial projection and modelview matrices, enable lighting, etc.
-
-* ``config_cb`` is called when the width or height of the frame widget changes
-  so that the rendering parameters (typically the viewport) can be adjusted
-  accordingly. It is invoked with a pair of integers ``(w,h)`` as the second
-  argument, which denotes the new dimension allocated to the drawing area.
-
-* ``display_cb`` is called whenever the contents of the drawing area needs to
-  be redrawn. This typically does most of the work necessary to render the
-  scene. The second callback argument is always ``()``.
-
-* ``timer_cb`` is called at regular intervals as specified with the
-  ``timeout`` parameter (see above), unless the ``timeout`` value is zero or
-  negative in which case this callback is disabled. The second callback
-  argument is always ``()``. The timer callback is typically used to
-  incrementally adjust some parameters of the scene in order to render
-  animations. When invoked, the callback automatically arranges for
-  ``display_cb`` to be called afterwards, so you don't have to do that
-  manually in your callback definition.
-
-You'll need at least either the ``display_cb`` or the ``timer_cb`` function to
-render anything, but typically all of these callbacks will be needed for
-animated scenes. Callback functions which aren't needed can be specified as
-``()``.
-
-There's also a related helper function which can be used as a trigger
-condition to defer rendering until the target frame widget has been realized::
-
-  extern bool pure_check_window(char *name) = check_window;
-
-This function returns ``true`` as soon as the named frame widget is ready to
-go, at wich time ``gl_windows`` can be called on the widget. So your call to
-``gl_windows`` should usually be wrapped up like this::
-
-  trigger 0 check_window
-  (\frame->gl_window frame timeout setup config display timer user_data) frame
-
-Here's an example from ``pure_glfunc.pure`` which shows how these functions
-are to be used::
-
-  using pure_func, GL, GLU;
-  extern void gdk_gl_draw_teapot(bool solid, double scale);
-  gnm_info "gltest" = "sbfff";
-
-  gltest frame m a b c = trigger 0 check_window
-    (\frame->gl_window frame (m*40) setup config display timer ()) frame
-  with
-    setup _ _ = () when
-      // Initialize.
-      GL::ClearColor 0.1 0.1 0.3 1.0; 
-      GL::ShadeModel GL::SMOOTH;
-      GL::Enable GL::DEPTH_TEST;
-      // Initial projection and modelview matrices.
-      GL::MatrixMode GL::PROJECTION;
-      GL::LoadIdentity;
-      GL::Rotatef 20.0 (-1.0) 0.0 0.0;
-      GL::MatrixMode GL::MODELVIEW;
-      GL::LoadIdentity;
-      // Lighting.
-      GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
-      GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
-      GL::Enable GL::LIGHTING;
-      GL::Enable GL::LIGHT0;
-    end;
-    config _ (w,h) = GL::Viewport 0 0 w h;
-    display _ _ = () when
-      GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
-      gdk_gl_draw_teapot true 0.5;
-    end if m;
-    display _ _ = () when
-      GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
-      GL::LoadIdentity;
-      GL::Rotatef (scale 360 a) 0.0 1.0 0.0;
-      GL::Rotatef (scale 360 b) 1.0 0.0 0.0;
-      GL::Rotatef (scale 360 c) 0.0 0.0 1.0;
-      gdk_gl_draw_teapot true 0.5;
-    end;
-    timer _ _ = () when
-      GL::Rotatef (scale 36 a) 0.0 1.0 0.0;
-      GL::Rotatef (scale 36 b) 1.0 0.0 0.0;
-      GL::Rotatef (scale 36 c) 0.0 0.0 1.0;
-    end;
-    scale step x = (x/100*step);
-  end;
-
-Have a look at the ``gl-example.gnumeric`` spreadsheet included in the
-distribution to see this example in action. (You first need to enable the
-"Pure OpenGL functions" in the Plugin Manager to make this work.)  The
-screenshot below shows how the example looks like in Gnumeric.
-
-.. figure:: opengl.png
-
-   Gnumeric/Pure OpenGL example.
+etc.).

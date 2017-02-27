@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = gnumeric-pure-$(version)
-version = 0.15
+version = 0.16
 
 # NOTE: This version of the module is set up to build with Gnumeric 1.12. It
 # will *not* compile with Gnumeric 1.10 and earlier any more because of
@@ -38,11 +38,10 @@ GODEPS=libspreadsheet-1.12
 INCLUDES = `pkg-config --cflags $(GODEPS)`
 GTKLIBS = `pkg-config --libs $(GODEPS)`
 
-#     Adjust the following as needed to build with OpenGL support. NOTE: This
-#     requires a GtkGLExt version which is compatible with GTK3, see
-#     https://github.com/tdz/gtkglext. Also, there are still some issues with
-#     the OpenGL support under GTK3 right now, so this is disabled by
-#     default. Uncomment the following line if you want to give it a try.
+#     NOTE: OpenGL support has been dropped as the GTK3 version of GtkGLExt
+#     hasn't had any updates since 2012, see https://github.com/tdz/gtkglext.
+#     The corresponding code is still in the source, however, so we still
+#     leave this here in case GtkGLExt3 comes back from the dead.
 
 #GLDEPS=gtkglext-3.0 gtkglext-x11-3.0
 
@@ -123,7 +122,7 @@ PIC = -fPIC
 export PIC
 endif
 
-# GtkGLExt support, if requested.
+# GtkGLExt support, if requested. UNSUPPORTED.
 # IMPORTANT: DON'T REMOVE THE -lstdc++ linker option, it prevents issues with
 # some proprietary graphics card drivers on Linux. See the following URL:
 # http://wiki.fifengine.de/Segfault_in_cxa_allocate_exception#Workaround
@@ -148,8 +147,13 @@ examples/*/*.pure examples/*/*.dsp examples/*/*.gnumeric \
 examples/*/Makefile examples/*/config.guess
 SEDFILES = README
 
+ifneq "$(GLDEPS)" ""
 all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml pure-glfunc/plugin.xml
 	$(MAKE) -C pure-gnm
+else
+all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml
+	$(MAKE) -C pure-gnm
+endif
 
 pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pure-loader/pure-loader.o
 	$(CC) $(shared) $(dllname) -o $@ $(LDFLAGS) $^ $(GTKLIBS) -lpure -lgmp $(LIBS)
@@ -170,19 +174,27 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+ifneq "$(GLDEPS)" ""
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
+endif
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+ifneq "$(GLDEPS)" ""
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
+endif
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 	$(MAKE) -C pure-gnm install
 
 install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+ifneq "$(GLDEPS)" ""
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
+endif
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+ifneq "$(GLDEPS)" ""
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
+endif
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 	$(MAKE) -C pure-gnm install
 
