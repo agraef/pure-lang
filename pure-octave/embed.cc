@@ -78,6 +78,7 @@ static bool init = false, first_init = false;
 
 #define octave_main my_octave_main
 #define clean_up_and_exit my_clean_up_and_exit
+#define octave_exit my_octave_exit
 
 static int octave_exit = 0;
 static octave::interpreter *embedded_interpreter = 0;
