@@ -59,27 +59,58 @@ extern "C" void octave_restore_signal_mask (void);
 #define can_interrupt octave::can_interrupt
 #define octave_catch_interrupts octave::catch_interrupts
 #define octave_interrupt_exception octave::interrupt_exception
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=3
+#define eval_string octave::eval_string
+#define feval octave::feval
+#endif
 #endif
 
-/* Basic Octave interface. This is a heavily hacked version of octave_embed by
-   Paul Kienzle (http://wiki.octave.org/wiki.pl?OctaveEmbedded) which in turn
-   is based on Octave's toplevel. */
+/* Basic Octave interface. This is a heavily hacked version of octave_embed
+   originally by Paul Kienzle (http://wiki.octave.org/wiki.pl?OctaveEmbedded)
+   which in turn is based on Octave's toplevel. */
 
 static bool init = false, first_init = false;
+
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=3
+// Octave 4.3+: Creating an embedded instance of the Octave interpreter is
+// child's play now. For now, we just emulate the old interface on top of
+// it. Also note that the command line arguments are always ignored now.
+
+#define octave_main my_octave_main
+#define clean_up_and_exit my_clean_up_and_exit
+
+static int octave_exit = 0;
+static octave::interpreter *embedded_interpreter = 0;
+
+static int my_octave_main(int argc, char **argv, int embedded)
+{
+  if (!embedded_interpreter) {
+    embedded_interpreter = new octave::interpreter();
+    embedded_interpreter->execute();
+  }
+}
+
+static void my_clean_up_and_exit(int exit_status, bool safe_to_return)
+{
+  if (embedded_interpreter) {
+    delete embedded_interpreter;
+    embedded_interpreter = 0;
+  }
+}
+#endif
 
 static void install_builtins();
 
 void octave_init(int argc, char *argv[])
 {
   if (!init) {
-#if OCTAVE_MAJOR>3 || OCTAVE_MAJOR>=3 && OCTAVE_MINOR>=8
+    // We don't support a restart of the Octave interpreter, because that
+    // trips different kinds of issues with different versions of Octave
+    // (including segfaults in some versions). So just bail out here.
     if (first_init) {
-      // octave_main() segfaults when called a second time, so let's at least
-      // try to terminate gracefully here.
-      fprintf(stderr, "error: octave_init called twice, exiting\n");
-      exit(1);
+      fprintf(stderr, "error: octave_init called twice, ignored\n");
+      return;
     }
-#endif
     octave_main(argc,argv,1);
     init = true;
     if (!first_init) {
@@ -110,9 +141,9 @@ static void recover(void)
 {
 #if 0
   // This isn't supported in the latest Octave versions. We simply leave this
-  // disabled for now, which means that you'll have to use 'unwind_protect'
-  // explicitly in your Octave code in order to handle Octave exceptions.
-  // XXXFIXME: This might leak memory in some cases??
+  // disabled, which means that you'll have to use 'unwind_protect' explicitly
+  // in your Octave code in order to handle Octave exceptions. XXXFIXME: This
+  // might leak memory in some cases??
   unwind_protect::run_all ();
 #endif
   can_interrupt = true;
@@ -128,78 +159,55 @@ int octave_eval(const char *cmd)
 {
   int parse_status;
 
-  // XXXFIXME: Need to look at this because octave_save_signal_mask and
-  // octave_restore_signal_mask are not available in the public API of Octave
-  // 4.2+ any more. Also, eval_string() segfaults somewhere in
-  // octave::application::interactive() (deep down in liboctinterp) with
-  // Octave 4.2.0 at least, so while the code compiles it doesn't work at
-  // present. (No workaround for this is known yet, so we recommend sticking
-  // to Octave 4.0 until this is fixed.)
+  if (!init) return -1;
+
+  // XXXFIXME: Need to look at this because octave_save_signal_mask() and
+  // octave_restore_signal_mask() are not in the public API of Octave 4.2+ any
+  // more. They're still in the library, though, and we (presumably) need them
+  // here so that we can set up an interrupt (SIG_INT) handler.
   octave_save_signal_mask ();
-  if (octave_set_current_context)
-    {
+
+  // XXXFIXME: Really need to clean up this cruft, this just seems needlessly
+  // complicated. Is this even needed any more?
+  if (octave_set_current_context) {
 #if defined (USE_EXCEPTIONS_FOR_INTERRUPTS)
-      panic_impossible ();
+    panic_impossible ();
 #else
 #if 0
-      unwind_protect::run_all ();
+    unwind_protect::run_all ();
 #endif
-      raw_mode (0);
-      std::cout << "\n";
-      octave_restore_signal_mask ();
+    raw_mode (0);
+    std::cout << "\n";
+    octave_restore_signal_mask ();
 #endif
-    }
+  }
 
   can_interrupt = true;
   octave_catch_interrupts ();
   octave_initialized = true;
 
-  // XXX FIXME XXX need to give caller an opaque pointer
-  // so that they can define and use separate namespaces
-  // when calling octave, with a shared global namespace.
-  // Something like:
-  //   int call_octave (const char *string, void *psymtab = NULL) {
-  //     ...
-  //     curr_sym_tab = psymtab == NULL ? top_level_sym_tab : symbol_table;
-  // I suppose to be safe from callbacks (surely we have to
-  // provide some way to call back from embedded octave into
-  // the user's application), we should push and pop the current
-  // symbol table.
+  // Note that Kienzle's code uses various error codes here: -1 indicates
+  // "failure", which seems to be set in the interpreter somewhere, -2 is user
+  // interrupt (and more dramatic failures), -3 memory failure.
+  try {
+    reset_error_handler ();
+    // XXXFIXME: eval_string() just always segfaults with Octave 4.2.0+. No
+    // workaround for this is known yet. Octave 4.0 and 4.3 seem to be ok,
+    // though, so just stick to one of these until this is fixed.
+    eval_string(cmd, false, parse_status, 0);
+  } catch (octave_interrupt_exception) {
+    recover ();
+    std::cout << "\n";
+    error_state = -2;
+  } catch (std::bad_alloc) {
+    recover ();
+    std::cout << "\n";
+    error_state = -3;
+  }
 
-  // Note that I'm trying to distinguish exception from 
-  // failure in the return codes. I believe failure is 
-  // indicated by -1.  I have execution exception (including
-  // user interrupt and more dramatic failures) returning -2
-  // and memory failure returning -3.  We should formalize
-  // this with error codes defined in embed_octave.h.  Maybe
-  // a more fine-grained approach could be used within octave
-  // proper.
-  try 
-    {
-#if 0
-      curr_sym_tab = top_level_sym_tab;
-#endif
-      reset_error_handler ();
-      eval_string(cmd, false, parse_status, 0);
-    }
-  catch (octave_interrupt_exception)
-    {
-      recover ();
-      std::cout << "\n"; 
-      error_state = -2; 
-    }
-  catch (std::bad_alloc)
-    {
-      recover ();
-      std::cout << "\n"; 
-      error_state = -3;
-    }
-
-  octave_restore_signal_mask();
+  octave_restore_signal_mask ();
   octave_initialized = false;
 
-  // XXX FIXME XXX callbacks calling embed_octave
-  // may or may not want error_state reset.
   return error_state;
 }
 
@@ -248,17 +256,6 @@ gsl_matrix_calloc(const size_t n1, const size_t n2)
   return m;
 }
 
-#if 0
-static void gsl_matrix_free(gsl_matrix *m)
-{
-  if (m->owner) {
-    if (m->block) free(m->block->data);
-    free(m->block);
-  }
-  free(m);
-}
-#endif
-
 static gsl_matrix_complex* 
 gsl_matrix_complex_alloc(const size_t n1, const size_t n2)
 {
@@ -299,17 +296,6 @@ gsl_matrix_complex_calloc(const size_t n1, const size_t n2)
   return m;
 }
 
-#if 0
-static void gsl_matrix_complex_free(gsl_matrix_complex *m)
-{
-  if (m->owner) {
-    if (m->block) free(m->block->data);
-    free(m->block);
-  }
-  free(m);
-}
-#endif
-
 static gsl_matrix_int* 
 gsl_matrix_int_alloc(const size_t n1, const size_t n2)
 {
@@ -349,17 +335,6 @@ gsl_matrix_int_calloc(const size_t n1, const size_t n2)
   memset(m->data, 0, m->block->size*sizeof(int));
   return m;
 }
-
-#if 0
-static void gsl_matrix_int_free(gsl_matrix_int *m)
-{
-  if (m->owner) {
-    if (m->block) free(m->block->data);
-    free(m->block);
-  }
-  free(m);
-}
-#endif
 
 /* GSL doesn't really support empty matrices, so we fake them by allocating 1
    dummy row or column if the corresponding dimension is actually zero. */
@@ -837,12 +812,14 @@ static octave_value *pure_to_octave(pure_expr *x)
 
 pure_expr *octave_get(const char *id)
 {
+  if (!init) return 0;
   octave_value val = get_global_value(id, true);
   return octave_to_pure(val);
 }
 
 pure_expr *octave_set(const char *id, pure_expr *x)
 {
+  if (!init) return 0;
   octave_value *val = pure_to_octave(x);
   if (val) {
     set_global_value(id, *val);
@@ -861,6 +838,7 @@ pure_expr *octave_set(const char *id, pure_expr *x)
 
 pure_expr *octave_func(pure_expr *fun)
 {
+  if (!init) return 0;
   // First try to find an ordinary function handle.
   char *s;
   if (pure_is_cstring_dup(fun, &s)) {
@@ -891,6 +869,7 @@ pure_expr *octave_func(pure_expr *fun)
 
 pure_expr *octave_call(pure_expr *fun, int nargout, pure_expr *args)
 {
+  if (!init) return 0;
   pure_expr **xs;
   size_t n;
   octave_value *v;
