@@ -23,14 +23,19 @@ else
 ECHON = echo -n
 endif
 
+# The mkoctfile to use. Adjust this as needed if it's named differently, isn't
+# in the standard PATH or if you have multiple Octave installations on your
+# system.
+mkoctfile = mkoctfile
+
 # Try to guess the Octave version number. We're only interested in the
 # major/minor version here, to cope with the C/C++ API breakage in Octave 3.8+.
-octversion=$(shell mkoctfile --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/\1 \2/')
+octversion=$(shell $(mkoctfile) --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/\1 \2/')
 octversionflag="$(shell if [ $(word 1,$(octversion)) -gt 3 ] || ( [ $(word 1,$(octversion)) -ge 3 ] && [ $(word 2,$(octversion)) -ge 8 ] ); then $(ECHON) '-DOCTAVE_3_8_PLUS'; fi) $(shell if [ $(word 1,$(octversion)) -ge 4 ] && [ $(word 2,$(octversion)) -ge 2 ]; then $(ECHON) '-DOCTAVE_4_2_PLUS'; fi)"
 
 # Add the -rpath flag so that the dynamic linker finds liboctave.so etc. when
 # Pure loads the module.
-RLD_FLAG=$(shell mkoctfile -p RLD_FLAG)
+RLD_FLAG=$(shell $(mkoctfile) -p RLD_FLAG)
 
 DISTFILES = COPYING Makefile README embed.cc embed.h \
 gsl_structs.h gnuplot.pure octave.pure debian/* examples/*.pure
@@ -43,16 +48,16 @@ ifeq ($(DLL),.dylib)
 # dylib which can be linked into other modules.
 embed.o: embed.cc embed.h
 	rm -f $@
-	mkoctfile -v $(octversionflag) -o $@ -c $<
-MKOCT_LDCXX = $(shell mkoctfile -p LD_CXX)
-MKOCT_LDFLAGS = $(shell mkoctfile -p LFLAGS) $(shell mkoctfile -p OCTAVE_LIBS) $(shell mkoctfile -p LDFLAGS)
+	$(mkoctfile) -v $(octversionflag) -o $@ -c $<
+MKOCT_LDCXX = $(shell $(mkoctfile) -p LD_CXX)
+MKOCT_LDFLAGS = $(shell $(mkoctfile) -p LFLAGS) $(shell $(mkoctfile) -p OCTAVE_LIBS) $(shell $(mkoctfile) -p LDFLAGS)
 octave_embed$(DLL): embed.o
 	rm -f $@
 	$(MKOCT_LDCXX) $(shared) $(dllname) -o $@ embed.o $(MKOCT_LDFLAGS) -lpure $(RLD_FLAG)
 else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
-	mkoctfile -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG)
+	$(mkoctfile) -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG)
 	if test -f $@.oct; then mv $@.oct $@; fi
 endif
 
