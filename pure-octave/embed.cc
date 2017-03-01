@@ -17,7 +17,9 @@
    Please see the accompanying COPYING file for the precise license terms. The
    GPL are also be read online at http://www.gnu.org/licenses/. */
 
-#ifdef OCTAVE_4_2_PLUS
+// Deal with Octave API breakage in different versions. At present, the
+// critical checkpoints are 3.8 and 4.2.
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
 #include "octave-config.h"
 #undef OCTAVE_USE_DEPRECATED_FUNCTIONS
 #else
@@ -31,7 +33,7 @@
 #if 0
 #include "unwind-prot.h"
 #endif
-#ifdef OCTAVE_4_2_PLUS
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
 #include "interpreter.h"
 #else
 #include "toplev.h"
@@ -49,7 +51,7 @@
 
 #include "embed.h"
 
-#ifdef OCTAVE_4_2_PLUS
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
 // These aren't in the public API any more.
 extern "C" void octave_save_signal_mask (void);
 extern "C" void octave_restore_signal_mask (void);
@@ -70,7 +72,7 @@ static void install_builtins();
 void octave_init(int argc, char *argv[])
 {
   if (!init) {
-#ifdef OCTAVE_3_8_PLUS
+#if OCTAVE_MAJOR>3 || OCTAVE_MAJOR>=3 && OCTAVE_MINOR>=8
     if (first_init) {
       // octave_main() segfaults when called a second time, so let's at least
       // try to terminate gracefully here.
@@ -91,7 +93,7 @@ void octave_init(int argc, char *argv[])
 void octave_fini(void)
 {
   if (init) {
-#ifdef OCTAVE_3_8_PLUS
+#if OCTAVE_MAJOR>3 || OCTAVE_MAJOR>=3 && OCTAVE_MINOR>=8
     // Octave 3.8 doesn't expose do_octave_atexit() any more, so we call
     // clean_up_and_exit() instead, and prevent Octave from exiting the
     // process.
@@ -1024,7 +1026,7 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 
 static void install_builtins()
 {
-#ifdef OCTAVE_3_8_PLUS
+#if OCTAVE_MAJOR>3 || OCTAVE_MAJOR>=3 && OCTAVE_MINOR>=8
   install_builtin_function(Fpure_call, "pure_call", "embed.cc", PURE_HELP);
 #else
   install_builtin_function(Fpure_call, "pure_call", PURE_HELP);
