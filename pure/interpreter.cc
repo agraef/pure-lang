@@ -9012,7 +9012,7 @@ expr interpreter::parse_simple(list<OpEntry>::iterator& act,
       prec_t prec = symtab.sym(f).prec;
       if (out.stk.empty() || out.stk.back().is_op) {
 	// we expect a prefix operator here
-	if (fix != prefix && f != symtab.minus_sym().f) {
+	if (fix != prefix && !symtab.check_minus_sym(f)) {
 	  throw err("syntax error, unexpected "+fixity_str(fix)+
 		    " operator '"+symtab.sym(f).s+"'");
 	}
@@ -9022,8 +9022,8 @@ expr interpreter::parse_simple(list<OpEntry>::iterator& act,
 		    symtab.sym(f).s+"'");
 	}
 	expr y = parse_simple(act, end, nprec(prec, prefix));
-	if (x.tag() == symtab.minus_sym().f) {
-	  expr op = expr(symtab.neg_sym().f);
+	if (symtab.check_minus_sym(x.tag())) {
+	  expr op = expr(symtab.neg_sym_of(x.tag()).f);
 	  op.flags() = x.flags() & (EXPR::QUAL|EXPR::GLOBAL|EXPR::LOCAL);
 	  y = uminop(op, y);
 	} else

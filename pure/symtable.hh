@@ -385,6 +385,10 @@ public:
   symbol& astag_sym();
   symbol& eval_sym()
   { return *sym_p("__eval__", __eval_sym); }
+  // the minus symbol; this plays an awkward role in the syntax because it can
+  // be *both* a unary and a binary symbol
+  bool check_minus_sym(int32_t f);
+  symbol& neg_sym_of(int32_t f);
 };
 
 #endif // ! SYMTABLE_HH

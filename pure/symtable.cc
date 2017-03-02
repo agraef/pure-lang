@@ -730,3 +730,14 @@ symbol& symtable::with_sym()
   else
     return *sym_p("__with__", __with_sym, 0, infixl);
 }
+
+bool symtable::check_minus_sym(int32_t f)
+{
+  return f == minus_sym().f;
+}
+
+symbol& symtable::neg_sym_of(int32_t f)
+{
+  assert(f == minus_sym().f);
+  return neg_sym();
+}

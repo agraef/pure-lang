@@ -124,7 +124,7 @@ typedef yy::parser::token token;
 static yy::parser::token_type optoken[5] =
   {token::NA, token::LT, token::RT, token::PR, token::PO};
 
-#define optok(_f, _fix) ((_fix<=infixr && _f==interp.symtab.minus_sym().f)?token::PR:optoken[_fix])
+#define optok(_f, _fix) ((_fix<=infixr && interp.symtab.check_minus_sym(_f))?token::PR:optoken[_fix])
 
 // A little helper class to keep track of interpreter-local data.
 
