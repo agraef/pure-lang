@@ -48,11 +48,11 @@ static inline string psym(const string& s, bool local = false)
     return s;
 }
 
-static inline const string& pname(int32_t f)
+static string pname(int32_t f)
 {
   assert(f > 0);
-  if (f == interpreter::g_interp->symtab.neg_sym().f) {
-    static string uminus = "-";
+  if (interpreter::g_interp->symtab.is_neg_sym(f)) {
+    string uminus = interpreter::g_interp->symtab.neg_sym_pname(f);
     return uminus;
   } else {
     const symbol& sym = interpreter::g_interp->symtab.sym(f);
@@ -86,10 +86,8 @@ static inline const string sym_padding(int32_t f)
 static prec_t sym_nprec(int32_t f)
 {
   assert(f > 0);
-  if (f == interpreter::g_interp->symtab.neg_sym().f) {
-    prec_t p = nprec(interpreter::g_interp->symtab.minus_sym().prec);
-    if (p < NPREC_MAX) p += 3; // precedence of unary minus
-    return p;
+  if (interpreter::g_interp->symtab.is_neg_sym(f)) {
+    return interpreter::g_interp->symtab.neg_sym_nprec(f);
   } else {
     const symbol& sym = interpreter::g_interp->symtab.sym(f);
     return nprec(sym.prec, sym.fix);

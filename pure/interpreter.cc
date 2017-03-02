@@ -8823,10 +8823,12 @@ expr interpreter::macsval(pure_expr *x)
   return v;
 }
 
-expr interpreter::uminop(expr op, expr x)
+expr interpreter::uminop(expr op, expr x, bool have_uminus)
 {
-  // handle special case of a numeric argument
-  if (x.tag() == EXPR::BIGINT && (x.flags()&EXPR::OVF) &&
+  // check for unary minus and handle the special case of a numeric argument
+  if (!have_uminus)
+    return expr(op, x);
+  else if (x.tag() == EXPR::BIGINT && (x.flags()&EXPR::OVF) &&
       mpz_cmp_ui(x.zval(), 0x80000000U) == 0)
     // The negated int 0x80000000 can actually be represented as a machine int
     // value, we convert it back on the fly here.
@@ -9023,9 +9025,10 @@ expr interpreter::parse_simple(list<OpEntry>::iterator& act,
 	}
 	expr y = parse_simple(act, end, nprec(prec, prefix));
 	if (symtab.check_minus_sym(x.tag())) {
-	  expr op = expr(symtab.neg_sym_of(x.tag()).f);
+	  int32_t f = symtab.neg_sym_of(x.tag()).f;
+	  expr op = expr(f);
 	  op.flags() = x.flags() & (EXPR::QUAL|EXPR::GLOBAL|EXPR::LOCAL);
-	  y = uminop(op, y);
+	  y = uminop(op, y, f == symtab.neg_sym().f);
 	} else
 	  y = expr(x, y);
 	out.push_arg(y);

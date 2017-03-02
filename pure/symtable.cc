@@ -733,11 +733,56 @@ symbol& symtable::with_sym()
 
 bool symtable::check_minus_sym(int32_t f)
 {
-  return f == minus_sym().f;
+  if (f == minus_sym().f) return true;
+  symbol* sym = (f>0)?&symtable::sym(f):0;
+  if (sym && sym->prec >= 0 && sym->prec < PREC_MAX && sym->fix <= infixr) {
+    size_t k = symsplit(sym->s);
+    if (k == string::npos) return false;
+    return sym->s.substr(k).compare("::-") == 0;
+  } else
+    return false;
 }
 
 symbol& symtable::neg_sym_of(int32_t f)
 {
-  assert(f == minus_sym().f);
-  return neg_sym();
+  assert(check_minus_sym(f));
+  if (f == minus_sym().f) return neg_sym();
+  symbol* sym = (f>0)?&symtable::sym(f):0;
+  assert(sym && sym->prec >= 0 && sym->prec < PREC_MAX && sym->fix <= infixr);
+  size_t k = symsplit(sym->s);
+  assert(k != string::npos && sym->s.substr(k).compare("::-") == 0);
+  string s = sym->s.substr(0, k);
+  symbol* neg_sym = symtable::sym(s.append("::neg"));
+  neg_sym->bminus = sym;
+  return *neg_sym;
+}
+
+bool symtable::is_neg_sym(int32_t f)
+{
+  if (f == neg_sym().f) return true;
+  symbol* sym = (f>0)?&symtable::sym(f):0;
+  return sym && sym->bminus;
+}
+
+string symtable::neg_sym_pname(int32_t f)
+{
+  if (f == neg_sym().f) return "-";
+  symbol* sym = (f>0)?&symtable::sym(f):0;
+  assert(sym && sym->bminus);
+  return sym->bminus->s;
+}
+
+prec_t symtable::neg_sym_nprec(int32_t f)
+{
+  prec_t p;
+  if (f == neg_sym().f)
+    p = minus_sym().prec;
+  else {
+    symbol* sym = (f>0)?&symtable::sym(f):0;
+    assert(sym && sym->bminus);
+    p = sym->bminus->prec;
+  }
+  p = nprec(p);
+  if (p < NPREC_MAX) p += 3; // precedence of unary minus
+  return p;
 }

@@ -1,0 +1,25 @@
+// Test overloading of binary minus in a namespace (excerpt from the
+// lucid.pure example).
+
+// The compiler should handle this by manufacturing a corresponding unary
+// minus operator in an automatic fashion, so that the overloaded operators
+// work in the same manner as the default ones. Fixed in Pure 0.66.
+
+public a b; // symbolic constants used in the test samples below
+
+namespace lucid;
+infixl (+) + - ;
+
+-(x:xs)			= (::- x) : (-xs)&;
+(x:xs) + (y:ys)		= (x ::+ y) : (xs+ys)&;
+(x:xs) - (y:ys)		= (x ::- y) : (xs-ys)&;
+
+a+b;
+a-b;
+-b;
+neg b;
+
+a+1;
+a-1;
+-1;
+neg 1;

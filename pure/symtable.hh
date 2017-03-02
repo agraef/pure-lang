@@ -42,18 +42,19 @@ public:
   fix_t fix; // fixity
   bool priv; // private attribute
   bool unresolved; // unresolved symbol
+  symbol *bminus; // pointer to corresponding binary symbol (unary minus)
   symbol() // constructor for dummy entries
     : f(0), g(0), s(""), ns(0), prec(PREC_MAX), fix(infix), priv(false),
-      unresolved(false)
+      unresolved(false), bminus(0)
   {}
   symbol(const string& _s, int _f, bool _priv = false)
     : f(_f), g(0), s(_s), ns(0), prec(PREC_MAX), fix(infix), priv(_priv),
-      unresolved(false)
+      unresolved(false), bminus(0)
   { x = expr(f); }
   symbol(const string& _s, int _f, prec_t _prec, fix_t _fix,
 	 bool _priv = false)
     : f(_f), g(0), s(_s), ns(0), prec(_prec), fix(_fix), priv(_priv),
-      unresolved(false)
+      unresolved(false), bminus(0)
   { x = expr(f); }
 };
 
@@ -389,6 +390,9 @@ public:
   // be *both* a unary and a binary symbol
   bool check_minus_sym(int32_t f);
   symbol& neg_sym_of(int32_t f);
+  bool is_neg_sym(int32_t f);
+  string neg_sym_pname(int32_t f);
+  prec_t neg_sym_nprec(int32_t f);
 };
 
 #endif // ! SYMTABLE_HH

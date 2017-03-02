@@ -976,7 +976,7 @@ public:
   bool checkguards(expr x, const vguardl& guards);
   bool checkeqns(expr x, const veqnl& eqns);
   void closure(rule& r, bool b = true);
-  expr uminop(expr op, expr x);
+  expr uminop(expr op, expr x, bool have_uminus);
   expr *mklsect(expr *x, expr *y);
   expr *mkrsect(expr *x, expr *y);
   expr *mkexpr(expr *x, expr *y);
