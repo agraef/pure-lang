@@ -1,0 +1,439 @@
+
+/* lucid.pure: A toy implementation of the functional dataflow language.
+   See: https://en.wikipedia.org/wiki/Lucid_(programming_language) */
+
+/* Original version 01/08/2009 by Albert Graef <aggraef@gmail.com>. This has
+   been lying around unfinished on my hard disk for many many years, but I
+   finally decided that it was time to polish it up and add it to the
+   examples. So here it is in all its glory! 02/03/2017 AG */
+
+/* We keep the Lucid operations in their own namespace, to prevent name
+   clashes. For convenience, you can also use the French guillemets « » as
+   namespace brackets. (This seems to be a good fit, considering how popular
+   the Lucid family of languages has been in French research circles.) These
+   symbols are readily available with AltGr + x/y on some international
+   keyboards. Not sure how you'd get them on an English keyboard, but of
+   course you can always change them to something more convenient. */
+
+outfix « »;
+namespace lucid (« »);
+
+/* Lucid maintains the illusion that all streams are infinite. To work with
+   finite streams, it employs a special hiaton named "eod" which signals the
+   end of the stream. We replicate this functionality here, and we also
+   overload Pure's null predicate so that we can check for "empty" streams
+   flagged by the eod symbol. (This replaces Lucid's iseod predicate.)
+
+   Note that Lucid also makes eod infinite in numeric comparisons. This seems
+   to be an unfortunate choice, however, because it hides errors in algorithms
+   which continue reading past the end of a stream when they shouldn't.
+   Therefore we have this behavior disabled by default, which means that some
+   Lucid programs written in this lenient style will have to be rewritten to
+   make them work in Pure. If you don't want this, you can just uncomment the
+   line defining eod as inf below to make eod work the Lucid way (however,
+   note that this will make *real* inf results in computations terminate the
+   stream, which might not be what you want). */
+
+//const eod = inf;
+nonfix eod;
+
+null (eod:_) | null eod = true;
+null xs::list = ::null xs otherwise;
+
+/* Helper function to expand a stream argument if needed. This also takes care
+   of empty lists (which become a Lucid-style infinite stream of eods), as
+   well as singleton args x which are replaced by a constant stream. */
+
+arg x			= x if thunkp x;
+			= repeat x if ~listp x;
+			= repeat eod if null x;
+			= x otherwise;
+
+/* These are Lucid's basic stream operations, which always take infinite
+   stream values as inputs and return such values as outputs. Most of these
+   should be fairly obvious. Also note that, since our Lucid streams are in
+   fact just infinite Pure streams, you can apply all of Pure's own stream
+   operations such as map and zip to these objects, too.
+
+   - 'first' and 'next' are like Pure's 'head' and 'tail', except that first
+   returns an infinite constant stream.
+
+   - 'fby' ("followed by") is like Pure's list consing operator ':', except
+   that its left operand is a stream (whose tail just gets thrown away).
+
+   - 'asa' ("as soon as") repeats the current element from the left operand
+   forever as soon as the condition (truth value) in the right operand becomes
+   true.
+
+  - 'wvr' ("whenever") spits out exactly those elements of its left operand
+  for which the condition in its right operand becomes true.
+
+   - 'upon' keeps repeating the first element of its left operand, until the
+   condition in its right operand becomes true, in which case it proceeds to
+   the next element.
+
+   Note that some of Lucid's standard operations are missing here, in
+   particular: 'index' and 'attime'. But they are easy to define in terms of
+   the existing facilities, see the examples at the end of this script. */
+
+public first next;
+infixl 0 asa wvr upon;
+infixr 1 fby;
+
+/* Special case rules to prevent asa and wvr from looping forever when applied
+   to finite Lucid streams. We break the loop when the left operand hits eod
+   and return an endless stream of eods instead. (This rests on the assumption
+   that if we hit eod in the left operand then that stream is finished, which
+   seems reasonable. Also note that this treatment isn't needed for the other
+   operations which never loop forever without producing anything.) */
+(eod:xs) asa ys		|
+(eod:xs) wvr ys		= repeat eod;
+
+first (x:xs)		= repeat x;
+next (x:xs)		= xs;
+(x:xs) fby ys		= x:arg ys;
+(x:xs) asa (y:ys)	= if y then repeat x else xs asa ys;
+(x:xs) wvr (y:ys)	= if y then x:(xs wvr ys)& else xs wvr ys;
+(x:xs) upon ys		= x:(if y then xs upon ys else x:xs upon ys
+			     when y:ys = arg ys end)&;
+
+// Fallback rules for mixed (stream/singleton) arguments.
+first x			= arg x;
+next x			= arg x;
+x fby ys		= arg x fby ys;
+x asa ys@(y:_)		= arg x asa ys;
+xs@(x:_) asa y		= xs asa arg y;
+x asa y			= arg x asa arg y;
+x wvr ys@(y:_)		= arg x wvr ys;
+xs@(x:_) wvr y		= xs wvr arg y;
+x wvr y			= arg x wvr arg y;
+x upon y		= repeat x;
+
+/* This implements something akin to Lucid's "is current" iteration construct.
+   This is probably one of Lucid's least perspicuous parts, but in Pure it's
+   rather straightforward to use, see the prime and power programs below for
+   examples. Our implementation basically works just like Pure's 'map', except
+   that we're dealing with stream processing rather than element mapping
+   functions here. Binding the "current" variables is then done using Pure
+   functions, and Pure's 'zip' is used to collect the values in case multiple
+   streams are bound in one go. Please note that our implementation of
+   'current' only accepts a single argument, so the stream function f must be
+   an uncurried function which takes multiple arguments as tuples. */
+
+infix 10 current;
+
+f current x = map (head.f) (zips x) with
+  zips (x,y@(_,_)) = zip (arg x) (zips y);
+  zips (x,y) = zip (arg x) (arg y);
+  zips x = arg x;
+end;
+
+/* A replacement for Lucid's if-then-else, this implements a point-wise
+   if-then-else operation on three streams. The first stream *must* consist of
+   truth values (ints in Pure) and determines which of the elements from the
+   other two streams is selected. (It would be nice if we could just use
+   Pure's if-then-else for that, but there's no way to redefine it in plain
+   Pure without macros.) */
+
+public select;
+select xs ys zs		= (if x then y else z):select xs ys zs& when
+  x:xs = arg xs; y:ys = arg ys; z:zs = arg zs;
+end;
+
+/* We also want to be able to formulate some interesting computations, so we
+   overload Pure's standard arithmetic and logical operations to work in a
+   point-wise fashion on stream operands. Note that the overloaded operations
+   are only visible in the 'lucid' namespace, so their originals in the
+   default namespace can still be used as before. */
+
+infixr  (||)  || ;
+infixr  (&&)  && ;
+prefix  (~)   ~ ;
+infix   (<)   < > <= >= == ~= ;
+infix   (===) === ~== ;
+infix   (+:)  +: <: ;
+infixl  (<<)  << >> ;
+infixl  (+)   + - or ;
+infixl  (*)   * / div mod and ;
+infixl  (%)   % ;
+prefix  (not) not ;
+infixr  (^)   ^ ;
+
+~(x:xs)			= (::~ x) : (~xs)&;
+(x:xs) && (y:ys)	= (x ::&& y) : (xs&&ys)&;
+(x:xs) || (y:ys)	= (x ::|| y) : (xs||ys)&;
+
+(x:xs) < (y:ys)		= (x ::< y) : (xs<ys)&;
+(x:xs) > (y:ys)		= (x ::> y) : (xs>ys)&;
+(x:xs) <= (y:ys)	= (x ::<= y) : (xs<=ys)&;
+(x:xs) >= (y:ys)	= (x ::>= y) : (xs>=ys)&;
+(x:xs) == (y:ys)	= (x ::== y) : (xs==ys)&;
+(x:xs) ~= (y:ys)	= (x ::~= y) : (xs~=ys)&;
+(x:xs) === (y:ys)	= (x ::=== y) : (xs===ys)&;
+(x:xs) ~== (y:ys)	= (x ::~== y) : (xs~==ys)&;
+
+(x:xs) +: (y:ys)	= (x ::+: y) : (xs+:ys)&;
+(x:xs) <: (y:ys)	= (x ::<: y) : (xs<:ys)&;
+
+(x:xs) << (y:ys)	= (x ::<< y) : (xs<<ys)&;
+(x:xs) >> (y:ys)	= (x ::>> y) : (xs>>ys)&;
+
+-(x:xs)			= (::- x) : (-xs)&;
+(x:xs) + (y:ys)		= (x ::+ y) : (xs+ys)&;
+(x:xs) - (y:ys)		= (x ::- y) : (xs-ys)&;
+(x:xs) * (y:ys)		= (x ::* y) : (xs*ys)&;
+(x:xs) / (y:ys)		= (x ::/ y) : (xs/ys)&;
+(x:xs) % (y:ys)		= (x ::% y) : (xs%ys)&;
+(x:xs) div (y:ys)	= (x ::div y) : (xs div ys)&;
+(x:xs) mod (y:ys)	= (x ::mod y) : (xs mod ys)&;
+(x:xs) ^ (y:ys)		= (x ::^ y) : (xs^ys)&;
+
+not (x:xs)		= (::not x) : (not xs)&;
+(x:xs) or (y:ys)	= (x ::or y) : (xs or ys)&;
+(x:xs) and (y:ys)	= (x ::and y) : (xs and ys)&;
+
+// Fallback rules for mixed (stream/singleton) arguments.
+
+x@(_:_) && y		= (x && arg y);
+x@(_:_) || y		= (x || arg y);
+
+x@(_:_) < y		= (x < arg y);
+x@(_:_) > y		= (x > arg y);
+x@(_:_) <= y		= (x <= arg y);
+x@(_:_) >= y		= (x >= arg y);
+x@(_:_) == y		= (x == arg y);
+x@(_:_) ~= y		= (x ~= arg y);
+x@(_:_) === y		= (x === arg y);
+x@(_:_) ~== y		= (x ~== arg y);
+
+x@(_:_) +: y		= (x +: arg y);
+x@(_:_) <: y		= (x <: arg y);
+
+x@(_:_) << y		= (x << arg y);
+x@(_:_) >> y		= (x >> arg y);
+
+x@(_:_) + y		= (x + arg y);
+x@(_:_) - y		= (x - arg y);
+x@(_:_) * y		= (x * arg y);
+x@(_:_) / y		= (x / arg y);
+x@(_:_) % y		= (x % arg y);
+x@(_:_) div y		= (x div arg y);
+x@(_:_) mod y		= (x mod arg y);
+x@(_:_) ^ y		= (x ^ arg y);
+
+x@(_:_) or y		= (x or arg y);
+x@(_:_) and y		= (x and arg y);
+
+x && y@(_:_)		= (arg x && y);
+x || y@(_:_)		= (arg x || y);
+
+x < y@(_:_)		= (arg x < y);
+x > y@(_:_)		= (arg x > y);
+x <= y@(_:_)		= (arg x <= y);
+x >= y@(_:_)		= (arg x >= y);
+x == y@(_:_)		= (arg x == y);
+x ~= y@(_:_)		= (arg x ~= y);
+x === y@(_:_)		= (arg x === y);
+x ~== y@(_:_)		= (arg x ~== y);
+
+x +: y@(_:_)		= (arg x +: y);
+x <: y@(_:_)		= (arg x <: y);
+
+x << y@(_:_)		= (arg x << y);
+x >> y@(_:_)		= (arg x >> y);
+
+x + y@(_:_)		= (arg x + y);
+x - y@(_:_)		= (arg x - y);
+x * y@(_:_)		= (arg x * y);
+x / y@(_:_)		= (arg x / y);
+x % y@(_:_)		= (arg x % y);
+x div y@(_:_)		= (arg x div y);
+x mod y@(_:_)		= (arg x mod y);
+x ^ y@(_:_)		= (arg x ^ y);
+
+x or y@(_:_)		= (arg x or y);
+x and y@(_:_)		= (arg x and y);
+
+~x			= (::~ x);
+x && y			= (x ::&& y);
+x || y			= (x ::|| y);
+
+x < y			= (x ::< y);
+x > y			= (x ::> y);
+x <= y			= (x ::<= y);
+x >= y			= (x ::>= y);
+x == y			= (x ::== y);
+x ~= y			= (x ::~= y);
+x === y			= (x ::=== y);
+x ~== y			= (x ::~== y);
+
+x +: y			= (x ::+: y);
+x <: y			= (x ::<: y);
+
+x << y			= (x ::<< y);
+x >> y			= (x ::>> y);
+
+-x			= (::- x);
+x + y			= (x ::+ y);
+x - y			= (x ::- y);
+x * y			= (x ::* y);
+x / y			= (x ::/ y);
+x % y			= (x ::% y);
+x div y			= (x ::div y);
+x mod y			= (x ::mod y);
+x ^ y			= (x ::^ y);
+
+not x			= (::not x);
+x or y			= (x ::or y);
+x and y			= (x ::and y);
+
+/* Examples for testing and illustration follow. Normally, these are only
+   included when running interactively. */
+
+#! --if interactive
+
+/* A few simple examples adapted from the Lucid Wikipedia page. There's one
+   pitfall here: Values defined recursively using a Pure function definition
+   *must* be "thunked" as usual with Pure's & postfix operator (especially in
+   the right operand of 'fby'), to prevent the definitions from being
+   evaluated eagerly, causing non-termination.
+
+   Another shortcoming of our toy implementation is that it does no common
+   subexpression elimination or memoization of any kind, and thus some
+   computations may be repeated many times over, which can lead to an
+   exponential blowup of the running time in some bad cases (see the Fibonacci
+   example). Of course this could be tackled in Pure, but I haven't tried that
+   yet, so I leave it as an exercise to the curious minded reader. ;-) */
+
+// Counting off the natural numbers 0, 1, 2, ... (Lucid's 'index').
+index = 0 fby (index+1)&;
+
+// Lucid's 'attime'.
+infixl 0 attime;
+x attime y = (x asa index == first y) fby (x attime (next y))&;
+
+// The factorials. Using machine ints, these start wrapping around pretty
+// quickly, consider replacing 0 with 0L below to avoid that.
+fac = fac with
+  n = 0 fby (n+1)&;
+  fac = 1 fby (fac*(n+1))&;
+end;
+
+// The Fibonacci numbers. Complexity grows exponentially by the golden ratio
+// here, so this becomes *very* slow after >20 iterations.
+fib = fib with
+  fib = 0 fby 1 fby (fib + next fib)&;
+end;
+
+// Better version of the Fibonacci numbers, computes the numbers in pairs
+// which runs *much* faster (linear time). We're also cheating a little here,
+// by throwing in a Pure list comprehension in the fby part, which makes
+// accessing the pairs a lot simpler. But this also shows how both modes of
+// computation can be mixed and matched as needed.
+fib2 = fib2 with
+  fib2 = (0,1) fby [b,a+b | a,b = fib2]&;
+end;
+
+// Total of a sequence.
+total x = total with
+  total = 0 fby (total + x)&;
+end;
+
+// Running average.
+avg x = avg with
+  sum = first x fby (sum + next x)&;
+  n = 1 fby (n+1)&;
+  avg = sum / n;
+end;
+
+// Prime number sieve. This illustrates the use of 'current' to iterate a
+// Lucid function over a stream.
+prime = prime with
+  prime = 2 fby (p wvr isprime current p)&;
+  p = 3 fby (p+2)&;
+  isprime p = ~divis asa divis || prime*prime > p with
+    divis = ~(p mod prime);
+  end;
+end;
+
+// Powers of numbers. Another example using the 'current' construct.
+power x n = power current (x,n) with
+  power (x,n) = p asa index == n with
+    p = 1 fby (p*x)&;
+  end;
+end;
+
+// Quicksort. This illustrates how to work with finite streams indicated by
+// the eod symbol. (This isn't the solution in Wadge and Ashcroft's book and
+// on the Wikipedia page, which seems overly complicated and has a bug causing
+// non-termination in some cases.)
+qsort xs = if null xs then xs
+	   else append (qsort as) (append bs (qsort cs))
+with
+  pivot = first xs;
+  ys = next xs;
+  as = ys wvr ys < pivot;
+  bs = pivot fby eod;
+  cs = ys wvr ys >= pivot;
+  append xs ys = if null xs then ys else first xs fby append (next xs) ys;
+end;
+
+// Square root (Newton's algorithm).
+const eps = 1e-8;
+sqroot x = sqroot current x with
+  square x = x*x;
+  sqroot x = approx asa err < eps with
+    approx = x/2 fby ((approx + x/approx)/2)&;
+    // Note that we haven't defined abs as a Lucid function, but we can just
+    // apply it on the fly using 'map' here.
+    err = map abs (square approx-x);
+  end;
+end;
+
+// Root mean square.
+rms x = sqroot (avg (square x)) with
+  square x = x*x;
+  avg x = mean with
+    n = 1 fby (n+1)&;
+    mean = first x fby (mean * (n/(n+1)) + next x/(n+1))&;
+  end;
+end;
+
+namespace;
+
+// Convenience operation to display the first n values from a stream, or the
+// first values which satisfy a given predicate. This also stops at the first
+// eod value (signaling the end of the Lucid stream).
+
+showme n::int xs = list $ takewhile (~==«eod») $ take n xs;
+showme p xs = list $ takewhile (~==«eod») $ takewhile p xs;
+// CAUTION: This only works with finite streams.
+showall xs = list $ takewhile (~==«eod») xs;
+
+// Stuff below is meant to be run interactively.
+
+#! --ifnot interactive
+
+showme 20 «index»; // counting 0, 1, 2, ...
+showme 12 «fac»;   // the first few factorials
+showme 20 «fib»;   // the first few fibs (slow!)
+showme 20 «fib2»;  // the first few pairs of fibs (fast!)
+
+showme 20 «total index»; // running total
+showme 10 «avg index»;   // running average
+// Works with Pure-generated streams, too:
+showme 20 «total $ cycle [0,1]»;
+
+showme (<100) «prime»; // primes up to 100
+// Use attime to retrieve a specific prime by its index:
+showme 1 «prime attime 22»; // the 23th prime
+
+showme 16 «power (1..inf) 2»; // squares
+showme 16 «power 2 (1..inf)»; // powers of 2
+
+showall «qsort [1,5,3,17,3,9,2,8,14,10]»; // quick sort
+showall «sqroot [1,2,4,5,9]»; // square roots (Newton's method)
+showme 8 «rms $ cycle [0,1,0,-1]»; // root mean square of a pulse train
+
+#! --endif
+#! --endif
