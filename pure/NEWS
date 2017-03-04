@@ -1,3 +1,25 @@
+** Pure 0.66 2017-03-04
+
+Another maintenance release which sports a few additional bugfixes in Emacs
+Pure mode. Also, --version now reports the git revision if it is available at
+compile time, and a new example was added (examples/lucid.pure).
+
+The biggest change in this release is in the way the compiler treats the
+declaration of binary minus in custom namespaces. The compiler now handles
+this by manufacturing a corresponding unary minus operator and an accompanying
+"neg" function symbol in the same namespace, so that the overloaded "-"
+operator works in exactly the same manner as the default one. Note that no
+special action is needed to define the unary variant of the operator; you only
+declare the binary operator (like it's done in the prelude for the standard
+'-' operator), and the compiler does all the necessary incantations to make
+this work.
+
+This finally makes it possible to completely override all the arithmetic
+operators *including* unary minus in a custom namespace (this is also used in
+the lucid.pure example, so you can see it in action there). Previously, if
+my::- was declared as a binary minus operator in namespace my, using it as a
+unary minus operator would always provoke an error message from the parser.
+
 ** Pure 0.65 2017-02-23
 
 Pure 0.64 turned out to be an incredibly stable release, but a maintenance
