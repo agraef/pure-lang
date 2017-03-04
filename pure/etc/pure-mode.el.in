@@ -564,7 +564,7 @@ remote operation of Pd patches, as described in the pd-pure manual."
     (force-mode-line-update)))
   
 ;;;###autoload
-(define-derived-mode pure-mode fundamental-mode "Pure"
+(define-derived-mode pure-mode prog-mode "Pure"
   "Major mode for editing Pure scripts.
 
 Provides syntax highlighting (using `font-lock-mode') and
@@ -587,13 +587,14 @@ Pure symbol or topic to look up in the index.
 Etags Support
 -------------
 
-Use the `pure-make-tags' (\\[pure-make-tags]) command to create an Emacs
-TAGS file for the script in the current buffer or a given
-collection of scripts (shell glob patterns are permitted).
+Use the `pure-make-tags' (\\[pure-make-tags]) command to create
+an Emacs TAGS file for the script in the current buffer or a
+given collection of scripts (shell glob patterns are permitted).
 You can then employ the usual Emacs commands such as
-`find-tag' \(\\[find-tag]) to locate the definitions of Pure symbols
-in the given scripts (and all their imports). See info node
-`(emacs)Tags' for details.
+`xref-find-definitions' \(\\[xref-find-definitions]) to locate
+the definitions of Pure symbols in the given scripts (and all
+their imports). See info node `(emacs)Looking Up Identifiers' for
+details.
 
 Indentation and Filling
 -----------------------
@@ -2359,7 +2360,9 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			   (;--If-then-else
 			    (and (zerop nest)
 				 (not complete)
-				 (looking-at pure-ifelse-re))
+				 (looking-at pure-ifelse-re)
+				 (not (looking-back "#!\\s *--"
+						    (point-at-bol))))
 			    (throw 'nesting 'block))
 			   (;--Beginning of program
 			    (bobp)
