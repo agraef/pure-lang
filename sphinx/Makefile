@@ -146,7 +146,13 @@ allmarkdown:
 	@rm -rf $(rst_dirs)
 	@$(MAKE) --no-print-directory sources
 	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(rst_dirs); true)
+# Run this twice, in case the index had to be regenerated.
 	@$(MAKE) markdown
+	@$(MAKE) markdown
+# Also generate the html docs (single files) and the pdf doc (one big file).
+# Comment this out if you don't want these.
+	@$(MAKE) markdown-html
+	@$(MAKE) markdown-puredoc-pdf
 
 # Same as above, but don't run sphinx-builder yet, leave that to the user.
 # This can be run without having any of the docutils/Sphinx tools installed,
@@ -201,6 +207,7 @@ uninstall:
 # viewing.
 
 docsdir = ../../pure-lang-docs
+webdir = ../../purelang.bitbucket.org
 
 $(docsdir)/Makefile: docs/Makefile.in Makefile
 	sed -e 's/@version@/$(version)/g' < $< > $@
@@ -229,6 +236,13 @@ update-info: allinfo $(docsdir)/Makefile
 update-texmacs: alltexmacs $(docsdir)/Makefile
 	rm -f $(docsdir)/*.tm
 	cp -r $(BUILDDIR)/texmacs/*.tm $(docsdir)
+
+# Same as above, but update the markdown docs.
+
+update-markdown: allmarkdown $(webdir)/index.html
+	rm -rf $(webdir)/markdown
+	mkdir -p $(webdir)/markdown
+	cp -r $(addprefix $(BUILDDIR)/markdown/, *.md *.html *.pdf *.png *.css) $(webdir)/markdown
 
 # Dist target.
 
@@ -383,7 +397,7 @@ PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'g
 
 # CSS styles for nicer html output.
 #HTML_FLAGS += -c john-full.css
-#HTML_FLAGS += -c modern.css
+HTML_FLAGS += -c modern.css
 
 # Some available templates for nicer LaTeX/pdf output. Use one of these if you
 # have the corresponding fonts installed. These both use mathpazo for math and
@@ -393,7 +407,7 @@ PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'g
 # (Palatino should be readily available on many systems; Minion Pro is
 # included, e.g., with Acrobat Reader.)
 
-#TEX_FLAGS += --template=mydefault-palatino.latex
+TEX_FLAGS += --template=mydefault-palatino.latex
 #TEX_FLAGS += --template=mydefault-minion.latex
 
 # Index file name.
