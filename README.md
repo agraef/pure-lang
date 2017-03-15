@@ -7,7 +7,7 @@ lexical closures, built-in list and matrix support and an easy-to-use C
 interface. The interpreter uses [LLVM][0] as a backend to JIT-compile Pure
 programs to fast native code.
 
-Please check our website at [purelang.bitbucket.org][1] for more information.
+Please check our website at [purelang.bitbucket.io][1] for more information.
 The Pure Language and Library Documentation is available in [html][3] and
 [pdf][4] format. A very complete and up-to-date collection of packages for
 Arch Linux are available from the [Arch User Repositories][5], please also
@@ -26,10 +26,10 @@ Albert Gräf <aggraef@gmail.com>
 Enjoy. :)
 
 [0]: http://llvm.org/
-[1]: http://purelang.bitbucket.org/
+[1]: https://purelang.bitbucket.io/
 [2]: https://bitbucket.org/purelang/pure-lang/downloads
-[3]: http://puredocs.bitbucket.org/
-[4]: http://puredocs.bitbucket.org/puredoc.pdf
+[3]: https://puredocs.bitbucket.io/
+[4]: https://puredocs.bitbucket.io/puredoc.pdf
 [5]: https://aur.archlinux.org/packages/?SeB=m&K=pure-aur&PP=100
 [6]: https://bitbucket.org/purelang/pure-lang/wiki/ArchPackaging
 [6b]: https://bitbucket.org/purelang/pure-lang/wiki/PureOnMacOSX
