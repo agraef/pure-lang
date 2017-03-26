@@ -1,0 +1,164 @@
+%% 
+%% This is file `bnf.sty', generated on <1993/2/16> 
+%% with the docstrip utility (2.0r).
+%% 
+%% The original source file was `bnf.doc'.
+%% Included options: `style'.
+%% 
+%% 
+%% IMPORTANT NOTICE:
+%% You are not allowed to distribute this file.
+%% For distribution of the original source see
+%% the copyright notice in the file bnf.doc.
+%% 
+\def\filename{BNF.DOC}
+\def\fileversion{1.05}
+\def\filedate{09 Feb 1993 15:16:48 BST}
+\def\docdate{09 Feb 1993 15:16:48 BST}
+%%% ====================================================================
+%%%  @LaTeX-file{
+%%%     filename        = "BNF.DOC",
+%%%     version         = "1.05",
+%%%     date            = "09 Feb 1993",
+%%%     time            = "15:16:48 BST",
+%%%     author          = "Mike Piff",
+%%%     address         = "Dr M. J. Piff
+%%%                        University of Sheffield
+%%%                        Department of Pure Mathematics
+%%%                        Hicks Building
+%%%                        Hounsfield Road
+%%%                        SHEFFIELD S3 7RH
+%%%                        England",
+%%%     codetable       = "ISO/ASCII",
+%%%     telephone       = "+44 742 824431",
+%%%     email           = "M.Piff@shef.ac.uk (Janet)",
+%%%     keywords        = "Backus,Naur,syntax,grammar",
+%%%     supported       = "yes",
+%%%     checksum        = "15432 526 2399 20401",
+%%%     docstring       = "A style option to LaTeX for producing
+%%%                        Backus-Naur Form syntax notation.",
+%%%  }
+%%% ====================================================================
+%% This is BNF.DOC
+%% Copyright (C) 1993 Mike Piff
+%% All rights reserved.
+%% Copying of this file is authorized only if
+%% you make absolutely no changes to your copy.
+%%
+%% Usage:
+%% \documentstyle[bnf]{article} %% in LaTeX
+ %<+driver>   \DocInput{BNF.DOC}
+\typeout{Backus-Naur Form style option for LaTeX, (c) Mike Piff, \filedate}
+\newif\ifnonterminal
+\def\NonTerminal{\left\langle\obeyspaces\ControlSpaces
+   \nonterminaltrue\NonTerminalStyle}
+\def\endNonTerminal{\right\rangle}
+\def\NonTerminalStyle{\fam0 }
+{\obeyspaces\gdef\ControlSpaces{\let =\ }}
+\def\Star{\,\left\{}  \def\endStar{\right\}\,}
+\def\Optional{\,\left[} \def\endOptional{\right]\,}
+\def\Bracket{\,\left(} \def\endBracket{\right)\,}
+\def\OR{\mathop{\left|\right.}\nolimits}
+\def\Production{\mathrel{\longrightarrow}}
+\def\Yields{\mathrel{\Longrightarrow}}
+\def\Empty{\varepsilon}
+\begingroup
+ \catcode`\`=\active
+ \gdef\TerminalFont{\tt \catcode96\active
+   \def`{\leavevmode\kern\z@\char96 }}
+\endgroup
+\begingroup
+  \catcode`\~=\active
+  \lccode`\~=`\^^M
+  \lowercase{\endgroup
+    \gdef\Terminal{\relax\PreTerminal
+      \ifmmode \hbox \else \leavevmode\null \fi
+      \bgroup
+      \TerminalFont
+      \catcode`~\active
+      \def~{\egroup\@latexerr{Terminal string ended by
+                              end of line.}\@ehc}%
+    \let\do\@makeother \dospecials
+    \@sTerminal}}
+\def\@sTerminal#1{%
+  \catcode`#1\active
+  \lccode`\~`#1%
+  \lowercase{\def~{\egroup\PostTerminal}}}%
+\def\PreTerminal{} \def\PostTerminal{}
+\mathchardef\lt="313C \mathchardef\gt="313E
+\def\mathactive{"8000}
+\def\bnf{%
+   \mathchardef\HYPHEN="2D  \mathchardef\MINUS="2200
+   \mathchardef\Relbar="303D  \def\relbar{\mathrel{\smash{\MINUS}}}
+   \mathchardef\EQUALS="303D
+   \mathcode`"=\mathactive
+   \mathcode`[=\mathactive \mathcode`\]=\mathactive
+   \mathcode`(=\mathactive \mathcode`\)=\mathactive
+   \mathcode`|=\mathactive \mathcode`-=\mathactive
+   \mathcode`<=\mathactive \mathcode`\>=\mathactive
+   \mathcode`@=\mathactive \mathcode`==\mathactive
+   \mathcode96 \mathactive
+}
+\def\endbnf{}
+\def\NotInNonTerminal{\errmessage{Not allowed in a non-terminal}}
+\def\NotNTdef#1#2{\gdef#1{\ifnonterminal\NotInNonTerminal\else#2\fi}}
+\begingroup
+   \catcode`"\active
+   \catcode`[\active \catcode`\]\active
+   \catcode`(\active \catcode`\)\active
+   \catcode`|\active \catcode`-\active
+   \catcode`<\active \catcode`>\active
+   \catcode`@\active \catcode`=\active
+   \catcode96 \active
+   \gdef"{\Terminal"}%
+   \gdef`{\Terminal`}%
+   \NotNTdef[\Optional        \NotNTdef]\endOptional
+   \NotNTdef(\Bracket         \NotNTdef)\endBracket
+   \NotNTdef|\OR              \NotNTdef<\NonTerminal
+   \gdef>{\endNonTerminal}%
+   \gdef-{%
+      \ifnonterminal
+         \def\Nnext{\HYPHEN}%
+      \else
+         \def\Nnext{\futurelet\Next\SeeIfProdn}%
+      \fi\Nnext}
+   \gdef={%
+      \ifnonterminal
+         \def\Nnext{\NotInNonTerminal}%
+      \else
+         \def\Nnext{\futurelet\Next\SeeIfYields}%
+      \fi\Nnext}%
+   \gdef@{% either an escape char or a star group
+      \ifnonterminal
+         \def\Nnext{\NotInNonTerminal}%
+      \else
+         \def\Nnext{\futurelet\Next\SeeIfSpecial}%
+      \fi\Nnext}%
+\endgroup
+\def\SeeIfProdn{%
+   \if\noexpand\Next\noexpand>%
+      \def\Nnext{\Production\@gobble}%
+   \else
+      \def\Nnext{\MINUS}%
+   \fi
+   \Nnext}
+\def\SeeIfYields{%
+   \if\noexpand\Next\noexpand>%
+      \def\Nnext{\Yields\@gobble}%
+   \else
+      \def\Nnext{\EQUALS}%
+   \fi\Nnext}
+\def\SeeIfSpecial{%
+   \if\noexpand\Next\noexpand<%
+      \def\Nnext{\lt\@gobble}%
+   \else
+      \if\noexpand\Next\noexpand>%
+         \def\Nnext{\gt\@gobble}%
+      \else
+         \def\Nnext{\Star\bgroup\aftergroup\endStar\aftergroup\egroup}%
+      \fi
+   \fi\Nnext}
+
+\endinput
+%% 
+%% End of file `bnf.sty'.
