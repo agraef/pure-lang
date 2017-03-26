@@ -1,0 +1,400 @@
+<a name="doc-pure-csv"></a>
+
+Pure-CSV - Comma Separated Value Interface for the Pure Programming Language
+============================================================================
+
+Version 1.6, March 06, 2017
+
+Eddie Rucker &lt;<erucker@bmc.edu>&gt;
+
+The CSV library provides an interface for reading and writing comma separated
+value files. The module is very loosely based on Python's CSV module
+(<http://docs.python.org/lib/module-csv.html>).
+
+Installation
+------------
+
+Get the latest source from
+<https://bitbucket.org/purelang/pure-lang/downloads/pure-csv-1.6.tar.gz>.
+
+Run `make` to compile the module and `make install` (as root) to install it in
+the Pure library directory. This requires GNU make. The `make install` step is
+only necessary for system-wide installation.
+
+The `make` utility tries to guess your Pure installation directory and
+platform-specific setup. If it gets this wrong, you can set some variables
+manually. In particular, `make install prefix=/usr` sets the installation
+prefix, and `make PIC=-fPIC` or some similar flag might be needed for
+compilation on 64 bit systems. Please see the Makefile for details.
+
+Usage
+-----
+
+Data records are represented as vectors or lists of any Pure values. Values
+are converted as necessary and written as a group of strings, integers, or
+doubles separated by a delimiter. Three predefined dialects are provided;
+`DEFAULT` (record terminator= `\n` ), `RFC4180` (record terminator= `\r\n` ),
+and `Excel`. Procedures are provided to create other CSV dialects. See
+(<http://www.ietf.org/rfc/rfc4180.txt>) for more details about the RFC4180
+standard.
+
+### Handling Errors
+
+<a name="error"></a>
+
+`error msg`
+
+:   is an error handling term. Operations resulting in parse errors, memory
+    errors, or read/write errors produce a special `csv::error msg` term,
+    where `msg` is a string describing the particular error. Your application
+    should either check for these or have `csv::error` defined to directly
+    handle errors in some way (e.g., provide a default value, or raise an
+    exception).
+
+### Creating Dialects
+
+<a name="dialect"></a>
+
+`dialect record`
+
+:   creates a dialect from a record of dialect option pairs. The dialect
+    object is freed automatically when exiting the pure script. The list of
+    possible options and option values are presented below.
+
+    -   `delimiter` - Character used to separate fields.
+        -   Value - any string.
+        -   Default - `","`.
+    -   `escape` - Embedded escape character used to embed a delimiter,
+        escape, or terminator into unquoted fields. If the escape character is
+        not null, then the quote character is ignored.
+        -   Value - any string.
+        -   Default - `""`.
+        -   Reading - The escape character is dropped and the next char is
+            inserted into the field.
+        -   Writing - The escape character is written into the output stream
+            before the delimiter, escape, or return character.
+    -   `quote` - Quotes are used to embed delimiters, quotes, or terminators
+        into a field.
+        -   Value - any string.
+        -   Default - `"\""`.
+        -   Notes - Embedded quotes are doubled. The `escape` option must be
+            the null string.
+    -   `terminator` - Record termination string.
+        -   Value - any string.
+        -   Reading - Either a user specified string or if not specivied the
+            file is sniffed for a `\r`, `\r\n`, or `\n`.
+        -   Writing - Either a user specified string, `\r\n` for Windows
+            platforms, or `\n` for everything else.
+    -   `quote_flag` - Sets the quoting style of strings and/or numbers.
+        -   Value - One of {`ALL`, `STRINGS`, `MINIMAL`}.
+        -   Default - `ALL`.
+        -   Reading -
+            1.  `ALL` - Every field is read as a string.
+            2.  `STRING`, `MINIMAL` - Fields within quotes and fields that
+                cannot be converted to integers or doubles are read as
+                strings.
+        -   Writing -
+            1.  `ALL` - Every field is written within quotes.
+            2.  `STRING` - Only fields of type `string` are quoted.
+            3.  `MINIMAL` - Only fields containing embedded quotes,
+                terminators, or delimiters are written within quotes.
+    -   `space_around_quoted_field` - Determines how white space between
+        quotes and delimiters should be treated.
+        -   Value - One of {`NO`, `LEFT`, `RIGHT`, `BOTH`}.
+        -   Default - `NO`.
+        -   Reading -
+            1.  `NO` - Follows RFC4180 rules.
+            2.  `LEFT` - Allows space before a quoted field.
+            3.  `RIGHT` - Allows space between a quoted field and a delimiter.
+            4.  `BOTH` - Allows space before and after a quoted field.
+        -   Writing - fields are never written with space before a quoted
+            field or between a quoted field and a delimiter.
+        -   Notes this option does not affect space within quotes or fields
+            written using the `escape` string option.
+    -   `trim_space` - trim white space before or after field contents.
+        -   Value - One of {`NO`, `LEFT`, `RIGHT`, `BOTH`}.
+        -   Default - `NO`.
+        -   Reading -
+            1.  `NO` - Reading follows RFC4180 rules.
+            2.  `LEFT`, `RIGHT`, or `BOTH` - The field is trimmed accordingly.
+                Use *caution* because trimming may allow automatic conversion
+                of numbers if the `quote_flag` is set to `MINIMAL`.
+        -   Writing -
+            1.  `NO` - Reading follows RFC4180 rules
+            2.  `LEFT`, `RIGHT`, or `BOTH` - Trimming space is probably a bad
+                idea since leading or trailing space may be significant for
+                other applications.
+
+    The following example illustrates the construction of a dialect for
+    reading tab delimited files without quoted strings.
+
+<a name="example_dialect"></a>
+
+Example
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {delimiter=>"\t", quote_flag=>STRING};
+    > 
+
+### Opening CSV Files
+
+<a name="open"></a>
+
+`open name::string`
+
+:   opens a CSV file for reading using the default dialect. If the file does
+    not exist, the `error msg` rule is invoked.
+
+`open (name::string, rw_flag::string)`
+
+:   opens a CSV file for reading, writing, or appending using the default
+    dialect. Valid `rw_flag` values are `"r"` for reading, `"w"` for writing,
+    and `"a"` for appending. If the file does not exist when opened for
+    reading, the `error msg` rule is invoked. When a file is opened for
+    writing and the file exists, the old file is overwritten. If the file does
+    not exist, a new empty file is created. When a file is opened for
+    appending and the file exists, new records are appended to the end of the
+    file, otherwise a new empty file is created.
+
+`open (name::string, rw_flag::string, d::matrix)`
+
+:   exactly as above except reading/writing is done according to a user
+    defined dialect `d`.
+
+`open (name::string, rw_flag::string, d::matrix, opts@(_:_))`
+
+:   exactly as above except allows for list output or header options when
+    reading.
+
+    1.  If `opts` contains `LIST`, the output of `getr`, `fgetr`, and
+        `fgetr_lazy` is a list instead of a vector.
+    2.  If `opts` contains `HEADER`, the first line of the file is
+        automatically read and parsed as a record where entries are
+        `key=>position` pairs where `key` is a string and `position` is an
+        integer denoting the location of a field within the record. The header
+        record may be accessed by `header`.
+
+<a name="examples_open"></a>
+
+Examples
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {delimiter=>"\t"};
+    > let f = open ("junk.csv", "w", d);
+    > putr f {"hello",123,"",3+:4,world};
+    ()
+    > close f;
+    ()
+    > let f = open ("junk.csv", "r", d);
+    > getr f;
+    {"hello","123","","3+:4","world"}
+    >
+
+Suppose our file "test.csv" is as presented below.
+
+    ir$ more test.csv
+    NAME,TEST1,TEST2
+    "HOPE, BOB",90,95
+    "JONES, SALLY",88,72
+    "RED, FEEFEE",45,52
+
+Notice how the `LIST` option affects the return of `getr` and how the `HEADER`
+option may be used to index records.
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {quote_flag=>MINIMAL};
+    > let f = open ("test.csv", "r", d, [LIST,HEADER]);
+    > let r = getr f;
+    > r!0;
+    "HOPE, BOB"
+    > let k = header f;
+    > k;
+    {"NAME"=>0,"TEST1"=>1,"TEST2"=>2}
+    > r!(k!"NAME");
+    "HOPE, BOB"
+    > r!!(k!!["NAME","TEST1"]);
+    ["HOPE, BOB",90]
+    >
+
+### File Reading Functions
+
+<a name="header"></a>
+
+`header csv_file::pointer`
+
+:   returns the record of `key=>position` pairs when opened by `csv::open`
+    using the header option. If the file was opened without the `HEADER`
+    option, `{}` is returned.
+
+<a name="getr"></a>
+
+`getr csv_file::pointer`
+
+:   reads from a `csv_file` opened by `csv::open` and returns a record
+    represented as a row matrix. Reading from a file opened for writing or
+    appending invokes the `error msg` rule.
+
+<a name="fgetr"></a>
+
+`fgetr csv_file::pointer`
+
+:   reads a whole file and returns a list of records. This procedure should
+    only be used on data files that are small enough to fit in the computer's
+    primary memory. Reading from a file opened for writing or appending
+    invokes the `error msg` rule.
+
+`fgetr_lazy csv_file::pointer`
+
+:   Lazy version of `fgetr`.
+
+### File Writing Functions
+
+When modifying CSV files that will be imported into Microsoft Excel, fields
+with significant leading 0s should be written using a `"=""0..."""` formatting
+scheme. This same technique will work for preserving leading space too. Again,
+this quirk should only be necessary for files to be imported into MS Excel.
+
+<a name="putr"></a>
+
+`putr csv_file::pointer rec::matrix`
+
+:   writes a record in row matrix format to `csv_file`. Writing to a file
+    opened for reading invokes the `error msg` rule.
+
+<a name="fputr"></a>
+
+`fputr csv_file::pointer l@(_:_)`
+
+:   writes a list of records where each record is a row matrix to `csv_file`.
+    Writing to a file opened for reading invokes the `error msg` rule.
+
+<a name="examples"></a>
+
+### Examples
+
+The first example shows how to write and read a default CSV file.
+
+    > using csv;
+    > using namespace csv;
+    > let f = open ("testing.csv", "w");
+    > fputr f [{"bob",3.9,"",-2},{"fred",-11.8,"",0},{"mary",2.3,"$",11}];
+    ()
+    > close f;
+    ()
+    > let f = open "testing.csv";
+    > fgetr f;
+    [{"bob","3.9","","-2"},{"fred","-11.8","","0"},{"mary","2.3","$","11"}]
+    > close f;
+    >
+
+The second example illustrates how to write and read a CSV file using
+automatic conversions.
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {quote_flag=>MINIMAL};
+    > let f = open ("test.csv", "w", d);
+    > putr f {"I","",-4,1.2,2%4,like};
+    ()
+    > putr f {"playing","the",0,-0.2,1+:4,drums};
+    ()
+    > close f;
+    ()
+    > let f = open ("test.csv", "r", d);
+    > fgetr f;
+    [{"I","",-4,1.2,"2%4","like"},{"playing","the",0,-0.2,"1+:4","drums"}]
+    > close f;
+    ()
+    >
+
+Records containing quotes, delimiters, and line breaks are also properly
+handled.
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {quote_flag=>STRING};
+    > let f = open ("test.csv", "w", d);
+    > fputr f [{"this\nis\n",1},{"a \"test\"",2}];
+    ()
+    > close f;
+    ()
+    > let f = open ("test.csv", "r", d);
+    > fgetr f;
+    [{"this\nis\n",1},{"a \"test\"",2}]
+    > close f;
+    ()
+    >
+
+Consider the following hand written CSV file. According to RFC4180, this is
+not a valid CSV file. However, by using the `space_around_quoted_field`, the
+file can still be read.
+
+    erucker:$ more test.csv
+      "this",   "is",  "not", "valid"
+
+    > using csv;
+    > using namespace csv;
+    > let f = open "test.csv";
+    > getr f;
+    csv::error "parse error at line 1"
+    > let d = dialect {space_around_quoted_field=>BOTH};
+    > let f = open ("test.csv", "r", d);
+    > getr f;
+    {"this","is","not","valid"}
+    >
+
+The `trim_space` flag should be used with caution. A field with space in front
+of a number should be interpreted as a string, but consider the following
+file.
+
+    erucker:$ more test.csv
+    "  this   ", 45 ,23,  hello
+
+Now observe the differences for the two dialects below.
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {trim_space=>BOTH};
+    > let f = open ("test.csv","r",d);
+    > getr f;
+    {"this","45","23","hello"}
+    > let d = dialect {trim_space=>BOTH, quote_flag=>MINIMAL};
+    > let f = open ("test.csv", "r", d);
+    > getr f;
+    {"this",45,23,"hello"}
+    >
+
+The `trim_space` flag also affects writing.
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {trim_space=>BOTH};
+    > let f = open ("test.csv", "w", d);
+    > putr f {"   this   ","   45 "};
+    ()
+    > close f;
+    ()
+    > quit
+
+    erucker:$ more test.csv
+    "this","45"
+
+For the last example a tab delimiter is used, automatic conversions is on, and
+records are represented as lists. Files are automatically closed when the
+script is finished.
+
+    > using csv;
+    > using namespace csv;
+    > let d = dialect {quote_flag=>MINIMAL, delimiter=>"\t"};
+    > let f = open ("test.csv", "w", d, [LIST]);
+    > fputr f [["a","b",-4.5,""],["c","d",2.3,"-"]];
+    ()
+    > close f;
+    ()
+    > let f = open ("test.csv", "r", d, [LIST]);
+    > fgetr f;                             
+    [["a","b",-4.5,""],["c","d",2.3,"-"]]
+    > quit

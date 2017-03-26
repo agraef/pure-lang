@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-gl"></a></p>
+<h1 id="pure-opengl-bindings">Pure OpenGL Bindings</h1>
+<p>Version 0.9, March 06, 2017</p>
+<div style="white-space: pre-line;">Scott Dillard
+Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</div>
+<p>These are fairly complete Pure bindings for the OpenGL graphics library, which allow you to do 2D and 3D graphics programming with Pure. The bindings should work out of the box on most contemporary systems which have OpenGL drivers installed, thanks to Scott’s on-demand loading code for the GL functions, which accounts for the fact that different GL implementations will export different functions. (Mostly to account for Microsoft’s Museum of Ancient OpenGL History, otherwise known as opengl32.dll.)</p>
+<p>Information about OpenGL can be found at: <a href="http://www.opengl.org/" class="uri">http://www.opengl.org/</a></p>
+<p>As of pure-gl 0.5, the bindings are now generated using pure-gen instead of Scott’s original OpenGL-specific generator. The stuff needed to do this is included (except pure-gen, which is a separate package available from the Pure website), so that you can regenerate the bindings if necessary.</p>
+<h2 id="copying">Copying</h2>
+<div style="white-space: pre-line;">Copyright (c) 2009, Scott E Dillard
+Copyright (c) 2009, Albert Graef
+Copyright (c) 2002-2005, Sven Panne</div>
+<p>pure-gl is distributed under a 3-clause BSD-style license, please see the accompanying COPYING file for details.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-gl-0.9.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-gl-0.9.tar.gz</a>.</p>
+<p>Normally you just run <code>make &amp;&amp; sudo make install</code>, as with the other Pure modules. (See The Makefile for further options.) This doesn’t regenerate the bindings and so can be done on any system which has Pure, OpenGL and a C compiler installed.</p>
+<p>If you miss some vendor-specific OpenGL functionality which is in your system’s header files but not in the distributed bindings, with some effort you can fix that yourself by regenerating the bindings, see below.</p>
+<h2 id="using-the-gl-bindings">Using the GL Bindings</h2>
+<p><a name="module-gl"></a></p>
+<p><a name="module-glu"></a></p>
+<p><a name="module-glut"></a></p>
+<p><a name="module-gl_arb"></a></p>
+<p><a name="module-gl_ext"></a></p>
+<p><a name="module-gl_nv"></a></p>
+<p><a name="module-gl_ati"></a></p>
+<p>The bindings mainly consist of 3 Pure files: GL.pure, GLU.pure and GLUT.pure.</p>
+<p>In your Pure program, write something like:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> GL, GLU, GLUT;</code></pre></div>
+<p>GL.pure covers OpenGL up through version 2.1. To get access to extensions, you include GL_XXX.pure where XXX is the extensions suffix. Currently, there are GL_ARB.pure, GL_EXT.pure, GL_NV.pure and GL_ATI.pure, which should cover about 99% of the useful extensions out there. If you need more than that, it is straightforward to tweak the Makefile to scrape some of the more esoteric extensions from your headers. All OpenGL functions are loaded on first use. If your OpenGL implementation does not define a given function, a <code>gl_unsupported</code> exception is thrown with the name of the function as its only argument.</p>
+<p>The functions are in namespaces GL, GLU and GLUT respectively. Functions are in curried form, i.e.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">GL::Vertex3d <span class="dv">1.0</span> <span class="dv">2.0</span> <span class="dv">3.0</span>;</code></pre></div>
+<p>GL enumerants are in uppercase, as in C:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">GL::Begin GL::LINE_STRIP;</code></pre></div>
+<p>Currently, if the GLU or GLUT bindings reference a function that your DLL does not contain, it echoes this to stdout. I’m working on a way to supress this.</p>
+<p>Some examples can be found in the examples subdirectory. This also includes a wrapper of Rasterman’s imlib2 library (also generated with pure-gen), and an example which uses this to render an image as a texture.</p>
+<p>The examples/flexi-line directory contains Eduardo Cavazos’ port of the flexi-line demo. Run <code>pure flexi-line-auto.pure</code>, sit back and enjoy. There’s also an interactive version of the demo available in flexi-line.pure.</p>
+<h2 id="regenerating-the-bindings">Regenerating the Bindings</h2>
+<p>You need to have pure-gen installed to do this.</p>
+<p>Also make sure that you have the OpenGL headers installed. By default, the Makefile assumes that they are in the GL subdirectory of /usr/include, you can set the <code>glpath</code> variable in the Makefile accordingly to change this. (Set <code>glpath</code> to the path under which the GL subdirectory resides, not to the GL subdirectory itself. See below for an example.) Note that on Linux systems, /usr/include/GL usually contains the MESA headers. If available, you may want to use your GPU vendor’s headers instead, to get all the extensions available on your system.</p>
+<p>Alternatively, you can also just put the headers (gl.h, glext.h, glu.h, glut.h, and any other OpenGL headers that get #included in those) into the GL subdirectory of the pure-gl sources, by copying them over or creating symbolic links to them. This is particularly useful for maintainers, who may want to use a “staged” header set which is different from the installed OpenGL headers. The “.” directory will always be searched first, so you can also just put the vendor-specific headers there. For instance, if you’re like Scott and you use Ubuntu with an Nvidia GPU, then you can do this:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">cd pure-gl/GL
+ln -s /usr/share/doc/nvidia-glx-new-dev/include/GL/gl.h
+ln -s /usr/share/doc/nvidia-glx-new-dev/include/GL/glext.h</code></pre></div>
+<p>Finally, the Makefile also assumes that you have freeglut (an improved GLUT replacement) installed and want all the extensions offered by freeglut. To use the vanilla GLUT without the extensions instead, you only have to change the value of the <code>source</code> variable in the Makefile from GL/all_gl_freeglut.h to GL/all_gl.h. If you use openglut instead of freeglut you will have to change the GL/all_gl_freeglut.h file accordingly.</p>
+<p>Once you have set up things to your liking, you can regenerate the bindings by running make as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">make generate</code></pre></div>
+<p>If you need a custom path to the OpenGL headers as described above (say, /usr/local/include) then do this instead:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">make generate glpath=/usr/local/include</code></pre></div>
+<p>If you’re lucky, this will regenerate all the GL*.pure and GL*.c files, and recompile the shared module from the GL*.c files after that. This shared module, instead of the OpenGL libraries themselves, is what gets loaded by the Pure modules.</p>
+<p>If you’re not so lucky, save a complete build log with all the error messages and ask on the pure-lang mailing list for help.</p>
+<p>See the “Generator stuff” section in the Makefile for further options. Adding a rule for other extensions should be easy, just have a look at an existing one (e.g., GL_EXT.c) and modify it accordingly.</p>
+</body>
+</html>

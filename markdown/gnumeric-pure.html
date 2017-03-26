@@ -1,0 +1,496 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-gnumeric-pure"></a></p>
+<h1 id="gnumericpure-a-pure-plugin-for-gnumeric">Gnumeric/Pure: A Pure Plugin for Gnumeric</h1>
+<p>Version 0.16, March 06, 2017</p>
+<p>Albert Gräf &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>Gnumeric/Pure is a <a href="http://www.gnumeric.org/">Gnumeric</a> extension which lets you use <a href="http://purelang.bitbucket.org/">Pure</a> functions in Gnumeric, the Gnome spreadsheet. It offers better execution speed than the existing Perl and Python plugins, and provides some powerful features not found in other Gnumeric scripting plugins, such as asynchronous data sources created from Pure streams.</p>
+<h2 id="introduction">Introduction</h2>
+<p>This package provides a <a href="http://www.gnumeric.org/">Gnumeric</a> extension which gives you access to the <a href="http://purelang.bitbucket.org/">Pure</a> programming language in Gnumeric. It works pretty much like the Perl and Python plugin loaders which are distributed with Gnumeric, but Gnumeric/Pure offers some powerful features which aren’t found in other Gnumeric scripting plugins:</p>
+<ul>
+<li>Pure is a functional programming language which fits the computational model of spreadsheet programs very well.</li>
+<li>Pure is based on term rewriting and thus enables you to do symbolic computations in addition to the usual numeric calculations.</li>
+<li>Pure has a built-in <a href="">MATLAB</a>/<a href="">Octave</a>-like matrix data structure which makes it easy to deal with cell ranges in a spreadsheet in an efficient manner.</li>
+<li>Pure also provides a bridge to <a href="http://www.octave.org/">Octave</a> so that you can call arbitrary Octave functions using this extension.</li>
+<li>Pure also has built-in support for lazy data structures and thus allows you to handle potentially infinite amounts of data such as the list of all prime numbers. Gnumeric/Pure lets you turn such lazy values into asynchronous data sources computed in the background, which update the spreadsheet automatically as results become available.</li>
+<li>Last but not least, Pure is compiled to native code on the fly. This means that, while startup times are a bit longer due to Pure’s JIT compiler kicking in (you’ll notice this if you open a spreadsheet with Pure functions), the resulting compiled code then typically executes <em>much</em> faster than equivalent interpreted Perl and Python code.</li>
+</ul>
+<p>Once the plugin loader is installed and enabled, you can try the Pure functions in the provided examples and start adding your own plugin scripts. As of version 0.12, there’s a new helper script <code>pure-gnm</code> which generates the required plugin.xml files to make this easy. Various examples can be found in the examples folder in the distribution, which should help you to get started with Gnumeric/Pure fairly quickly.</p>
+<p>For more advanced uses, Gnumeric/Pure also provides a programming interface which lets you do various special tasks such as modifying entire ranges of cells with one Pure call, calling Gnumeric functions from Pure, and setting up asynchronous data sources. The manual explains all this in detail.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> This manual assumes that you’re already familiar with Gnumeric as well as the Pure language and its programming environment. If not then you should consult the corresponding documentation to learn more about these.</p>
+</blockquote>
+<hr />
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2009-2017 by Albert Graef.</p>
+<p>Gnumeric/Pure is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any later version.</p>
+<p>Gnumeric/Pure is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Obviously, you need to have both Pure and Gnumeric installed. Pure 0.36 and Gnumeric 1.9.13 or later are known to work. The current release of this module will work with the latest, GTK3-based versions of Gnumeric (Gnumeric 1.11 and later, various versions starting from 1.12.23 have been tested and are known to work).</p>
+<p>Please note that the Gnumeric plugin interface is a moving target, which means that from time to time the gnumeric-pure module sources are updated to accommodate the latest changes in Gnumeric. Thus, depending on which Gnumeric version you are running, you may have to go with an older version of gnumeric-pure. In particular, if you are still running Gnumeric 1.10 or earlier then you should use version 0.12 of the module instead:</p>
+<blockquote>
+<p><a href="https://bitbucket.org/purelang/pure-lang/downloads/gnumeric-pure-0.12.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/gnumeric-pure-0.12.tar.gz</a></p>
+</blockquote>
+<p>Run <code>make</code> to compile the software. You might have to adjust the settings at the beginning of the Makefile to make this work. Once the compile goes through, you should now have a <code>pure_loader.so</code> file in the <code>pure-loader</code> subdirectory. You can install the plugin and related stuff with <code>sudo make install</code> in the global Gnumeric plugin directory, or if you prefer to install it into your personal plugin directory then run <code>make install-local</code> instead. (The latter is recommended if you plan to customize any of the sample plugin scripts included in the distribution for your purposes.)</p>
+<p>Typically, <code>make install</code> and <code>make install-local</code> will install the plugins into the following directories by default (here and in the following <code>&lt;version&gt;</code> denotes the version of Gnumeric you have installed):</p>
+<ul>
+<li>System-wide installations go into <code>/usr/local/lib/gnumeric/&lt;version&gt;/plugins</code> or similar, depending on Gnumeric’s installation prefix (usually either <code>/usr/local</code> or <code>/usr</code>).</li>
+<li>User-specific installations go into <code>~/.gnumeric/&lt;version&gt;/plugins</code>.</li>
+</ul>
+<p>The Makefile tries to guess the installation path and version number of Gnumeric on its own. If it guesses wrong, you can change these using the Makefile variables <code>prefix</code> and <code>gnmversion</code>, respectively. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">$ <span class="fu">make</span> prefix=/usr gnmversion=1.12.4</code></pre></div>
+<p>In either case, <code>make install</code> also installs the <code>pure-gnm</code> helper script under the Pure installation prefix. (This is a little convenience script to generate the <code>plugin.xml</code> files used by Gnumeric to load a plugin; see <a href="#defining-your-own-functions">Defining Your Own Functions</a> for details.)</p>
+<p>If <code>make install</code> doesn’t work for some reason, you can also just copy the <code>pure-func</code> and <code>pure-loader</code> directories manually to your Gnumeric plugin directory. You can still run <code>make install</code> in the <code>pure-gnm</code> subdirectory to get the <code>pure-gnm</code> script installed in this case.</p>
+<h2 id="setup">Setup</h2>
+<p>Once Gnumeric/Pure has been properly installed, you should see it in Gnumeric’s Tools/Plug-ins dialog. There are actually two main entries, one labelled “Pure functions” and the other one labelled “Pure plugin loader”. You need to enable both before you can start using Pure functions in your Gnumeric spreadsheets.</p>
+<p>Gnumeric doesn’t provide much in the way of GUI customization options right now, but at least it’s possible for plugins to install and configure additional menu and toolbar options. Gnumeric/Pure adds three additional options to the Tools menu which allow you to stop asynchronous data sources, reload Pure scripts and edit them. After installation, the definitions of these items can be found in the <code>pure-loader/pure-ui.xml</code> file in your Gnumeric plugin directory. Have a look at this file and edit is as desired. E.g., if you want to put the Pure-related options into a submenu and enable toolbar buttons for these options, then your <code>pure-ui.xml</code> file should look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;ui&gt;</span>
+  <span class="kw">&lt;menubar&gt;</span>
+    <span class="kw">&lt;menu</span><span class="ot"> name=</span><span class="st">&quot;Tools&quot;</span><span class="ot"> action=</span><span class="st">&quot;MenuTools&quot;</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;separator/&gt;</span>
+      <span class="kw">&lt;menu</span><span class="ot"> name=</span><span class="st">&quot;Pure&quot;</span><span class="ot"> action=</span><span class="st">&quot;PureMenu&quot;</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;menuitem</span><span class="ot"> action=</span><span class="st">&quot;PureStop&quot;</span><span class="kw">/&gt;</span>
+        <span class="kw">&lt;menuitem</span><span class="ot"> action=</span><span class="st">&quot;PureReload&quot;</span><span class="kw">/&gt;</span>
+        <span class="kw">&lt;menuitem</span><span class="ot"> action=</span><span class="st">&quot;PureEdit&quot;</span><span class="kw">/&gt;</span>
+      <span class="kw">&lt;/menu&gt;</span>
+    <span class="kw">&lt;/menu&gt;</span>
+  <span class="kw">&lt;/menubar&gt;</span>
+  <span class="kw">&lt;toolbar</span><span class="ot"> name=</span><span class="st">&quot;StandardToolbar&quot;</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;separator/&gt;</span>
+    <span class="kw">&lt;toolitem</span><span class="ot"> action=</span><span class="st">&quot;PureStop&quot;</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;toolitem</span><span class="ot"> action=</span><span class="st">&quot;PureReload&quot;</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;toolitem</span><span class="ot"> action=</span><span class="st">&quot;PureEdit&quot;</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;/toolbar&gt;</span>
+<span class="kw">&lt;/ui&gt;</span></code></pre></div>
+<h2 id="basic-usage">Basic Usage</h2>
+<p>With Pure/Gnumeric installed and enabled, you should be ready to join the fun now. Start up Gnumeric, click on a cell and invoke the “f(x)” dialog. The Pure functions available for use are shown in the “Pure” category. E.g., click on <code>pure_hello</code>. Now the Pure interpreter will be loaded and the function description displayed. Click “Ok” to select the <code>pure_hello</code> function and then “Ok” again to actually insert the function call (without arguments) into the current cell. You should now be able to read the friendly greeting returned by the function.</p>
+<p>Of course, you can also enter the function call directly as a formula into a cell as usual. Click on a cell, then enter the following:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">=pure_hello(getenv(<span class="st">&quot;USER&quot;</span>))</code></pre></div>
+<p>The greeting should now be displayed with your login name in it.</p>
+<p>Play around a bit with the other Pure functions. These functions are nothing special; they are just ordinary Pure functions which are defined by the <code>pure_func.pure</code> script in the <code>pure-func</code> subdirectory of your Gnumeric plugin directory. You can have a look at them by invoking the “Edit Pure Scripts” option which gets added to the Tools/Pure menu once the Pure plugin loader is enabled. (This will invoke the emacs editor by default, or the editor named by the <code>EDITOR</code> environment variable. You can set this environment variable in your shell’s startup files.) The Tools/Pure menu contains a second Pure-related option, “Reload Pure Scripts” which can be used to quickly reload all loaded Pure scripts after edits; more about that later.</p>
+<p>Please note that most of the functions in <code>pure_func.pure</code> are rather useless, they are only provided for illustrative purposes. However, there are some useful examples in there, too, in particular:</p>
+<ul>
+<li><code>pure_eval</code> lets you evaluate any Pure expression, given as a string in its first argument. E.g., try something like <code>=pure_eval(&quot;foldl (+) 0 (1..100)&quot;)</code>. Additional parameters are accessible as <code>x!0</code>, <code>x!1</code>, etc. For instance: <code>=pure_eval(&quot;x!0+x!1&quot;,A1,B1)</code>.</li>
+<li><code>pure_echo</code> just displays its arguments as a string in Pure syntax, as the interpreter sees them. This is useful for debugging purposes. E.g., <code>=pure_echo(A1:B10)</code> shows the given range as a Pure matrix.</li>
+<li><code>pure_shell</code> is a variation of <code>pure_eval</code> which executes arbitrary Pure code and returns the last evaluated expression (if any) as a string. This is mainly provided as a convenience to create an “interactive Pure shell” which lets you evaluate Pure code inside Gnumeric. To these ends, simply prepare a text cell for entering the code to be evaluated, and then apply <code>pure_shell</code> on this text cell in another cell to display the result.</li>
+</ul>
+<p>A spreadsheet showing most of the predefined functions in action can be found in <code>pure-examples.gnumeric</code> example distributed with Gnumeric/Pure.</p>
+<h2 id="interactive-pure-shell">Interactive Pure Shell</h2>
+<p>The <code>pure-examples.gnumeric</code> spreadsheet also includes an instance of <code>pure_shell</code> which lets you evaluate arbitrary Pure code in the same interpreter instance that executes Gnumeric/Pure functions. This is very helpful if you’re developing new Pure functions to be used in Gnumeric. It also lets you use Gnumeric as a kind of GUI frontend to the Pure interpreter. You can try this now. Open the <code>pure-examples</code> spreadsheet in Gnumeric and enter the following into the input cell of the Pure shell:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; scanl (+) <span class="dv">0</span> (<span class="dv">1</span>..<span class="dv">20</span>)
+  [<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">6</span>,<span class="dv">10</span>,<span class="dv">15</span>,<span class="dv">21</span>,<span class="dv">28</span>,<span class="dv">36</span>,<span class="dv">45</span>,<span class="dv">55</span>,<span class="dv">66</span>,<span class="dv">78</span>,<span class="dv">91</span>,<span class="dv">105</span>,<span class="dv">120</span>,<span class="dv">136</span>,<span class="dv">153</span>,<span class="dv">171</span>,<span class="dv">190</span>,<span class="dv">210</span>]</code></pre></div>
+<p>Note that here and in the following the prompt <code>&gt;</code> indicates a Pure expression to be evaluated in <em>Gnumeric</em> (rather than the standalone Pure interpreter), which is followed by another line indicating the result (printed in the output cell below the input cell of the Pure shell). You can find the Pure shell at the bottom of the first sheet in <code>pure-examples</code>, see the screenshot below. For your convenience, there’s also a second, bigger one on the second sheet. You might want to copy this over to a separate spreadsheet which you can use as a scratchpad for experimentation purposes.</p>
+<div class="figure">
+<img src="shell.png" alt="The Pure shell." />
+<p class="caption">The Pure shell.</p>
+</div>
+<p>Also note that this is in fact <em>Pure code</em> (not a Gnumeric formula) being evaluated there. You can execute any Pure code, including Pure declarations, so you can type:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> system; puts <span class="st">&quot;Hello, world!&quot;</span>;
+  <span class="dv">14</span></code></pre></div>
+<p>This prints the string <code>&quot;Hello, world!&quot;</code> on standard output, visible in the terminal window where you launched Gnumeric. Here is another example, showing how you can invoke any function from the C library, by declaring it as a Pure <code>extern</code> function:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">extern</span> <span class="dt">int</span> rand(); [rand | i = <span class="dv">1</span>..<span class="dv">5</span>];
+  [<span class="dv">1810821799</span>,<span class="dv">2106746672</span>,<span class="dv">1436605662</span>,<span class="dv">1363610028</span>,<span class="dv">695042099</span>]</code></pre></div>
+<p>All functions in the Pure prelude are readily available in the Gnumeric Pure shell, as well as the functions defined in <code>pure_func.pure</code> and its imports, including the programming interface described in <a href="#advanced-features">Advanced Features</a>. For instance, here’s how you can retrieve a cell value from the current sheet:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; get_cell <span class="st">&quot;A1&quot;</span>
+  <span class="st">&quot;Gnumeric/Pure Examples&quot;</span></code></pre></div>
+<p>Using <code>call</code> (see <a href="#calling-gnumeric-from-pure">Calling Gnumeric from Pure</a>), you can also invoke any Gnumeric function:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; call <span class="st">&quot;product&quot;</span> (<span class="dv">1</span>..<span class="dv">10</span>)
+  <span class="dv">3628800.0</span></code></pre></div>
+<h2 id="defining-your-own-functions">Defining Your Own Functions</h2>
+<p>After playing around with <code>pure_func.pure</code> and the interactive Pure shell for a while, of course you will want to write your own functions, that’s what this extension is about after all! This section shows you how to do this.</p>
+<h3 id="creating-a-simple-plugin">Creating a Simple Plugin</h3>
+<p>Let’s consider a simple example: the factorial function. In Pure this function can be implemented as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">factorial [x] = foldl (*) <span class="dv">1</span> (<span class="dv">1</span>..x);</code></pre></div>
+<p>Note the list bracket around the argument <code>x</code>. You wouldn’t normally pass a single numeric argument that way in Pure, but this is needed here since by default Gnumeric passes arguments as a list to a Pure function. There are other ways to configure the call interface to Pure functions, but these require that we tell Gnumeric about the number and types of arguments, see <a href="#gnumericpure-interface">Gnumeric/Pure Interface</a> below. For the moment let’s stick to the default scheme, however, in order to keep things simple.</p>
+<p>Put the above definition into a script file, say, <code>myplugin.pure</code>. Next we need to create a <code>plugin.xml</code> file to tell Gnumeric about our plugin and which functions it provides. While these files can be written by hand, this is tedious and error-prone. Fortunately, recent Gnumeric/Pure versions provide the <code>pure-gnm</code> helper script which makes this quite easy. To use <code>pure-gnm</code> with our plugin script, we have to add a special “hashbang” comment block to our script which supplies the needed information. In our case, this might look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">#! N: My Pure functions
+#! C: Pure
+#! D: My Pure functions.
+#! F: factorial</code></pre></div>
+<p>You can add this comment block anywhere in your plugin script, but usually it is placed near the beginning. The different fields have the following meaning:</p>
+<ul>
+<li><code>N</code>: the name of the plugin</li>
+<li><code>C</code>: the function category</li>
+<li><code>D</code>: a more detailed description of the plugin</li>
+<li><code>F</code>: a whitespace-delimited list of Pure function names</li>
+</ul>
+<p>The contents of the <code>N</code> and <code>D</code> fields (name and description) are visible in Gnumeric’s “Plugin Manager” dialog. You should specify at least the name field (otherwise the plugin will be displayed as “Unnamed” in the dialog), while the description is optional (if you don’t specify one, the description of the plugin will be empty). The <code>C</code> field denotes the category under which the functions listed in the <code>F</code> field will be shown in Gnumeric’s “f(x)” dialog; if you don’t specify this, the functions will be in the “Unknown” category. The <code>F</code> field is the most crucial part. It must contain all Pure functions defined in the plugin script or its imports that you want to be visible in Gnumeric, so you have to keep this in sync with the actual function definitions in the script; if you don’t specify this, the plugin will provide no functions at all.</p>
+<p>The <code>D</code> and <code>F</code> fields can also be split into multiple lines (each prefixed with the “hashbang” comment marker and the corresponding field identifier) if necessary.</p>
+<p>So our <code>myplugin.pure</code> script now looks like this:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">#! N: My Pure functions
+#! C: Pure
+#! D: My Pure functions.
+#! F: factorial
+
+factorial [x] = foldl (*) <span class="dv">1</span> (<span class="dv">1</span>..x);</code></pre></div>
+<p>Once you’ve added the comment block, you can generate the <code>plugin.xml</code> file for the plugin simply as follows:</p>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">$ <span class="ex">pure-gnm</span> myplugin.pure <span class="op">&gt;</span> plugin.xml</code></pre></div>
+<p>Note that by default <code>pure-gnm</code> writes the <code>plugin.xml</code> file to standard output which is useful if you want to check the generated file first. To actually create the file, we simply redirect the output to <code>plugin.xml</code>.</p>
+<p>You’ll have to redo this every time your plugin changes (i.e., you’ve added new functions or deleted or renamed old ones, or changed the name or description of the plugin). It’s easy to automate this step using <code>make</code>. E.g., the following Makefile will do the trick:</p>
+<pre class="sourceCode make"><code>myplugin = myplugin.pure
+
+all: plugin.xml
+
+plugin.xml: $(myplugin)
+        pure-gnm $&lt; &gt; $@
+
+clean:
+        rm -f plugin.xml</code></pre>
+<p>Now you can just run <code>make</code> in the plugin directory and it will rebuild the <code>plugin.xml</code> file as needed.</p>
+<h3 id="the-plugin.xml-file">The plugin.xml File</h3>
+<p>The <code>plugin.xml</code> file resulting from the previous step looks like this:</p>
+<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;?xml</span> version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;<span class="kw">?&gt;</span>
+<span class="kw">&lt;plugin</span><span class="ot"> id=</span><span class="st">&quot;Gnumeric_myplugin&quot;</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;information&gt;</span>
+    <span class="kw">&lt;name&gt;</span>My Pure functions<span class="kw">&lt;/name&gt;</span>
+    <span class="kw">&lt;description&gt;</span>My Pure functions.<span class="kw">&lt;/description&gt;</span>
+    <span class="kw">&lt;require_explicit_enabling/&gt;</span>
+  <span class="kw">&lt;/information&gt;</span>
+  <span class="kw">&lt;loader</span><span class="ot"> type=</span><span class="st">&quot;Gnumeric_PureLoader:pure&quot;</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;attribute</span><span class="ot"> name=</span><span class="st">&quot;module_name&quot;</span><span class="ot"> value=</span><span class="st">&quot;myplugin.pure&quot;</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;/loader&gt;</span>
+  <span class="kw">&lt;services&gt;</span>
+    <span class="kw">&lt;service</span><span class="ot"> type=</span><span class="st">&quot;function_group&quot;</span><span class="ot"> id=</span><span class="st">&quot;myplugin&quot;</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;category&gt;</span>Pure<span class="kw">&lt;/category&gt;</span>
+      <span class="kw">&lt;functions&gt;</span>
+        <span class="kw">&lt;function</span><span class="ot"> name=</span><span class="st">&quot;factorial&quot;</span><span class="kw">/&gt;</span>
+      <span class="kw">&lt;/functions&gt;</span>
+    <span class="kw">&lt;/service&gt;</span>
+  <span class="kw">&lt;/services&gt;</span>
+<span class="kw">&lt;/plugin&gt;</span></code></pre></div>
+<p>You can also edit this file by hand if you know what you’re doing; in that case, please check the Gnumeric documentation for details about the format of these files. The template used by <code>pure-gnm</code> to generate these files can be found in the source distribution (see <code>plugin.xml</code> in the <code>pure-gnm</code> folder) or under <code>/usr/local/lib/pure-gnm</code> after installation. You can edit this file (carefully!) in order to implement global changes that you want to be in every <code>plugin.xml</code> file generated by <code>pure-gnm</code>.</p>
+<p>Two specific items that you might want to edit by hand are the <code>&lt;require_explicit_enabling/&gt;</code> tag and the <code>id</code> properties of the <code>&lt;plugin&gt;</code> and <code>&lt;service&gt;</code> tags:</p>
+<ul>
+<li>The <code>&lt;require_explicit_enabling/&gt;</code> tag indicates that Gnumeric shouldn’t enable the new plugin until you explicitly tell it to. You can remove that line if you want Gnumeric to automatically enable new plugins as they are added to the system.</li>
+<li>The <code>pure-gnm</code> script automatically derives the <code>id</code> properties of the <code>&lt;plugin&gt;</code> and <code>&lt;service&gt;</code> tags from the name of the plugin script, which is a sensible default in most cases. However, you might have to change these identifiers if they happen to collide with other Gnumeric plugins and services. This can be done by either editing the generated <code>plugin.xml</code> file or by renaming the plugin script accordingly.</li>
+</ul>
+<p>Note that the only really Pure-specific part in the xml file is the loader description which also names the Pure script implementing the plugin in the value of the <code>module_name</code> attribute. In this case this is just <code>&quot;myplugin.pure&quot;</code>. This path is taken relative to the directory containing the <code>plugin.xml</code> file, but you can also specify an absolute path there if you want to keep the plugin script elsewhere. To achieve this with <code>pure-gnm</code>, you can just invoke it with an absolute path name, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">$ <span class="ex">pure-gnm</span> <span class="va">$PWD</span>/myplugin.pure <span class="op">&gt;</span> plugin.xml</code></pre></div>
+<p>Now you can move the <code>plugin.xml</code> file whereever you like and still have Gnumeric find the script file in its prescribed location. Again, this can be automatized using <code>make</code> fairly easily; we’ll return to that in the following section.</p>
+<h3 id="loading-the-plugin">Loading the Plugin</h3>
+<p>We now have the plugin script <code>myplugin.pure</code> and the <code>plugin.xml</code> file in the same directory, say, <code>/some/path/myplugin</code>. We still need to tell Gnumeric about the new plugin, though, so that it can find it. Unfortunately, the mechanics of making a plugin known to Gnumeric are somewhat involved, so we discuss the necessary steps in detail below. There are basically three ways you can go about this:</p>
+<ul>
+<li>If you want to keep plugin script and the <code>plugin.xml</code> file where they are, you’ll have to change Gnumeric’s plugin path so that it includes the <em>parent</em> directory <code>/some/path</code> (not <code>/some/path/myplugin</code>). This is done by adding the directory under the Directories tab in Gnumeric’s Tools/Plug-ins dialog, after which you’ll have to restart Gnumeric so that it picks up the changes in the plugin search path.</li>
+<li>Second, you can also move or copy the entire <code>/some/path/myplugin</code> directory to your personal Gnumeric plugin folder (usually <code>~/.gnumeric/&lt;version&gt;/plugins</code>). Gnumeric will always search this directory for new plugins by default, so modifying the plugin search path is not necessary. However, keeping the plugin script in a hidden location in your home directory may not be very convenient if you want to modify the script later.</li>
+<li>Third, you can get the best of both previous methods by keeping the plugin script where it is and copying just the <code>plugin.xml</code> file to your personal Gnumeric plugin folder.</li>
+</ul>
+<p>The third method tends to be the easiest, but note that it requires that the plugin script needs to be specified as an absolute path (as sketched out previously). Fortunately, it’s fairly easy to automate this with <code>make</code>. The following requires GNU make to work, and you’ll also need to have the Gnumeric development files installed, so that the Gnumeric version can be determined easily with a shell command. These rules are to be added to the end of the Makefile described previously under <a href="#creating-a-simple-plugin">Creating a Simple Plugin</a>.</p>
+<pre class="sourceCode make"><code>gnmversion=$(shell pkg-config --modversion libspreadsheet-1.12)
+plugindir=$(HOME)/.gnumeric/$(gnmversion)/plugins/myplugin
+
+install: $(myplugin)
+        test -d $(plugindir) || mkdir -p $(plugindir)
+        pure-gnm $(CURDIR)/$&lt; &gt; $(plugindir)/plugin.xml
+
+uninstall:
+        rm -rf $(plugindir)</code></pre>
+<p>Now you can just run <code>make install</code> to make the plugin known to Gnumeric. Note that we also added a rule that allows you to uninstall the plugin if it isn’t needed any more.</p>
+<p>In any case, once you fire up Gnumeric again, the new plugin should be listed as “My Pure functions” on the Plugin List tab in the Tools/Plug-ins dialog. Check it to enable it. The <code>factorial</code> function defined in the plugin should now be available and ready to be called just like any other Gnumeric function. For instance, type this into a cell to have the factorial of 10 computed:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">=factorial(<span class="dv">10</span>)</code></pre></div>
+<p>Also try saving the spreadsheet and loading it again after restarting Gnumeric. The plugin will now be loaded automatically and the spreadsheet should display the proper value of the factorial.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> Once you start playing around with your own Pure plugins, you may run into one common mishap: You open an existing spreadsheet without having enabled the plugins it uses. An easily visible symptom of that is that you’ll see cells showing the <code>#NAME?</code> error. You will then have to enable those plugins again <em>and</em> reload the spreadsheet afterwards, so that everything is recalculated properly.</p>
+<p>In contrast, just changing the body of a function in a plugin usually needs neither a restart of Gnumeric nor a reloading of the spreadsheet. In this case it’s often sufficient to reload all scripts with the “Reload Pure Scripts” option in the Tools/Pure menu, after which you can use “Recalculate” (F9) to recompute the spreadsheet.</p>
+</blockquote>
+<hr />
+<p>It is also worth mentioning here that the Pure loader can load multiple Pure plugins (and of course each plugin can provide as many functions as you want). You only need to tell Gnumeric about them after creating the scripts and <code>plugin.xml</code> files and placing them into corresponding plugin directories. Just enable the ones that you want in Tools/Plug-ins. All scripts are loaded in the same Pure interpreter (and thus are treated like one big script) so that functions in one script can use the function and variable definitions in another. If you need to access the definitions in the <code>pure_func.pure</code> “mother script”, you can also just import it into your scripts with a <code>using</code> clause, i.e.: <code>using pure_func;</code></p>
+<p>Another important point is that a Pure plugin script is always loaded in the directory where it is located, as indicated by the corresponding <code>plugin.xml</code> file, even if it is different from the plugin directory. That is, the current working directory (which is normally the directory that Gnumeric was started in) is temporarily set to the directory holding the plugin script while the script is being loaded. This enables the script to find imported scripts and other files (such as media files or scripts written in other languages) that it may need at load time. This wasn’t needed in this simple example, but you can find other examples in the Gnumeric/Pure distribution which make good use of this feature.</p>
+<h3 id="spicing-it-up">Spicing It Up</h3>
+<p>Our plugin example is now essentially complete, but in order to make it really convenient to use, we may want to add some information about how the <code>factorial</code> function is to be called in Gnumeric. Gnumeric doesn’t keep this kind of information in the <code>plugin.xml</code> file, but expects it to be provided by the plugin itself. In the Gnumeric/Pure interface this can be done by adding a rule for the <code>gnm_info</code> function. In our example we tell Gnumeric that <code>factorial</code> expects a single numeric argument. While we’re at it, we might as well add some helpful documentation to be displayed in Gnumeric’s “f(x)” dialog. The details of this are described in the following section, but to give you a sneak preview, here’s a beefed-up version of our script which implements all this (you can also find this version of the example along with a GNU Makefile in the Gnumeric/Pure distribution):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">#! N: My Pure functions
+#! C: Pure
+#! D: My Pure functions.
+#! F: factorial
+
+factorial x = foldl (*) <span class="dv">1</span> (<span class="dv">1</span>..x);
+
+<span class="kw">using</span> pure_func; <span class="co">// for the gnm_help function</span>
+gnm_info <span class="st">&quot;factorial&quot;</span> = <span class="st">&quot;f&quot;</span>, gnm_help <span class="st">&quot;factorial:factorial of a number&quot;</span>
+ [<span class="st">&quot;x:number&quot;</span>] <span class="st">&quot;Computes the factorial of @{x}.&quot;</span> [] [<span class="st">&quot;=factorial(10)&quot;</span>] [];</code></pre></div>
+<p>Fire up Gnumeric again, press the “f(x)” button and select <code>factorial</code> under the <code>Pure</code> category. The “f(x)” dialog should now display the additional information we added above. Also note that Gnumeric now knows that this function is supposed to be called with exactly one <code>f</code> (numeric) argument. Therefore the list brackets around the argument of <code>factorial</code> aren’t needed any more, so don’t forget to remove them, as shown in the above code sample.</p>
+<p>This completes our little example. As an exercise, you’re invited to add more functions on your own. (Don’t forget to change the <code>#! F</code> line accordingly and rerun <code>pure-gnm</code> when you do this, so that Gnumeric knows about the new functions.) It also pays off to take a look at some of the other included examples, you can find these in the <code>examples</code> folder of the distribution tarball.</p>
+<h2 id="gnumericpure-interface">Gnumeric/Pure Interface</h2>
+<p>We already explained in the previous section that, when a Pure function is called from Gnumeric, it receives its arguments in a list by default. However, it is possible to tell Gnumeric about the expected arguments of the function and also specify a help text to be displayed in the “f(x)” dialog, by giving a definition of the <code>gnm_info</code> function as explained below.</p>
+<p>Note that <code>gnm_info</code> is really an ordinary Pure function. Thus, rather than hardcoding this information as static text (such as the “docstrings” used in Gnumeric’s Python extension), the function descriptions can also be constructed dynamically in corresponding Pure code. This offers an opportunity for programmatic customizations. But note that the <code>gnm_info</code> function will only be invoked when the plugin script is loaded, so once that is done the function description remains the same for the entire Gnumeric session.</p>
+<h3 id="function-descriptions">Function Descriptions</h3>
+<p>To describe a given function to Gnumeric, define <code>gnm_info &quot;&lt;name&gt;&quot;</code> (where <code>&lt;name&gt;</code> is the name of the function) as a pair with the following elements:</p>
+<ul>
+<li>The first element, a string, gives the signature of the function. E.g., <code>&quot;&quot;</code> denotes a function without arguments, <code>&quot;f&quot;</code> a function taking a single float parameter, <code>&quot;fs&quot;</code> a function taking a float and a string argument (in that order), etc. Optional parameters can be indicated using <code>|</code>, as in <code>&quot;ff|s&quot;</code> (two non-optional floats, followed by an optional string). See below for a complete list of the supported parameter types.</li>
+<li>The second element is a list of hash pairs <code>key=&gt;text</code> which together make up the help text shown in Gnumeric’s “f(x)” dialog. You should at least specify the function name along with a short synopsis here, e.g. <code>GNM_FUNC_HELP_NAME =&gt; &quot;frob:the frob function&quot;</code>. Parameter descriptions take the form <code>GNM_FUNC_HELP_ARG =&gt; &quot;x:integer&quot;</code>. There are a number of other useful elements, see below for details.</li>
+</ul>
+<p>Both the signature and the function description are optional. That is, <code>gnm_info</code> may return either just a signature string, or a list of hash pairs with the function description, or both. The signature defaults to a variadic function which takes any number of parameters of any type (see below), and the description defaults to some boilerplate text which says that the function hasn’t been documented yet.</p>
+<p>Note that if no signature is given, then the function accepts any number of parameters of any type. In that case, or if there are optional parameters, the function becomes variadic and the (optional) parameters are passed as a Pure list (in addition to the non-optional parameters).</p>
+<p>Here’s the list of valid parameter types, as they are documented in the Gnumeric sources:</p>
+<pre class="sourceCode none"><code>f : float       no errors, string conversion attempted
+b : boolean     identical to f
+s : string      no errors
+S : scalar      any non-error scalar
+E : scalar      any scalar, including errors
+
+r : cell range  content may not be evaluated yet
+A : area        array, range (as above), or scalar
+? : anything        any value (scalars, non-scalars, errors, whatever)</code></pre>
+<p>The keys used in the function description may be any of the following, along with sample text for each type of field:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">GNM_FUNC_HELP_NAME         =&gt; <span class="st">&quot;name:synopsis&quot;</span>
+GNM_FUNC_HELP_ARG          =&gt; <span class="st">&quot;name:parameter description&quot;</span>
+GNM_FUNC_HELP_DESCRIPTION  =&gt; <span class="st">&quot;Long description.&quot;</span>
+GNM_FUNC_HELP_NOTE         =&gt; <span class="st">&quot;Note.&quot;</span>
+GNM_FUNC_HELP_EXAMPLES     =&gt; <span class="st">&quot;=sample_formula()&quot;</span>
+GNM_FUNC_HELP_SEEALSO      =&gt; <span class="st">&quot;foo,bar,...&quot;</span></code></pre></div>
+<p>The following keys are only supported in the latest Gnumeric versions:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">GNM_FUNC_HELP_EXTREF       =&gt; <span class="st">&quot;wiki:en:Trigonometric_functions&quot;</span>
+GNM_FUNC_HELP_EXCEL        =&gt; <span class="st">&quot;Excel compatibility information.&quot;</span>
+GNM_FUNC_HELP_ODF          =&gt; <span class="st">&quot;OpenOffice compatibility information.&quot;</span></code></pre></div>
+<p>Note that inside the descriptions, the notation <code>@{arg}</code> (<code>@arg</code> in older Gnumeric versions) can be used to refer to a parameter value. For instance, here’s a sample description for a binary function which also includes a help text:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;pure_max&quot;</span> = <span class="st">&quot;ff&quot;</span>,
+[GNM_FUNC_HELP_NAME     =&gt; <span class="st">&quot;pure_max:maximum of two numbers&quot;</span>,
+ GNM_FUNC_HELP_ARG      =&gt; <span class="st">&quot;x:number&quot;</span>,
+ GNM_FUNC_HELP_ARG      =&gt; <span class="st">&quot;y:number&quot;</span>,
+ GNM_FUNC_HELP_DESCRIPTION =&gt;
+ <span class="st">&quot;Computes the maximum of two numbers @{x} and @{y}.&quot;</span>,
+ GNM_FUNC_HELP_EXAMPLES =&gt; <span class="st">&quot;=pure_max(17,22)&quot;</span>];</code></pre></div>
+<p>As you can see, the function descriptions are a bit unwieldy, so it’s convenient to construct them using this little helper function defined in <code>pure_func.pure</code>:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_help name::<span class="dt">string</span> args descr::<span class="dt">string</span> notes examples see_also =
+  [GNM_FUNC_HELP_NAME         =&gt; name] +
+  [GNM_FUNC_HELP_ARG          =&gt; x | x::<span class="dt">string</span> = args ] +
+  [GNM_FUNC_HELP_DESCRIPTION  =&gt; descr ] +
+  [GNM_FUNC_HELP_NOTE         =&gt; x | x::<span class="dt">string</span> = notes ] +
+  [GNM_FUNC_HELP_EXAMPLES     =&gt; x | x::<span class="dt">string</span> = examples ] +
+  (<span class="kw">if</span> null see_also <span class="kw">then</span> [] <span class="kw">else</span>
+   [GNM_FUNC_HELP_SEEALSO     =&gt; join <span class="st">&quot;,&quot;</span> see_also]);</code></pre></div>
+<p>Now the description can be written simply as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;pure_max&quot;</span> = <span class="st">&quot;ff&quot;</span>, gnm_help <span class="st">&quot;pure_max:maximum of two numbers&quot;</span>
+  [<span class="st">&quot;x:number&quot;</span>, <span class="st">&quot;y:number&quot;</span>]
+  <span class="st">&quot;Computes the maximum of two numbers @{x} and @{y}.&quot;</span>
+  [] [<span class="st">&quot;=pure_max(17,22)&quot;</span>] [];</code></pre></div>
+<p>Since this function only has fixed arguments, it will be called in curried form, i.e., as <code>pure_max x y</code>. For instance, the actual definition of <code>pure_max</code> may look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure_max x y = max x y;</code></pre></div>
+<p>Conversely, if no signature is given, then the function accepts any number of parameters of any type, which are passed as a list. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;pure_sum&quot;</span> = gnm_help <span class="st">&quot;pure_sum:sum of a collection of numbers&quot;</span>
+  [] <span class="st">&quot;Computes the sum of a collection of numbers.&quot;</span>
+  [] [<span class="st">&quot;=pure_sum(1,2,3,4,5,6)&quot;</span>] [<span class="st">&quot;pure_sums&quot;</span>];</code></pre></div>
+<p>Here the function will be called as <code>pure_sum [x1,x2,...]</code>, where <code>x1</code>, <code>x2</code>, etc. are the arguments the function is invoked with. Note that in this case there may be any number of arguments (including zero) of any type, so your function definition must be prepared to handle this. If a function does not have a <code>gnm_info</code> description at all then it is treated in the same fashion. The <code>pure_func.pure</code> script contains some examples showing how to write functions which can deal with any numbers of scalars, arrays or ranges, see the <code>pure_sum</code> and <code>pure_sums</code> examples. These employ the following <code>ranges</code> function to “flatten” a parameter list to a list holding all denoted values:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">ranges xs = cat [ <span class="kw">case</span> x <span class="kw">of</span> _::<span class="dt">matrix</span> = list x; _ = [x] <span class="kw">end</span> | x = xs ];</code></pre></div>
+<p>E.g., the <code>pure_sum</code> function can now be defined as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure_sum xs = foldl (+) <span class="dv">0</span> (ranges xs);</code></pre></div>
+<p>A function may also have both fixed and optional arguments (note that in what follows we’re going to omit the detailed function descriptions for brevity):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;foo&quot;</span> = <span class="st">&quot;ff|ff&quot;</span>;</code></pre></div>
+<p>In this case the fixed arguments are passed in curried form as usual, while the optional parameters are passed as a list. That is, <code>foo</code> may be called as <code>foo x y []</code>, <code>foo x y [z]</code> or <code>foo x y [z,t]</code>, depending on whether it is invoked with two, three or four arguments.</p>
+<h3 id="conversions-between-pure-and-gnumeric-values">Conversions Between Pure and Gnumeric Values</h3>
+<p>The marshalling of types between Gnumeric and Pure is pretty straightforward; basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings and arrays, respectively. The following table summarizes the available conversions:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Pure</th>
+<th align="left">Gnumeric</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>gnm_error &quot;#N/A&quot;</code></td>
+<td align="left">error</td>
+</tr>
+<tr class="even">
+<td align="left"><code>4711</code>, <code>4711L</code>, <code>4711.0</code></td>
+<td align="left">scalar (number)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>&quot;Hello world&quot;</code></td>
+<td align="left">string</td>
+</tr>
+<tr class="even">
+<td align="left"><code>()</code></td>
+<td align="left">empty</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>(1,2,3)</code></td>
+<td align="left">array</td>
+</tr>
+<tr class="even">
+<td align="left"><code>[1,2,3]</code></td>
+<td align="left">array</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>{1,2,3;4,5,6}</code></td>
+<td align="left">array (or cell range)</td>
+</tr>
+<tr class="even">
+<td align="left"><code>&quot;A1:B10&quot;</code></td>
+<td align="left">cell range (<code>&quot;r&quot;</code> conversion)</td>
+</tr>
+</tbody>
+</table>
+<p>These conversions mostly work both ways. Note that on input, cell ranges are usually passed as matrices to Pure functions (i.e., they are passed “by value”), unless the function signature specifies a <code>&quot;r&quot;</code> conversion in which case the cell ranges themselves are passed to the function in string form. (Such values can also be passed on to Gnumeric functions which expect a cell range (<code>&quot;r&quot;</code> ) parameter, see <a href="#calling-gnumeric-from-pure">Calling Gnumeric from Pure</a> below.)</p>
+<p>Conversely, matrices, lists and tuples all become Gnumeric arrays on output, so usually you’ll want to enter these as array functions (<code>Ctrl-Shift-Enter</code> in Gnumeric). As a special case, the empty tuple can be used to denote empty cell values (but note that empty Gnumeric values may become zeros when passed as float or array arguments to Pure functions).</p>
+<p>Another special case is a term of the form <code>gnm_error msg</code>, where <code>msg</code> is a string value indicating a Gnumeric error value such as <code>&quot;#N/A&quot;</code>, <code>&quot;#NAME?&quot;</code>, <code>&quot;#NULL!&quot;</code>, etc. When returned by a plugin function, the error text will be displayed in the corresponding Gnumeric cell.</p>
+<p>If a Pure function returns a value that doesn’t match any of the above then it is converted to a string in Pure expression syntax and that string is returned as the result of the function invocation in Gnumeric. This makes it possible to return any kind of symbolic Pure value, but note that if such a value is then fed into another Pure function, that function will have to convert the string value back to the internal representation if needed; this can be done very conveniently using Pure’s <code>eval</code> function, see the Pure documentation for details.</p>
+<h2 id="advanced-features">Advanced Features</h2>
+<p>This section explains various additional features provided by the Gnumeric/Pure interface that should be useful for writing your own functions. Note that for your convenience all functions discussed in this section are declared in <code>pure_func.pure</code>.</p>
+<h3 id="calling-gnumeric-from-pure">Calling Gnumeric from Pure</h3>
+<p>It is possible to call Gnumeric functions from Pure using the <code>call</code> function which takes the name of the function (a string) as its first, and the parameters as the second (list) argument. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;gnm_bitand&quot;</span> = <span class="st">&quot;ff&quot;</span>;
+gnm_bitand x y = call <span class="st">&quot;bitand&quot;</span> [x,y];</code></pre></div>
+<p>Note that <code>call</code> is an external C function provided by Gnumeric/Pure. If you want to use it, it must be declared in your Pure script as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">expr</span>* pure_gnmcall(<span class="dt">char</span>* name, <span class="dt">expr</span>* args) = call;</code></pre></div>
+<p>However, <code>pure_func.pure</code> already contains the above declaration, so you don’t have to do this yourself if you import <code>pure_func.pure</code> in your scripts.</p>
+<p>Also note that <code>call</code> doesn’t do any of Gnumeric’s automatic conversions on the parameters, so you have to pass the proper types of arguments as required by the function.</p>
+<h3 id="accessing-spreadsheet-cells">Accessing Spreadsheet Cells</h3>
+<p>Gnumeric/Pure provides the following functions to retrieve and modify the contents of spreadsheet cells and ranges of such cells:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">expr</span>* pure_get_cell(<span class="dt">char</span>* s) = get_cell;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_get_cell_text(<span class="dt">char</span>* s) = get_cell_text;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_get_cell_format(<span class="dt">char</span>* s) = get_cell_format;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_set_cell(<span class="dt">char</span>* s, <span class="dt">expr</span> *x) = set_cell;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_set_cell_text(<span class="dt">char</span>* s, <span class="dt">expr</span> *x) = set_cell_text;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_set_cell_format(<span class="dt">char</span>* s, <span class="dt">expr</span> *x) = set_cell_format;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_get_range(<span class="dt">char</span>* s) = get_range;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_get_range_text(<span class="dt">char</span>* s) = get_range_text;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_get_range_format(<span class="dt">char</span>* s) = get_range_format;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_set_range(<span class="dt">char</span>* s, <span class="dt">expr</span> *x) = set_range;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_set_range_text(<span class="dt">char</span>* s, <span class="dt">expr</span> *x) = set_range_text;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_set_range_format(<span class="dt">char</span>* s, <span class="dt">expr</span> *x) = set_range_format;</code></pre></div>
+<p>For instance, here’s how you use these functions to write and then read some cell values (try this in the <a href="#interactive-pure-shell">interactive Pure shell</a>):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; set_cell <span class="st">&quot;A14&quot;</span> <span class="dv">42</span>
+  ()
+&gt; get_cell <span class="st">&quot;A14&quot;</span>
+  <span class="dv">42.0</span>
+&gt; set_range <span class="st">&quot;A14:G14&quot;</span> $ scanl (*) <span class="dv">1</span> (<span class="dv">1</span>..<span class="dv">6</span>)
+  ()
+&gt; get_range <span class="st">&quot;A14:G14&quot;</span>
+  {<span class="dv">1.0</span>,<span class="dv">1.0</span>,<span class="dv">2.0</span>,<span class="dv">6.0</span>,<span class="dv">24.0</span>,<span class="dv">120.0</span>,<span class="dv">720.0</span>}
+&gt; set_cell_text <span class="st">&quot;A14&quot;</span> <span class="st">&quot;=sum(B14:G14)&quot;</span>
+  ()
+&gt; get_cell <span class="st">&quot;A14&quot;</span>
+  <span class="dv">873.0</span>
+&gt; get_cell_text <span class="st">&quot;A14&quot;</span>
+  <span class="st">&quot;=sum(B14:G14)&quot;</span>
+&gt; get_range_text <span class="st">&quot;A14:G14&quot;</span>
+  {<span class="st">&quot;=sum(B14:G14)&quot;</span>,<span class="st">&quot;1&quot;</span>,<span class="st">&quot;2&quot;</span>,<span class="st">&quot;6&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;120&quot;</span>,<span class="st">&quot;720&quot;</span>}</code></pre></div>
+<p>Note that while the <code>set_cell</code> function sets the given cell to a constant value, <code>set_cell_text</code> also allows you to store a formula in a cell which will then be evaluated as usual. Similarly, <code>get_cell</code> retrieves the cell value, while <code>get_cell_text</code> yields the text in the cell, as entered by the user (which will either be a formula or the textual representation of a constant value). The <code>set_range</code>, <code>set_range_text</code>, <code>get_range</code> and <code>get_range_text</code> functions work analogously, but are used to manipulate entire ranges of cells, which can be set from Pure tuples, lists or matrices, and retrieved as Pure matrices.</p>
+<p>Functions to retrieve and change the cell format are also provided (watch the contents of the cell <code>A14</code> change its color to blue on entering the first expression):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; set_cell_format <span class="st">&quot;A14&quot;</span> <span class="st">&quot;[Blue]0.00&quot;</span>
+  ()
+&gt; get_range_format <span class="st">&quot;A14:C14&quot;</span>
+  {<span class="st">&quot;[Blue]0.00&quot;</span>,<span class="st">&quot;General&quot;</span>,<span class="st">&quot;General&quot;</span>}</code></pre></div>
+<p>There are also functions to get the position of the “current” cell (i.e., the cell from which a Pure function was called), and to translate between cell ranges in Gnumeric syntax and the corresponding internal representation consisting of a pointer to a Gnumeric sheet and the cell or range coordinates:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">expr</span>* pure_this_cell() = this_cell;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_parse_range(<span class="dt">char</span>* s) = parse_range;
+<span class="kw">extern</span> <span class="dt">expr</span>* pure_make_range(<span class="dt">expr</span>* x) = make_range;</code></pre></div>
+<p>Examples:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; this_cell
+  <span class="st">&quot;B4&quot;</span>
+&gt; parse_range this_cell
+  #&lt;<span class="dt">pointer</span> <span class="dv">0x875220</span>&gt;,<span class="dv">1</span>,<span class="dv">3</span>
+&gt; make_range (NULL,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">10</span>,<span class="dv">10</span>)
+  <span class="st">&quot;Sheet2!A1:K11&quot;</span></code></pre></div>
+<h3 id="asynchronous-data-sources">Asynchronous Data Sources</h3>
+<p>Gnumeric/Pure makes it easy to set up asynchronous data sources which draw values from a Pure computation executed in a background process. This facility is useful to carry out lengthy computations in the background while you can continue to work with your spreadsheet. It also allows you to process incoming data and asynchronous events from special devices (MIDI, sensors, stock tickers, etc.) in (soft) realtime.</p>
+<p>To do this, you simply pass an expression to the <code>datasource</code> function. This is another external C function provided by Gnumeric/Pure, which is declared in <code>pure_func.pure</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">expr</span>* pure_datasource(<span class="dt">expr</span>* x) = datasource;</code></pre></div>
+<p>The argument to <code>datasource</code> is typically a thunk or stream (lazy list) which is to be evaluated in the background. The call to <code>datasource</code> initially returns a <code>#N/A</code> value (<code>gnm_error &quot;#N/A&quot;</code>) while the computation is still in progress. The cell containing the data source then gets updated automatically as soon as the value becomes available, at which point the <code>datasource</code> call now returns the computed value. E.g., here’s how you would wrap up a lengthy calculation as a thunk and submit it to <code>datasource</code> which carries out the computation as a background task:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;pure_frob&quot;</span> = <span class="st">&quot;f&quot;</span>;
+pure_frob x = datasource (lengthy_calculation x&amp;);
+lengthy_calculation x = sleep <span class="dv">3</span> $$ foldl (*) <span class="dv">1</span> (<span class="dv">1</span>..x);</code></pre></div>
+<p>Note that a cell value may draw values from as many independent data sources as you want, so the definition of a cell may also involve multiple invocations of <code>datasource</code>:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;pure_frob2&quot;</span> = <span class="st">&quot;ff&quot;</span>;
+pure_frob2 x y = datasource (lengthy_calculation x&amp;),
+  datasource (lengthy_calculation y&amp;);</code></pre></div>
+<p>Special treatment is given to (lazy) lists, in this case <code>datasource</code> returns a new value each time a list element becomes available. For instance, the following function uses an infinite stream to count off the seconds starting from a given initial value:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gnm_info <span class="st">&quot;pure_counter&quot;</span> = <span class="st">&quot;f&quot;</span>;
+pure_counter x = datasource [sleep (i&gt;x) $$ i | i = x..inf];</code></pre></div>
+<p>You can also try this interactively in the Pure shell:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; datasource [sleep (i&gt;<span class="dv">0</span>) $$ i | i = <span class="dv">0</span>..inf]
+  <span class="dv">0</span>
+  <span class="dv">1</span>
+  ...</code></pre></div>
+<p>Here’s another example for the Pure shell which prints the prime numbers:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; datasource primes <span class="kw">with</span> primes = sieve (<span class="dv">2</span>..inf);
+    sieve (p:qs) = p : (sleep <span class="dv">1</span> $$ sieve [q | q = qs; q mod p])&amp; <span class="kw">end</span>
+  <span class="dv">2</span>
+  <span class="dv">3</span>
+  <span class="dv">5</span>
+  ...</code></pre></div>
+<p>Note that when processing a lazy list, the cell containing the call will keep changing as long as new values are produced (i.e., forever in this example). The “Stop Data Sources” option in the Tools/Pure menu can be used to stop all active data sources. “Reload Pure Scripts” also does this. You can then restart the data sources at any time by using “Recalculate” (<code>F9</code>) to recompute the spreadsheet.</p>
+<p>Also note that because of the special way that <code>datasource</code> handles list values, you cannot return a list directly as the result of <code>datasource</code>, if it is to be treated as a single result. Instead, you’ll have to wrap the result in a singleton list (e.g., <code>datasource [[lengthy_calculation x,lengthy_calculation y]&amp;]</code>), or return another aggregate (i.e., a matrix or a tuple).</p>
+<p>Finally, note that when the arguments of a call involving <code>datasource</code> change (because they depend on other cells which may have been updated), the computation is automatically restarted with the new parameters. The default behaviour in this case is that the entire computation will be redone from scratch, but it’s also possible to wrap up calls to <code>datasource</code> in a manner which enables more elaborate communication between Gnumeric and background tasks initiated with <code>datasource</code>. This is beyond the scope of this manual, however, so we leave this as an exercise to the interested reader.</p>
+<h3 id="triggers">Triggers</h3>
+<p>In addition to asynchronous data sources, the <code>trigger</code> function is provided to compute values or take actions depending on some external condition, such as the availability of data on a special device or the creation of some widget (see the next section):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">expr</span>* pure_trigger(<span class="dt">int</span> timeout, <span class="dt">expr</span>* cond, <span class="dt">expr</span> *val, <span class="dt">expr</span> *data)
+  = trigger;</code></pre></div>
+<p>Thus a typical invocation of the function looks as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">trigger timeout condition value data</code></pre></div>
+<p>The <code>condition</code> and <code>value</code> arguments are callback functions which get invoked by <code>trigger</code>, passing them the given <code>data</code> argument. The trigger reevaluates the given condition in regular intervals (1 second in the current implementation) and, as soon as it becomes <code>true</code>, computes the given value and returns that value as the result of the <code>trigger</code> call. As long as the condition doesn’t hold, <code>trigger</code> returns a <code>#N/A</code> value (<code>gnm_error &quot;#N/A&quot;</code>). Note that, in difference to <code>datasource</code>, both the condition and the value are computed in Gnumeric (rather than a child process), so that it is possible to access the current information in the loaded spreadsheet.</p>
+<p>The <code>timeout</code> value determines how often the condition is checked. If it is positive, the condition will be reevaluated <code>timeout+1</code> times (once initially, and then once per second for a total duration of <code>timeout</code> seconds). If it is negative, the trigger never times out and the condition will be checked repeatedly until the trigger expression is removed (or Gnumeric is exited). In either case <code>value data</code> will be recomputed each time <code>condition data</code> yields <code>true</code>. (This is most useful if the computed value, as a side effect, arranges for the condition to become <code>false</code> again afterwards.) Finally, if <code>timeout</code> is zero then the trigger fires at most once, as soon as the condition becomes <code>true</code>, at which point <code>value data</code> is computed just once.</p>
+<p>Here’s a (rather useless) example of a trigger which fires exactly once, as soon as a certain cell goes to a certain value, and then modifies another cell value accordingly:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; trigger <span class="dv">0</span> (\_-&gt;get_cell <span class="st">&quot;A14&quot;</span>===<span class="st">&quot;Hello&quot;</span>) (\_-&gt;set_cell <span class="st">&quot;A15&quot;</span> <span class="st">&quot;World&quot;</span>) ()</code></pre></div>
+<p>Now, as soon as you type <code>Hello</code> in the cell A14, the trigger will print <code>World</code> in cell A15. Note that the <code>data</code> argument isn’t used here. A more useful example will be discussed in the following section.</p>
+<h3 id="sheet-objects">Sheet Objects</h3>
+<p>Gnumeric offers some kinds of special objects which can be placed on a sheet. This comprises the chart and image objects which can be found in the “Insert” menu, as well as a number of useful graphical elements and GUI widgets on the “Object” toolbar, accessible via “View/Toolbars”. The latter are also useful for providing control input to Pure functions.</p>
+<p>Gnumeric/Pure provides the following function to retrieve information about the special objects in a spreadsheet:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">expr</span>* pure_sheet_objects() = sheet_objects;</code></pre></div>
+<p>For instance, with one button object in your spreadsheet, the output of <code>sheet_objects</code> might look like this:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; sheet_objects
+  [(<span class="st">&quot;Sheet1&quot;</span>,<span class="st">&quot;button&quot;</span>,<span class="st">&quot;Push Me!&quot;</span>,<span class="st">&quot;A11&quot;</span>,[#&lt;<span class="dt">pointer</span> <span class="dv">0x2a1dcd0</span>&gt;])]</code></pre></div>
+<p>Each object is described by a tuple which lists the name of the sheet on which the object is located, the type of object, the object’s content or label (if applicable), the cell which the object is linked to (if applicable), and a list of pointers to the corresponding <code>GtkWidgets</code> (if any). Note that in general a GUI object may be associated with several widgets, as Gnumeric allows you to have multiple views on the same spreadsheet, so there will be one widget for each view an object is visible in. Also note that the content/label information depends on the particular type of object:</p>
+<ul>
+<li>List and combo widgets return the content link (referring to the cells in the spreadsheet holding the items shown in the list).</li>
+<li>Frame and button widgets return the label shown on the widget.</li>
+<li>Graphic objects like rectangles and ellipses return the text content of the object.</li>
+<li>Image objects (type <code>&quot;image/xyz&quot;</code>, where <code>xyz</code> is the type of image, such as <code>svg</code> or <code>png</code>) return a pointer to the image data in this field.</li>
+</ul>
+<p>The <code>sheet_objects</code> function is a bit tricky to use, since some of the objects or their associated widgets might not have been created yet when the spreadsheet is loaded. Therefore it is necessary to use a trigger to make sure that the information is updated once all objects are fully displayed. The <code>pure_func.pure</code> script contains the following little wrapper around <code>sheet_objects</code> which does this:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure_objects = trigger <span class="dv">0</span> (\_-&gt;all realized sheet_objects)
+  (\_-&gt;matrix$map list sheet_objects) ()
+<span class="kw">with</span> realized (_,_,_,_,w) = ~listp w || ~null w &amp;&amp; ~any null w <span class="kw">end</span>;</code></pre></div>
+<p>See the <code>widgets.gnumeric</code> spreadsheet in the distribution for an example.</p>
+<p>Possible uses of this facility are left to your imagination. Using Gnumeric’s internal APIs and Pure’s Gtk interface, you might manipulate the GUI widgets in various ways (add icons to buttons or custom child widgets to frames, etc.).</p>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-tk"></a></p>
+<h1 id="pure-tk">pure-tk</h1>
+<p><a name="module-tk"></a></p>
+<p>Version 0.5, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>Pure’s <a href="http://www.tcl.tk">Tcl/Tk</a> interface.</p>
+<h2 id="introduction">Introduction</h2>
+<p>This module provides a basic interface between Pure and Tcl/Tk. The operations of this module allow you to execute arbitrary commands in the Tcl interpreter, set and retrieve variable values in the interpreter, and invoke Pure callbacks from Tcl/Tk.</p>
+<p>A recent version of Tcl/Tk is required (8.0 or later should do). You can get this from <a href="http://www.tcl.tk" class="uri">http://www.tcl.tk</a>. Both releases in source form and binary releases for Windows and various Unix systems are provided there.</p>
+<p>Some information on how to use this module can be found below. But you’ll find that pure-tk is very easy to use, so you might just want to look at the programs in the examples folder to pick it up at a glance. A very basic example can be found in tk_hello.pure; a slightly more advanced example of a tiny but complete Tk application is in tk_examp.pure.</p>
+<p>pure-tk also offers special support for Peter G. Baum’s <a href="http://www.gnocl.org/">Gnocl</a> extension which turns Tcl into a frontend for <a href="http://www.gtk.org/">GTK+</a> and <a href="http://www.gnome.org/">Gnome</a>. If you have Gnocl installed then you can easily create GTK+/Gnome applications, either from Tcl sources or from <a href="http://glade.gnome.org/">Glade</a> UI files, using the provided gnocl.pure module. See the included uiexample.pure and the accompanying Glade UI file for a simple example. Also, some basic information on using Gnocl with pure-tk can be found in the <a href="#tips-and-tricks">Tips and Tricks</a> section below.</p>
+<p>One nice thing about Tcl/Tk is that it provides a bridge to a lot of other useful libraries. A prominent example is <a href="http://www.vtk.org/">VTK</a>, a powerful open-source 3D visualization toolkit which comes with full Tcl/Tk bindings. The examples directory contains a simple example (earth.pure and earth.tcl) which shows how you can employ these bindings to write cool animated 3D applications using either Tk or Gnocl as the GUI toolkit.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2010 by Albert Gräf, all rights reserved. pure-tk is distributed under a BSD-style license, see the COPYING file for details.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-tk-0.5.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-tk-0.5.tar.gz</a>.</p>
+<p>As with the other addon modules for Pure, running <code>make &amp;&amp; sudo make install</code> should usually do the trick. This requires that you have Pure and Tcl/Tk installed. <code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix. Please see the Makefile for details.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> When starting a new interpreter, the Tcl/Tk initialization code looks for some initialization files which it executes before anything else happens. Usually these files will be found without any further ado, but if that does not happen automatically, you must set the TCL_LIBRARY and TK_LIBRARY environment variables to point to the Tcl and Tk library directories on your system.</p>
+</blockquote>
+<hr />
+<p>All programs in the examples subdirectory have been set up so that they can be compiled to native executables, and a Makefile is provided in that directory to handle this. So after installing pure-tk you just need to type <code>make</code> there to compile the examples. (This step isn’t necessary, though, you can also just run the examples with the Pure interpreter as usual.)</p>
+<h2 id="basic-usage">Basic Usage</h2>
+<dl>
+<dt><a name="tk"></a><code>tk cmd</code></dt>
+<dd>execute a Tcl command
+</dd>
+</dl>
+<!-- -->
+<p>You can submit a command to the Tcl interpreter with <code>tk cmd</code> where <code>cmd</code> is a string containing the command to be executed. If the Tcl command returns a value (i.e., a nonempty string) then <a href="#tk"><code>tk</code></a> returns that string, otherwise it returns <code>()</code>.</p>
+<p><a href="#tk"><code>tk</code></a> also starts a new instance of the Tcl interpreter if it is not already running. To stop the Tcl interpreter, you can use the <a href="#tk_quit"><code>tk_quit</code></a> function.</p>
+<dl>
+<dt><a name="tk_quit"></a><code>tk_quit</code></dt>
+<dd>stop the Tcl interpreter
+</dd>
+</dl>
+<!-- -->
+<p>Note that, as far as pure-tk is concerned, there’s only one Tcl interpreter per process, but of course you can create secondary interpreter instances in the Tcl interpreter using the appropriate Tcl commands.</p>
+<p>Simple dialogs can be created directly using Tk’s <code>tk_messageBox</code> and <code>tk_dialog</code> functions. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">tk <span class="st">&quot;tk_dialog .warning </span><span class="ch">\&quot;</span><span class="st">Warning</span><span class="ch">\&quot;</span><span class="st"> </span><span class="ch">\&quot;</span><span class="st">Are you sure?</span><span class="ch">\&quot;</span><span class="st"> warning 0 Yes No Cancel&quot;</span>;</code></pre></div>
+<p>Other kinds of common dialogs are available; see the Tcl/Tk manual for information.</p>
+<p>For more elaborate applications you probably have to explicitly create some widgets, add the appropriate callbacks and provide a main loop which takes care of processing events in the Tcl/Tk GUI. We discuss this in the following.</p>
+<h2 id="callbacks">Callbacks</h2>
+<p>pure-tk installs a special Tcl command named <code>pure</code> in the interpreter which can be used to implement callbacks in Pure. This command is invoked from Tcl as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure function args ...</code></pre></div>
+<p>It calls the Pure function named by the first argument, passing any remaining (string) arguments to the callback. If the Pure callback returns a (nonempty) string, that value becomes the return value of the <code>pure</code> command, otherwise the result returned to the Tcl interpreter is empty.</p>
+<p>Pure callbacks are installed on Tk widgets just like any other, just using the <code>pure</code> command as the actual callback command. For instance, you can define a callback which gets invoked when a button is pushed as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> tk, system;
+tk <span class="st">&quot;button .b -text {Hello, world!} -command {pure hello}; pack .b&quot;</span>;
+hello = puts <span class="st">&quot;Hello, world!&quot;</span>;</code></pre></div>
+<h2 id="the-main-loop">The Main Loop</h2>
+<dl>
+<dt><a name="tk_main"></a><code>tk_main</code></dt>
+<dd>call the Tk main loop
+</dd>
+</dl>
+<!-- -->
+<p>The easiest way to provide a main loop for your application is to just call <a href="#tk_main"><code>tk_main</code></a> which keeps processing events in the Tcl interpreter until the interpreter is exited. You can terminate the interpreter in a Pure callback by calling <a href="#tk_quit"><code>tk_quit</code></a>. Thus a minimalistic Tcl/Tk application coded in Pure may look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> tk;
+tk <span class="st">&quot;button .b -text {Hello, world!} -command {pure tk_quit}; pack .b&quot;</span>;
+tk_main;</code></pre></div>
+<p>The main loop terminates as soon as the Tcl interpreter is exited, which can happen, e.g., in response to a callback which invokes the <a href="#tk_quit"><code>tk_quit</code></a> function (as shown above) or Tcl code which destroys the main window (<code>destroy .</code>). The user can also close the main window from the window manager in order to exit the main loop.</p>
+<h2 id="accessing-tcl-variables">Accessing Tcl Variables</h2>
+<dl>
+<dt><a name="tk_set"></a><code>tk_set var val</code>, <a name="tk_unset"></a><code>tk_unset var</code>, <a name="tk_get"></a><code>tk_get var</code></dt>
+<dd>set and get Tcl variables
+</dd>
+</dl>
+<!-- -->
+<p>pure-tk allows your script to set and retrieve variable values in the Tcl interpreter with the <a href="#tk_set"><code>tk_set</code></a>, <a href="#tk_unset"><code>tk_unset</code></a> and <a href="#tk_get"><code>tk_get</code></a> functions. This is useful, e.g., to change the variables associated with entry and button widgets, and to retrieve the current values from the application. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; tk_set <span class="st">&quot;entry_val&quot;</span> <span class="st">&quot;some string&quot;</span>;
+<span class="st">&quot;some string&quot;</span>
+&gt; tk_get <span class="st">&quot;entry_val&quot;</span>;
+<span class="st">&quot;some string&quot;</span>
+&gt; tk_unset <span class="st">&quot;entry_val&quot;</span>;
+()
+&gt; tk_get <span class="st">&quot;entry_val&quot;</span>;
+tk_get <span class="st">&quot;entry_val&quot;</span></code></pre></div>
+<p>Note that <a href="#tk_set"><code>tk_set</code></a> returns the assigned value, so it is possible to chain such calls if several variables have to be set to the same value:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; tk_set <span class="st">&quot;foo&quot;</span> $ tk_set <span class="st">&quot;bar&quot;</span> <span class="st">&quot;yes&quot;</span>;
+<span class="st">&quot;yes&quot;</span>
+&gt; map tk_get [<span class="st">&quot;foo&quot;</span>,<span class="st">&quot;bar&quot;</span>];
+[<span class="st">&quot;yes&quot;</span>,<span class="st">&quot;yes&quot;</span>]</code></pre></div>
+<h2 id="conversions-between-pure-and-tcl-values">Conversions Between Pure and Tcl Values</h2>
+<p>As far as pure-tk is concerned, all Tcl values are strings (in fact, that’s just what they are at the Tcl language level, although the Tcl interpreter uses more elaborate representations of objects such as lists internally). There are no automatic conversions of any kind. Thus, the arguments passed to a Pure callback and the result returned by <a href="#tk"><code>tk</code></a> are simply strings in Pure land. The same holds for the <a href="#tk_set"><code>tk_set</code></a> and <a href="#tk_get"><code>tk_get</code></a> functions.</p>
+<p>However, there are a few helper functions which can be used to convert between Tcl and Pure data. First, the following operations convert Pure lists to corresponding Tcl lists and vice versa:</p>
+<dl>
+<dt><a name="tk_join"></a><code>tk_join xs</code>, <a name="tk_split"></a><code>tk_split s</code></dt>
+<dd>convert between Pure and Tcl lists
+</dd>
+</dl>
+<!-- -->
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; tk_join [<span class="st">&quot;0&quot;</span>,<span class="st">&quot;1.0&quot;</span>,<span class="st">&quot;Hello, world!&quot;</span>];
+<span class="st">&quot;0 1.0 {Hello, world!}&quot;</span>
+&gt; tk_split ans;
+[<span class="st">&quot;0&quot;</span>,<span class="st">&quot;1.0&quot;</span>,<span class="st">&quot;Hello, world!&quot;</span>]</code></pre></div>
+<p>The <a href="#tk_str"><code>tk_str</code></a> and <a href="#tk_val"><code>tk_val</code></a> operations work in a similar fashion, but they also do automatic conversions for numeric values (ints, bigints and doubles):</p>
+<dl>
+<dt><a name="tk_str"></a><code>tk_str xs</code>, <a name="tk_val"></a><code>tk_val s</code></dt>
+<dd>convert between Pure and Tcl values with numeric conversions
+</dd>
+</dl>
+<!-- -->
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; tk_str [<span class="dv">0</span>,<span class="dv">1.0</span>,<span class="st">&quot;Hello, world!&quot;</span>];
+<span class="st">&quot;0 1.0 {Hello, world!}&quot;</span>
+&gt; tk_val ans;
+[<span class="dv">0</span>,<span class="dv">1.0</span>,<span class="st">&quot;Hello, world!&quot;</span>]</code></pre></div>
+<p>In addition, these operations also convert single atomic values:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; tk_str <span class="dv">1.0</span>;
+<span class="st">&quot;1.0&quot;</span>
+&gt; tk_val ans;
+<span class="dv">1.0</span></code></pre></div>
+<h2 id="tips-and-tricks">Tips and Tricks</h2>
+<p>Here are a few other things that are worth keeping in mind when working with pure-tk.</p>
+<ul>
+<li><p>Errors in Tcl/Tk commands can be handled by giving an appropriate definition of the <a href="#tk_error"><code>tk_error</code></a> function, which is invoked with an error message as its single argument. For instance, the following implementation of <a href="#tk_error"><code>tk_error</code></a> throws an exception:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">tk_error msg = <span class="fu">throw</span> msg;</code></pre></div>
+<p>If no definition for this function is provided, then errors cause a literal <code>tk_error msg</code> expression to be returned as the result of the <a href="#tk"><code>tk</code></a> function. You can then check for such results and take an appropriate action.</p></li>
+<li>The Tcl interpreter, when started, displays a default main window, which is required by most Tk applications. If this is not desired (e.g., if only the basic Tcl commands are needed), you can hide this window using a <code>tk &quot;wm withdraw .&quot;</code> command. To redisplay the window when it is needed, use the <code>tk &quot;wm deiconify .&quot;</code> command. It is also common practice to use <code>wm withdraw</code> and <code>wm deiconify</code> while creating the widgets of an application, in order to reduce “flickering”.</li>
+<li><p>Instead of calling <a href="#tk_main"><code>tk_main</code></a>, you can also code your own main loop in Pure as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">main = do_something $$ main <span class="kw">if</span> tk_ready;
+     = () <span class="kw">otherwise</span>;</code></pre></div>
+<p>Note that the <a href="#tk_ready"><code>tk_ready</code></a> function checks whether the Tcl interpreter is still up and running, after processing any pending events in the interpreter. This setup allows you to do your own custom idle processing in Pure while the application is running. However, you have to be careful that your <code>do_something</code> routine runs neither too short nor too long (a few milliseconds should usually be ok). Otherwise your main loop may turn into a busy loop and/or the GUI may become very sluggish and unresponsive. Thus it’s usually better to just call <a href="#tk_main"><code>tk_main</code></a> and do any necessary background processing using the Tcl interpreter’s own facilities (e.g., by setting up a Pure callback with the Tcl <code>after</code> command).</p></li>
+<li><p>The <a href="#tk"><code>tk</code></a> function can become rather tedious when coding larger Tk applications. Usually, you will prefer to put the commands making up your application into a separate Tcl script. One way to incorporate the Tcl script into your your Pure program is to use the Tcl <code>source</code> command, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">tk <span class="st">&quot;source myapp.tcl&quot;</span>;</code></pre></div>
+<p>However, this always requires the script to be available at runtime. Another method is to read the script into a string which is assigned to a Pure constant, and then invoke the <a href="#tk"><code>tk</code></a> command on this string value:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> system;
+<span class="kw">const</span> ui = fget $ fopen <span class="st">&quot;myapp.tcl&quot;</span> <span class="st">&quot;r&quot;</span>;
+tk ui;</code></pre></div>
+<p>This still reads the script at runtime if the Pure program is executed using the Pure interpreter. However, you can now compile the Pure program to a native executable (see the Pure manual for details on this), in which case the text of the Tcl script is included verbatim in the executable. The compiled program can then be run without having the original Tcl script file available:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ pure -c myapp.pure -o myapp
+$ ./myapp</code></pre></div>
+<p>This is also the method to use for running existing Tk applications, e.g., if you create the interface using some interface builder like <a href="http://vtcl.sourceforge.net">vtcl</a>.</p></li>
+</ul>
+<!-- -->
+<ul>
+<li><p>The Tcl <code>package</code> command allows you to load additional extensions into the Tcl interpreter at runtime. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">tk <span class="st">&quot;package require Gnocl&quot;</span>;</code></pre></div>
+<p>This loads Peter G. Baum’s <a href="http://www.gnocl.org/">Gnocl</a> extension which turns Tcl into a frontend for <a href="http://www.gtk.org/">GTK+</a> and <a href="http://www.gnome.org/">Gnome</a>. In fact, pure-tk includes a special module to handle the nitty-gritty details of creating a GTK+/Gnome application from a <a href="http://glade.gnome.org/">Glade</a> UI file and set up Pure callbacks as specified in the UI file. To use this, just import the gnocl.pure module into your Pure scripts:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> gnocl;</code></pre></div>
+<p>Note that the Glade interface requires that you have a fairly recent version of Gnocl installed (Gnocl 0.9.94g has been tested). The other facilities provided by the gnocl.pure module should also work with older Gnocl versions such as Gnocl 0.9.91. Please see the gnocl.pure module and the corresponding examples included in the sources for more information.</p></li>
+<li><p>The Tcl <code>exit</code> procedure, just as in tclsh or wish, causes exit from the current process. Since the Tcl interpreter hosted by the pure-tk module runs as part of a Pure program and not as a separate child process, this might not be what you want. If you’d like <code>exit</code> to only exit the Tcl interpreter, without exiting the Pure program, you can redefine the <code>exit</code> procedure, e.g., as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">tk <span class="st">&quot;proc exit { {returnCode 0} } { pure tk_quit }&quot;</span>;</code></pre></div>
+<p>If you want to do something with the exit code provided by <code>exit</code>, you will have to provide an appropriate callback function, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">tk <span class="st">&quot;proc exit { {returnCode 0} } { pure quit_cb $returnCode }&quot;</span>;</code></pre></div>
+<p>A suitable implementation of <code>quit_cb</code> might look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">quit_cb <span class="dv">0</span> = puts <span class="st">&quot;Application exited normally.&quot;</span> $$ tk_quit;
+quit_cb n = printf <span class="st">&quot;Application exited with exit code %d.</span><span class="ch">\n</span><span class="st">&quot;</span> n $$
+            tk_quit <span class="kw">otherwise</span>;</code></pre></div></li>
+<li><p>If you need dialogs beyond the standard kinds of message boxes and common dialogs, you will have to do these yourself using a secondary toplevel. The dialog toplevel is just like the main window but will only be shown when the application needs it. You can construct both non-modal and modal dialogs this way, the latter can be implemented using Tk’s <code>grab</code> command.</p></li>
+</ul>
+</body>
+</html>

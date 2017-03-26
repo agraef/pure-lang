@@ -1,0 +1,1841 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-rational"></a></p>
+<h1 id="pure-rational---rational-number-library-for-the-pure-programming-language">Pure-Rational - Rational number library for the Pure programming language</h1>
+<p>Version 0.1, March 06, 2017</p>
+<div style="white-space: pre-line;">Rob Hubbard
+Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;
+Jiri Spitz &lt;<a href="mailto:jiri.spitz@bluetone.cz">jiri.spitz@bluetone.cz</a>&gt;</div>
+<p>This package provides a Pure port of <a href="http://q-lang.sourceforge.net/addons.html">Q+Q</a>, Rob Hubbard’s rational number library for the Q programming language. The port was done by Jiri Spitz. It contains <code>rational.pure</code>, a collection of utility functions for rational numbers, and <code>rat_interval.pure</code>, a module for doing interval arithmetic needed by <code>rational.pure</code>. These modules are designed to work with the <code>math.pure</code> module (part of the standard Pure library), which contains the definition of Pure’s rational type and implements the basic rational arithmetic.</p>
+<p>This document is an edited version of Rob’s original <a href="http://downloads.sourceforge.net/q-lang/rational.pdf?download">Q+Q manual</a> available from the Q website, slightly adjusted to account for the Pure specifics of the implementation. In particular, note that the operations provided by <code>rational.pure</code> and <code>rat_interval.pure</code> live in their own <code>rational</code> and <code>interval</code> namespaces, respectively, so if you want to get unqualified access to the symbols of these modules (as the examples in this manual assume) then you’ll have to import the modules as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> rational, rat_interval;
+<span class="kw">using</span> <span class="kw">namespace</span> rational, interval;</code></pre></div>
+<p>Also note that <a href="#module-rational">rational</a> always pulls in the <a href="purelib.html#module-math">math</a> module, so you don’t have to import the latter explicitly if you are using <a href="#module-rational">rational</a>.</p>
+<p>Another minor difference to the Q version of this module is that rational results always have Pure bigints as their numerators and denominators, hence the <code>L</code> suffix in the printed results. Also, unary minus binds weaker in Pure than the rational division operator, so a negative rational number will be printed as, e.g., <code>(-1L)%2L</code>, which looks a bit funny but is correct since Pure rationals always carry their sign in the numerator.</p>
+<h2 id="copying">Copying</h2>
+<div style="white-space: pre-line;">Copyright (c) 2006 - 2010 by Rob Hubbard.
+Copyright (c) 2006 - 2010 by Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;.
+Copyright (c) 2010 by Jiri Spitz &lt;<a href="mailto:jiri.spitz@bluetone.cz">jiri.spitz@bluetone.cz</a>&gt;.</div>
+<p>Pure-rational is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>Pure-rational is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-rational-0.1.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-rational-0.1.tar.gz</a>.</p>
+<p>Then run <code>make install</code> (as root) to install pure-rational in the Pure library directory. This requires GNU make, and of course you need to have Pure installed.</p>
+<p><code>make install</code> tries to guess your Pure installation directory. If it gets this wrong, you can install using <code>make install prefix=/usr</code> which sets the installation prefix. Please see the Makefile for details.</p>
+<h2 id="introduction">Introduction</h2>
+<h3 id="the-rational-module">The Rational Module</h3>
+<p><a name="module-rational"></a></p>
+<p>This module provides additional operations on the rational number type provided by the <code>math.pure</code> module in the standard library. The module is compatible with Pure version 0.43 (onwards).</p>
+<h3 id="the-files-and-the-default-prelude">The Files and the Default Prelude</h3>
+<p>The implementation of the rational type and associated utilities is distributed across various files.</p>
+<h4 id="math.pure-and-other-files">math.pure and Other Files</h4>
+<p>The file <code>math.pure</code> defines the type, its constructors and ‘deconstructors’ and basic arithmetical and mathematical operators and functions. This is part of the standard Pure library. A few definitions associated with rationals are also defined in other standard library modules. In particular, the type tests are contained in <code>primitives.pure</code>.</p>
+<p>It is also possible to create rational complex numbers (in addition to double complex numbers and integral or Gaussian complex numbers). That is, rationals play nicely with the complex number constructors provided in the <code>math.pure</code> module. This is discussed further in <a href="#rational-complex-numbers">Rational Complex Numbers</a>.</p>
+<h4 id="rational.pure">rational.pure</h4>
+<p>Additional ‘rational utilities’, not included in the <code>math.pure</code> module, are defined in <code>rational.pure</code>. The functions include further arithmetical and mathematical operators and functions, continued fraction support, approximation routines and string formatting and evaluation.</p>
+<p>The rational utilities include some ‘rational complex number’ functions.</p>
+<h4 id="rat_interval.pure">rat_interval.pure</h4>
+<p>Amongst the rational utilities are some functions that return a rational interval. The file <code>rat_interval.pure</code> is a partial implementation of interval arithmetic. Intervals are discussed further in <a href="#intervals">Intervals</a>.</p>
+<h3 id="notation">Notation</h3>
+<p>Throughout this document, the parameters q, q0, q1, … usually denote rationals (∈ <strong>Q</strong>), parameters z, … usually denote integers (∈ <strong>Z</strong>), r, … usually denote real numbers (∈ <strong>R</strong>), c, … usually denote complex numbers (∈ <strong>C</strong>), n, … usually denote parameters of any numeric type, v, … usually denote parameters of any interval type, and x, … usually denote parameters of any type.</p>
+<p>The reals are not just the doubles, but include rationals and integers. The term ‘rational’ usually refers to a rational number ∈ <strong>Q</strong> ⊃ <strong>Z</strong>, or an expression of type rational or integer.</p>
+<h2 id="the-rational-type">The Rational Type</h2>
+<h3 id="constructors">Constructors</h3>
+<p>Rationals are constructed with the <code>%</code> exact division operator, and other kinds of numbers can be converted to rationals with the <code>rational</code> function. These are both defined in math.pure.</p>
+<dl>
+<dt><a name="%/rational"></a><code>n1 % n2</code></dt>
+<dd>is the exact division operator, which may be used as a constructor (for integers n1 and n2). This is described in <a href="#more-on-division">More on Division</a>.
+</dd>
+<dt><a name="rational/rational"></a><code>rational x</code></dt>
+<dd>converts the given number <code>x</code> to a rational.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 1</strong> Constructing a fraction:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">44</span>%<span class="dv">14</span>;
+22L%7L</code></pre></div>
+<p><strong>Example 2</strong> Converting from an integer:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational <span class="dv">3</span>;
+3L%1L</code></pre></div>
+<h3 id="deconstructors">‘Deconstructors’</h3>
+<p>A rational number is in simplest form if the numerator and denominator are coprime (i.e. do not have a factor in common) and the denominator is positive (and, specifically, non-zero). Sometimes the term ‘irreducible’ is used for a rational in simplest form. This is a property of the representation of the rational number and not of the number itself.</p>
+<dl>
+<dt><a name="num/rational"></a><code>num q</code></dt>
+<dd>given a rational or integer q, returns the ‘(signed) simplest numerator’, i.e. the numerator of the normalised form of q.
+</dd>
+<dt><a name="den/rational"></a><code>den q</code></dt>
+<dd>given a rational or integer q, returns the ‘(positive) simplest denominator’, i.e. the denominator of the normalised form of q.
+</dd>
+<dt><a name="rational::num_den"></a><code>rational::num_den q</code></dt>
+<dd>given a rational or integer q, returns a pair (n, d) containing the (signed) simplest numerator n and the (positive) simplest denominator d. This is the inverse (up to equivalence) of rational as defined on integer pairs (see <a href="#constructors">Constructors</a>).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 3</strong> Using num_den to obtain a representation in simplest form:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> q = (<span class="dv">44</span>%(-<span class="dv">14</span>));
+&gt; num q;
+-22L
+&gt; den q;
+7L
+&gt; num_den q;
+-22L,7L
+&gt; num_den <span class="dv">3</span>;
+3L,1L
+&gt; num_den (-<span class="dv">3</span>);
+-3L,1L</code></pre></div>
+<p>Together, <a href="purelib.html#num"><code>num</code></a> and <a href="purelib.html#den"><code>den</code></a> are a pair of ‘decomposition’ operators, and <a href="#rational::num_den"><code>num_den</code></a> is also a decomposition operator. There are others (see <a href="#decomposition">Decomposition</a>). The integer and fraction function (see <a href="#integer-and-fraction-parts">Integer and Fraction Parts</a>) may be used in conjunction with <a href="#rational::num_den_gauss"><code>num_den_gauss</code></a> to decompose a rational into integer, numerator and denominator parts.</p>
+<h3 id="type-and-value-tests">Type and Value Tests</h3>
+<p>The functions <a href="purelib.html#rationalp"><code>rationalp</code></a> and <a href="purelib.html#ratvalp"><code>ratvalp</code></a> and other rational variants are new for rationals and the standard functions <a href="purelib.html#exactp"><code>exactp</code></a> and <a href="purelib.html#inexactp"><code>inexactp</code></a> are extended for rationals.</p>
+<p>A value is ‘exact’, or of an exact type, if it is of a type that is able to represent the values returned by arithmetical operations exactly; in a sense, it is ‘closed’ under arithmetical operations. Otherwise, a value is ‘inexact’. Inexact types are able to store some values only approximately.</p>
+<p>The doubles are not an exact type. The results of some operations on some values that are stored exactly, can’t be stored exactly. (Furthermore, doubles are intended to represent real numbers; no irrational number (∈ <strong>R</strong> \ <strong>Q</strong>) can be stored exactly as a double; even some rational (∈ <strong>Q</strong>) numbers are not stored exactly.)</p>
+<p>The rationals are an exact type. All rational numbers (subject to available resources, of course) are stored exactly. The results of the arithmetical operations on rationals are rationals represented exactly. Beware that the standard <code>intvalp</code> and <a href="purelib.html#ratvalp"><code>ratvalp</code></a> may return 1 even if the value is of double type. However, these functions may be combined with <a href="purelib.html#exactp"><code>exactp</code></a>.</p>
+<dl>
+<dt><a name="exactp/rational"></a><code>exactp x</code></dt>
+<dd>returns whether x has an exact value.
+</dd>
+<dt><a name="inexactp/rational"></a><code>inexactp x</code></dt>
+<dd>returns whether x has an inexact value.
+</dd>
+<dt><a name="rationalp/rational"></a><code>rationalp x</code></dt>
+<dd>returns whether x is of rational type.
+</dd>
+<dt><a name="ratvalp/rational"></a><code>ratvalp x</code></dt>
+<dd>returns whether x has a rational value.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 4</strong> Rational value tests:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = [<span class="dv">9</span>, <span class="dv">9</span>%<span class="dv">1</span>, <span class="dv">9</span>%<span class="dv">2</span>, <span class="dv">4.5</span>, sqrt <span class="dv">2</span>, <span class="dv">1</span>+i, inf, nan];
+&gt; map exactp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map inexactp l;
+[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>]
+&gt; map rationalp l;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map ratvalp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map (\x -&gt; (exactp x &amp;&amp; ratvalp x)) l; <span class="co">// &quot;has exact rational value&quot;</span>
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map intvalp l; <span class="co">// for comparison</span>
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map (\x -&gt; (exactp x &amp;&amp; intvalp x)) l; <span class="co">// &quot;has exact integer value&quot;</span>
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]</code></pre></div>
+<p>See <a href="#rational-complex-numbers">Rational Complex Numbers</a> for details about rational complex numbers, and <a href="#rational-complex-type-and-value-tests">Rational Complex Type and Value Tests</a> for details of their type and value tests.</p>
+<h2 id="arithmetic">Arithmetic</h2>
+<h3 id="operators">Operators</h3>
+<p>The standard arithmetic operators (+), (−) and (*) are overloaded to have at least one rational operand. If both operands are rational then the result is rational. If one operand is integer, then the result is rational. If one operand is double, then the result is double.</p>
+<p>The operators (/) and (%) are overloaded for division on at least one rational operand. The value returned by (/) is always <code>inexact</code> (in the sense of <a href="#type-and-value-tests">Type and Value Tests</a>). The value returned by (%) is <code>exact</code> (if it exists).</p>
+<p>The standard function <code>pow</code> is overloaded to have a rational left operand. If <code>pow</code> is passed integer operands where the right operand is negative, then a rational is returned. The right operand should be an integer; negative values are permitted (because q<sup>−z</sup> = 1/q<sup>z</sup>). It is not overloaded to also have a rational right operand because such values are not generally rational (e.g. q<sup>1/n</sup> = <sup>n</sup>√q).</p>
+<p>The standard arithmetic operator (^) is also overloaded, but produces a double value (as always).</p>
+<p><strong>Example 5</strong> Arithmetic:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">5</span>%<span class="dv">7</span> + <span class="dv">2</span>%<span class="dv">3</span>;
+29L%21L
+&gt; str_mixed ans;
+<span class="st">&quot;1L+8L/21L&quot;</span>
+&gt; <span class="dv">1</span> + <span class="dv">2</span>%<span class="dv">3</span>;
+5L%3L
+&gt; ans + <span class="dv">1.0</span>;
+<span class="dv">2.66666666666667</span>
+&gt; <span class="dv">3</span>%<span class="dv">8</span> - <span class="dv">1</span>%<span class="dv">3</span>;
+1L%24L
+&gt; (<span class="dv">11</span>%<span class="dv">10</span>) ^ <span class="dv">3</span>;
+<span class="dv">1.331</span>
+&gt; pow (<span class="dv">11</span>%<span class="dv">10</span>) <span class="dv">3</span>;
+1331L%1000L
+&gt; pow <span class="dv">3</span> <span class="dv">5</span>;
+243L
+&gt; pow <span class="dv">3</span> (-<span class="dv">5</span>);
+1L%243L</code></pre></div>
+<p>(See the function <a href="#rational::str_mixed"><code>str_mixed</code></a>.)</p>
+<p>Beware that (/) on integers will not produce a rational result.</p>
+<p><strong>Example 6</strong> Division:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">44</span>/<span class="dv">14</span>;
+<span class="dv">3.14285714285714</span>
+&gt; <span class="dv">44</span>%<span class="dv">14</span>;
+22L%7L
+&gt; str_mixed ans;
+<span class="st">&quot;3L+1L/7L&quot;</span></code></pre></div>
+<p>(See the function <a href="#rational::str_mixed"><code>str_mixed</code></a>.)</p>
+<h3 id="more-on-division">More on Division</h3>
+<p>There is a rational-aware divide operator on the numeric types:</p>
+<dl>
+<dt><a name="%/rational"></a><code>n1 % n2</code></dt>
+<dd>returns the quotient (∈ <strong>Q</strong>) of n1 and n2. If n1 and n2 are rational or integer then the result is rational. This operator has the precedence of division (/).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 7</strong> Using % like a constructor:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">44</span> % <span class="dv">14</span>;
+22L%7L
+&gt; <span class="dv">2</span> + <span class="dv">3</span>%<span class="dv">8</span>; <span class="co">// &quot;2 3/8&quot;</span>
+19L%8L
+&gt; str_mixed ans;
+<span class="st">&quot;2L+3L/8L&quot;</span></code></pre></div>
+<p>(See the function <a href="#rational::str_mixed"><code>str_mixed</code></a>.)</p>
+<dl>
+<dt><a name="rational::reciprocal"></a><code>rational::reciprocal n</code></dt>
+<dd>returns the reciprocal of n: 1/n.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 8</strong> Reciprocal:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; reciprocal (<span class="dv">22</span>%<span class="dv">7</span>);
+7L%22L</code></pre></div>
+<p>The following division functions are parameterised by a rounding mode <code>roundfun</code>. The available rounding modes are described in <a href="#rounding-to-integer">Rounding to Integer</a>.</p>
+<dl>
+<dt><a name="rational::divide"></a><code>rational::divide roundfun n d</code></dt>
+<dd>for rationals n and d returns a pair (q, r) of ‘quotient’ and ‘remainder’ where q is an integer and r is a rational such that |r| &lt; |d| (or better) and n = q * d + r. Further conditions may hold, depending on the chosen rounding mode <code>roundfun</code> (see <a href="#rounding-to-integer">Rounding to Integer</a>). If <code>roundfun</code> = <a href="purelib.html#floor"><code>floor</code></a> then 0 ≤ r &lt; d. If <code>roundfun</code> = <a href="purelib.html#ceil"><code>ceil</code></a> then −d &lt; r ≤ 0. If <code>roundfun</code> = <a href="purelib.html#trunc"><code>trunc</code></a> then |r| &lt; |d| and sgn r ∈ {0, sgn d}. If <code>roundfun</code> = <a href="purelib.html#round"><code>round</code></a>, <code>roundfun</code> = <a href="#round_zero_bias"><code>round_zero_bias</code></a> or <code>roundfun</code> = <a href="#rational::round_unbiased"><code>round_unbiased</code></a> then |r| ≤ d/2.
+</dd>
+<dt><a name="rational::quotient"></a><code>rational::quotient roundfun nN d</code></dt>
+<dd>returns just the quotient as produced by <a href="#rational::divide"><code>divide</code></a> roundfun n d.
+</dd>
+<dt><a name="rational::modulus"></a><code>rational::modulus roundfun n d</code></dt>
+<dd>returns just the remainder as produced by <a href="#rational::divide"><code>divide</code></a> roundfun n d.
+</dd>
+<dt><a name="div/rational"></a><code>q1 div q2</code></dt>
+<dd>(overload of the built-in div) q1 and q2 may be rational or integer. Returns an integer.
+</dd>
+<dt><a name="mod/rational"></a><code>q1 mod q2</code></dt>
+<dd>(overload of the built-in mod) q1 and q2 may be rational or integer. Returns a rational. If q = q1 div q2 and r = q1 mod q2 then q1 = q * q2 + q, q ∈ <strong>Z</strong>, |r| &lt; |q2| and sgn r ∈ {0, sgn q2}.
+</dd>
+</dl>
+<!-- -->
+<h3 id="relations-equality-and-inequality-tests">Relations — Equality and Inequality Tests</h3>
+<p>The standard arithmetic operators (==), (~=), (&lt;), (&lt;=), (&gt;), (&gt;=) are overloaded to have at least one rational operand. The other operand may be rational, integer or double.</p>
+<p><strong>Example 9</strong> Inequality:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">3</span>%<span class="dv">8</span> &lt; <span class="dv">1</span>%<span class="dv">3</span>;
+<span class="dv">0</span></code></pre></div>
+<h3 id="comparison-function">Comparison Function</h3>
+<dl>
+<dt><a name="rational::cmp"></a><code>rational::cmp n1 n2</code></dt>
+<dd>is the ‘comparison’ (or ‘compare’) function, and returns sgn (n1 − n2); that is, it returns −1 if n1 &lt; n2, 0 if n1 = n2, and +1 if n1 &gt; n2.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 10</strong> Compare:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; cmp (<span class="dv">3</span>%<span class="dv">8</span>) (<span class="dv">1</span>%<span class="dv">3</span>);
+<span class="dv">1</span></code></pre></div>
+<h2 id="mathematical-functions">Mathematical Functions</h2>
+<p>Most mathematical functions, including the elementary functions (sin, sin <sup>−1</sup>, sinh, sinh<sup>−1</sup>, cos, … , exp, ln, … ), are not closed on the set of rational numbers. That is, most mathematical functions do not yield a rational number in general when applied to a rational number. Therefore the elementary functions are not defined for rationals. To apply these functions, first apply a cast to double, or compose the function with a cast.</p>
+<h3 id="absolute-value-and-sign">Absolute Value and Sign</h3>
+<p>The standard <code>abs</code> and <code>sgn</code> functions are overloaded for rationals.</p>
+<dl>
+<dt><a name="abs/rational"></a><code>abs q</code></dt>
+<dd>returns absolute value, or magnitude, |q| of q; abs q = |q| = q × sgn q (see below).
+</dd>
+<dt><a name="sgn/rational"></a><code>sgn q</code></dt>
+<dd>returns the sign of q as an integer; returns −1 if q &lt; 0, 0 if q = 0, +1 if q &gt; 0.
+</dd>
+</dl>
+<!-- -->
+<p>Together, these functions satisfy the property ∀q • (sgn q) * (abs q) = q (i.e. ∀q • (sgn q) * |q| = q). Thus these provide a pair of ‘decomposition’ operators; there are others (see <a href="#decomposition">Decomposition</a>).</p>
+<h3 id="greatest-common-divisor-gcd-and-least-common-multiple-lcm">Greatest Common Divisor (GCD) and Least Common Multiple (LCM)</h3>
+<p>The standard functions <code>gcd</code> and <code>lcm</code> are overloaded for rationals, and mixtures of integer and rational.</p>
+<dl>
+<dt><a name="gcd/rational"></a><code>gcd n1 n2</code></dt>
+<dd>The GCD is also known as the Highest Common Factor (HCF). The GCD of rationals q1 and q2 is the largest (therefore positive) rational f such that f divides into both q1 and q2 exactly, i.e. an integral number of times. This is not defined for n1 and n2 both zero. For integral q1 and q2, this definition coincides with the usual definition of GCD for integers.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 11</strong> With two rationals:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> a = <span class="dv">7</span>%<span class="dv">12</span>;
+&gt; <span class="kw">let</span> b = <span class="dv">21</span>%<span class="dv">32</span>;
+&gt; <span class="kw">let</span> f = gcd a b;
+&gt; f;
+7L%96L
+&gt; a % f;
+8L%1L
+&gt; b % f;
+9L%1L</code></pre></div>
+<p><strong>Example 12</strong> With a rational and an integer:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> f = gcd (<span class="dv">6</span>%<span class="dv">5</span>) <span class="dv">4</span>;
+&gt; f;
+2L%5L
+&gt; (<span class="dv">6</span>%<span class="dv">5</span>) % f;
+3L%1L
+&gt; <span class="dv">4</span> % f;
+10L%1L</code></pre></div>
+<p><strong>Example 13</strong> With integral rationals and with integers:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; gcd (rational <span class="dv">18</span>) (rational <span class="dv">24</span>);
+6L%1L
+&gt; gcd <span class="dv">18</span> <span class="dv">24</span>;
+<span class="dv">6</span></code></pre></div>
+<p><strong>Example 14</strong> The behaviour with negative numbers:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; gcd (rational (-<span class="dv">18</span>)) (rational <span class="dv">24</span>);
+6L%1L
+&gt; gcd (rational <span class="dv">18</span>) (rational (-<span class="dv">24</span>));
+6L%1L
+&gt; gcd (rational (-<span class="dv">18</span>)) (rational (-<span class="dv">24</span>));
+6L%1L</code></pre></div>
+<dl>
+<dt><a name="lcm/rational"></a><code>lcm n1 n2</code></dt>
+<dd>The LCM of rationals q1 and q2 is the smallest positive rational m such that both q1 and q2 divide m exactly. This is not defined for n1 and n2 both zero. For integral q1 and q2, this definition coincides with the usual definition of LCM for integers.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 15</strong> With two rationals:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> a = <span class="dv">7</span>%<span class="dv">12</span>;
+&gt; <span class="kw">let</span> bB = <span class="dv">21</span>%<span class="dv">32</span>;
+&gt; <span class="kw">let</span> m = lcm a b;
+&gt; m;
+21L%4L
+&gt; m % a;
+9L%1L
+&gt; m % b;
+8L%1L</code></pre></div>
+<p><strong>Example 16</strong> With a rational and an integer:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m = lcm (<span class="dv">6</span>%<span class="dv">5</span>) <span class="dv">4</span>;
+&gt; m;
+12L%1L
+&gt; m % (<span class="dv">6</span>%<span class="dv">5</span>);
+10L%1L</code></pre></div>
+<p><strong>Example 17</strong> The behaviour with negative numbers:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; lcm (rational (-<span class="dv">18</span>)) (rational <span class="dv">24</span>);
+72L%1L
+&gt; lcm (rational <span class="dv">18</span>) (rational (-<span class="dv">24</span>));
+72L%1L
+&gt; lcm (rational (-<span class="dv">18</span>)) (rational (-<span class="dv">24</span>));
+72L%1L</code></pre></div>
+<p>Together, the GCD and LCM have the following property when applied to two numbers: (gcd q1 q2) * (lcm q1 q2) = |q1 * q2|.</p>
+<h3 id="extrema-minima-and-maxima">Extrema (Minima and Maxima)</h3>
+<p>The standard <code>min</code> and <code>max</code> functions work with rational values.</p>
+<p><strong>Example 18</strong> Maximum:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; max (<span class="dv">3</span>%<span class="dv">8</span>) (<span class="dv">1</span>%<span class="dv">3</span>);
+3L%8L</code></pre></div>
+<h2 id="special-rational-functions">Special Rational Functions</h2>
+<h3 id="complexity">Complexity</h3>
+<p>The ‘complexity’ (or ‘complicatedness’) of a rational is a measure of the greatness of its simplest (positive) denominator.</p>
+<p>The complexity of a number is not itself made available, but various functions and operators are provided to allow complexities to be compared. Generally, it does not make sense to operate directly on complexity values.</p>
+<p>The complexity functions in this section may be applied to integers (the least complex), rationals, or reals (doubles; the most complex).</p>
+<p>Functions concerning ‘complexity’ are named with ‘cplx’, whereas functions concerning ‘complex numbers’ (see <a href="#rational-complex-numbers">Rational Complex Numbers</a>) are named with ‘comp’.</p>
+<h4 id="complexity-relations">Complexity Relations</h4>
+<dl>
+<dt><a name="rational::eq_cplx"></a><code>n1 rational::eq_cplx n2</code></dt>
+<dd>“[is] equally complex [to]” — returns 1 if n1 and n2 are equally complex; returns 0 otherwise. Equal complexity is not the same a equality; n1 and n2 are equally complex if their simplest denominators are equal. Equal complexity forms an equivalence relation on rationals.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 19</strong> Complexity equality test:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; (<span class="dv">1</span>%<span class="dv">3</span>) eq_cplx (<span class="dv">100</span>%<span class="dv">3</span>);
+<span class="dv">1</span>
+&gt; (<span class="dv">1</span>%<span class="dv">4</span>) eq_cplx (<span class="dv">1</span>%<span class="dv">5</span>);
+<span class="dv">0</span>
+&gt; (<span class="dv">3</span>%<span class="dv">3</span>) eq_cplx (<span class="dv">1</span>%<span class="dv">3</span>); <span class="co">// LHS is not in simplest form</span>
+<span class="dv">0</span></code></pre></div>
+<dl>
+<dt><a name="rational::not_eq_cplx"></a><code>n1 rational::not_eq_cplx n2</code></dt>
+<dd>“not equally complex” — returns 0 if n1 and n2 are equally complex; returns 1 otherwise.
+</dd>
+<dt><a name="rational::less_cplx"></a><code>n1 rational::less_cplx n2</code></dt>
+<dd>“[is] less complex [than]” (or “simpler”) — returns 1 if n1 is strictly less complex than n2; returns 0 otherwise. This forms a partial strict ordering on rationals.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 20</strong> Complexity inequality test:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; (<span class="dv">1</span>%<span class="dv">3</span>) less_cplx (<span class="dv">100</span>%<span class="dv">3</span>);
+<span class="dv">0</span>
+&gt; (<span class="dv">1</span>%<span class="dv">4</span>) less_cplx (<span class="dv">1</span>%<span class="dv">5</span>);
+<span class="dv">1</span>
+&gt; (<span class="dv">3</span>%<span class="dv">3</span>) less_cplx (<span class="dv">1</span>%<span class="dv">3</span>); <span class="co">// LHS is not in simplest form</span>
+<span class="dv">1</span></code></pre></div>
+<dl>
+<dt><a name="rational::less_eq_cplx"></a><code>n1 rational::less_eq_cplx n2</code></dt>
+<dd>“less or equally complex” (or “not more complex”) — returns 1 if n1 is less complex than or equally complex to n2; returns 0 otherwise. This forms a partial non-strict ordering on rationals.
+</dd>
+<dt><a name="rational::more_cplx"></a><code>n1 rational::more_cplx n2</code></dt>
+<dd>“[is] more complex [than]” — returns 1 if n1 is strictly more complex than n2; returns 0 otherwise. This forms a partial strict ordering on rationals.
+</dd>
+<dt><a name="rational::more_eq_cplx"></a><code>n1 rational::more_eq_cplx n2</code></dt>
+<dd>“more or equally complex” (or “not less complex”) — returns 1 if n1 is more complex than or equally complex to n2; returns 0 otherwise. This forms a partial non-strict ordering on rationals.
+</dd>
+</dl>
+<!-- -->
+<h4 id="complexity-comparison-function">Complexity Comparison Function</h4>
+<dl>
+<dt><a name="rational::cmp_complexity"></a><code>rational::cmp_complexity n1 n2</code></dt>
+<dd>is the ‘complexity comparison’ function, and returns the sign of the difference in complexity; that is, it returns −1 if n1 is less complex than n2, 0 if n1 and n2 are equally complex (but not necessarily equal), and +1 if n1 is more complex than n2.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 21</strong> Complexity comparison:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; cmp_complexity (<span class="dv">1</span>%<span class="dv">3</span>) (<span class="dv">100</span>%<span class="dv">3</span>);
+<span class="dv">0</span>
+&gt; cmp_complexity (<span class="dv">1</span>%<span class="dv">4</span>) (<span class="dv">1</span>%<span class="dv">5</span>);
+-<span class="dv">1</span>
+&gt; cmp_complexity (<span class="dv">3</span>%<span class="dv">3</span>) (<span class="dv">1</span>%<span class="dv">3</span>); <span class="co">// LHS is not in simplest form</span>
+-<span class="dv">1</span></code></pre></div>
+<h4 id="complexity-extrema">Complexity Extrema</h4>
+<dl>
+<dt><a name="rational::least_cplx"></a><code>rational::least_cplx n1 n2</code></dt>
+<dd>returns the least complex of n1 and n2; if they’re equally complex, n1 is returned.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 22</strong> Complexity selection:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; least_cplx (<span class="dv">100</span>%<span class="dv">3</span>) (<span class="dv">1</span>%<span class="dv">3</span>);
+100L%3L
+&gt; least_cplx (<span class="dv">1</span>%<span class="dv">5</span>) (<span class="dv">1</span>%<span class="dv">4</span>);
+1L%4L
+&gt; least_cplx (<span class="dv">1</span>%<span class="dv">3</span>) (<span class="dv">3</span>%<span class="dv">3</span>); <span class="co">// second argument not in simplest form</span>
+1L%1L</code></pre></div>
+<dl>
+<dt><a name="rational::most_cplx"></a><code>rational::most_cplx n1 n2</code></dt>
+<dd>returns the most complex of n1 and n2; if they’re equally complex, n1 is returned.
+</dd>
+</dl>
+<!-- -->
+<h4 id="other-complexity-functions">Other Complexity Functions</h4>
+<dl>
+<dt><a name="rational::complexity_rel"></a><code>rational::complexity_rel n1 op n2</code></dt>
+<dd>returns “complexity-of n1” compared by operator op to the “complexity-of n2”. This is equivalent to prefix complexity rel op n1 n2 (below), but is the more readable form.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 23</strong> Complexity relations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; complexity_rel (<span class="dv">1</span>%<span class="dv">3</span>) (==) (<span class="dv">100</span>%<span class="dv">3</span>);
+<span class="dv">1</span>
+&gt; complexity_rel (<span class="dv">1</span>%<span class="dv">4</span>) (&lt;=) (<span class="dv">1</span>%<span class="dv">5</span>);
+<span class="dv">1</span>
+&gt; complexity_rel (<span class="dv">1</span>%<span class="dv">4</span>) (&gt;) (<span class="dv">1</span>%<span class="dv">5</span>);
+<span class="dv">0</span></code></pre></div>
+<dl>
+<dt><a name="rational::prefix_complexity_rel"></a><code>rational::prefix_complexity_rel op n1 n2</code></dt>
+<dd>returns the same as complexity_rel n1 op n2, but this form is more convenient for currying.
+</dd>
+</dl>
+<!-- -->
+<h3 id="mediants-and-farey-sequences">Mediants and Farey Sequences</h3>
+<dl>
+<dt><a name="rational::mediant"></a><code>rational::mediant q1 q2</code></dt>
+<dd><p>returns the canonical mediant of the rationals q1 and q2, a form of (nonarithmetic) average on rationals. The mediant of the representations n1/d1 = q1 and n2/d2 = q2, where d1 and d2 must be positive, is defined as (n1 + n2)/(d1 + d2). A mediant of the rationals q1 and q2 is a mediant of some representation of each of q1 and q2. That is, the mediant is dependent upon the representations and therefore is not well-defined as a function on pairs of rationals. The canonical mediant always assumes the simplest representation, and therefore is well-defined as a function on pairs of rationals.</p>
+<p>By the phrase “the mediant” (as opposed to just “a mediant”) we always mean “the canonical mediant”.</p>
+<p>If q1 &lt; q2, then any mediant q is always such that q1 &lt; q &lt; q2.</p>
+<p>The (canonical) mediant has some special properties. If q1 and q2 are integers, then the mediant is the arithmetic mean. If q1 and q2 are unit fractions (reciprocals of integers), then the mediant is the harmonic mean. The mediant of q and 1/q is ±1, (which happens to be a geometric mean with the correct sign, although this is a somewhat uninteresting and degenerate case).</p>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 24</strong> Mediants:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; mediant (<span class="dv">1</span>%<span class="dv">4</span>) (<span class="dv">3</span>%<span class="dv">10</span>);
+2L%7L
+&gt; mediant <span class="dv">3</span> <span class="dv">7</span>; <span class="co">// both integers</span>
+5L%1L
+&gt; mediant <span class="dv">3</span> <span class="dv">8</span>; <span class="co">// both integers again</span>
+11L%2L
+&gt; mediant (<span class="dv">1</span>%<span class="dv">3</span>) (<span class="dv">1</span>%<span class="dv">7</span>); <span class="co">// both unit fractions</span>
+1L%5L
+&gt; mediant (<span class="dv">1</span>%<span class="dv">3</span>) (<span class="dv">1</span>%<span class="dv">8</span>); <span class="co">// both unit fractions again</span>
+2L%11L
+&gt; mediant (-<span class="dv">10</span>) (-<span class="dv">1</span>%<span class="dv">10</span>);
+(-1L)%1L</code></pre></div>
+<dl>
+<dt><a name="rational::farey"></a><code>rational::farey k</code></dt>
+<dd>for an integer k, farey returns the ordered list containing the order-k Farey sequence, which is the ordered list of all rational numbers between 0 and 1 inclusive with (simplest) denominator at most k.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 25</strong> A Farey sequence:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; map str_mixed (farey <span class="dv">6</span>);
+[<span class="st">&quot;0L&quot;</span>,<span class="st">&quot;1L/6L&quot;</span>,<span class="st">&quot;1L/5L&quot;</span>,<span class="st">&quot;1L/4L&quot;</span>,<span class="st">&quot;1L/3L&quot;</span>,<span class="st">&quot;2L/5L&quot;</span>,<span class="st">&quot;1L/2L&quot;</span>,<span class="st">&quot;3L/5L&quot;</span>,<span class="st">&quot;2L/3L&quot;</span>,
+<span class="st">&quot;3L/4L&quot;</span>,<span class="st">&quot;4L/5L&quot;</span>,<span class="st">&quot;5L/6L&quot;</span>,<span class="st">&quot;1L&quot;</span>]</code></pre></div>
+<p>(See the function <a href="#rational::str_mixed"><code>str_mixed</code></a>.)</p>
+<p>Farey sequences and mediants are closely related. Three rationals q1 &lt; q2 &lt; q3 are consecutive members of a Farey sequence if and only if q2 is the mediant of q1 and q3. If rationals q1 = n1/d1 &lt; q2 = n2/d2 are consecutive members of a Farey sequence, then n2d1 − n1d2 = 1.</p>
+<h3 id="rational-type-simplification">Rational Type Simplification</h3>
+<dl>
+<dt><a name="rational::rat_simplify"></a><code>rational::rat_simplify q</code></dt>
+<dd>returns q with rationals simplified to integers, if possible.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 26</strong> Rational type simplification:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = [<span class="dv">9</span>, <span class="dv">9</span>%<span class="dv">1</span>, <span class="dv">9</span>%<span class="dv">2</span>, <span class="dv">4.5</span>, <span class="dv">9</span>%<span class="dv">1</span>+i, <span class="dv">9</span>%<span class="dv">2</span>+i]; l;
+[<span class="dv">9</span>,9L%1L,9L%2L,<span class="dv">4.5</span>,9L%1L+:<span class="dv">1</span>,9L%2L+:<span class="dv">1</span>]
+&gt; map rat_simplify l;
+[<span class="dv">9</span>,<span class="dv">9</span>,9L%2L,<span class="dv">4.5</span>,<span class="dv">9</span>+:<span class="dv">1</span>,9L%2L+:<span class="dv">1</span>]</code></pre></div>
+<p>See <a href="#rational-complex-numbers">Rational Complex Numbers</a> for details about rational complex numbers, and <a href="#rational-complex-type-simplification">Rational Complex Type Simplification</a> for details of their type simplification.</p>
+<h2 id="q---z-rounding"><strong>Q</strong> -&gt; <strong>Z</strong> — Rounding</h2>
+<h3 id="rounding-to-integer">Rounding to Integer</h3>
+<p>Some of these are new functions, and some are overloads of standard functions. The behaviour of the overloads is consistent with that of the standard functions.</p>
+<dl>
+<dt><a name="floor/rational"></a><code>floor q</code></dt>
+<dd>(overload of standard function) returns q rounded downwards, i.e. towards −1, to an integer, usually denoted bQc.
+</dd>
+<dt><a name="ceil/rational"></a><code>ceil q</code></dt>
+<dd>(overload of standard function) returns q rounded upwards, i.e. towards +1, to an integer, usually denoted dQe.
+</dd>
+<dt><a name="trunc/rational"></a><code>trunc q</code></dt>
+<dd>(overload of standard function) returns q truncated, i.e. rounded towards 0, to an integer.
+</dd>
+<dt><a name="round/rational"></a><code>round q</code></dt>
+<dd>(overload of standard function) returns q ‘rounded off’, i.e. rounded to the nearest integer, with ‘half-integers’ (values that are an integer plus a half) rounded away from zero.
+</dd>
+<dt><a name="rational::round_zero_bias"></a><code>rational::round_zero_bias q</code></dt>
+<dd>(new function) returns q ‘rounded off’, i.e. rounded to the nearest integer, but with ‘half-integers’ rounded towards zero.
+</dd>
+<dt><a name="rational::round_unbiased"></a><code>rational::round_unbiased q</code></dt>
+<dd>(new function) returns q rounded to the nearest integer, with ‘half-integers’ rounded to the nearest even integer.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 27</strong> Illustration of the different rounding modes:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = iterwhile (&lt;= <span class="dv">3</span>) (+(<span class="dv">1</span>%<span class="dv">2</span>)) (- rational <span class="dv">3</span>);
+&gt; map <span class="dt">double</span> l; <span class="co">// (just to show the values in a familiar format)</span>
+[-<span class="dv">3.0</span>,-<span class="dv">2.5</span>,-<span class="dv">2.0</span>,-<span class="dv">1.5</span>,-<span class="dv">1.0</span>,-<span class="dv">0.5</span>,<span class="dv">0.0</span>,<span class="dv">0.5</span>,<span class="dv">1.0</span>,<span class="dv">1.5</span>,<span class="dv">2.0</span>,<span class="dv">2.5</span>,<span class="dv">3.0</span>]
+&gt; map floor l;
+[-3L,-3L,-2L,-2L,-1L,-1L,0L,0L,1L,1L,2L,2L,3L]
+&gt; map ceil l;
+[-3L,-2L,-2L,-1L,-1L,0L,0L,1L,1L,2L,2L,3L,3L]
+&gt; map trunc l;
+[-3L,-2L,-2L,-1L,-1L,0L,0L,0L,1L,1L,2L,2L,3L]
+&gt; map round l;
+[-3L,-3L,-2L,-2L,-1L,-1L,0L,1L,1L,2L,2L,3L,3L]
+&gt; map round_zero_bias l;
+[-3L,-2L,-2L,-1L,-1L,0L,0L,0L,1L,1L,2L,2L,3L]
+&gt; map round_unbiased l;
+[-3L,-2L,-2L,-2L,-1L,0L,0L,0L,1L,2L,2L,2L,3L]</code></pre></div>
+<p>(See the function <a href="purelib.html#double"><code>double</code></a>.)</p>
+<h3 id="integer-and-fraction-parts">Integer and Fraction Parts</h3>
+<dl>
+<dt><a name="rational::integer_and_fraction"></a><code>rational::integer_and_fraction roundfun q</code></dt>
+<dd>returns a pair (z, f) where z is the ‘integer part’ as an integer, f is the ‘fraction part’ as a rational, where the rounding operations are performed using rounding mode <code>roundfun</code> (see <a href="#rounding-to-integer">Rounding to Integer</a>).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 28</strong> Integer and fraction parts with the different rounding modes:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> nc = -<span class="dv">22</span>%<span class="dv">7</span>;
+&gt; integer_and_fraction floor nc;
+-4L,6L%7L
+&gt; integer_and_fraction trunc nc;
+-3L,(-1L)%7L
+&gt; integer_and_fraction round nc;
+-3L,(-1L)%7L</code></pre></div>
+<p>It is always the case that z and f have the property that q = z + f. However, the remaining properties depend upon the choice of <code>roundfun</code>. Thus this provides a ‘decomposition’ operator; there are others (see <a href="#decomposition">Decomposition</a>). If <code>roundfun</code> = <a href="purelib.html#floor"><code>floor</code></a> then 0 ≤ f &lt; 1. If <code>roundfun</code> = <a href="purelib.html#ceil"><code>ceil</code></a> then −1 &lt; f ≤ 0. If <code>roundfun</code> = <a href="purelib.html#trunc"><code>trunc</code></a> then |f| &lt; 1 and sgn f ∈ {0, sgn q}. If <code>roundfun</code> = <a href="purelib.html#round"><code>round</code></a>, <code>roundfun</code> = <a href="#rational::round_zero_bias"><code>round_zero_bias</code></a> or <code>roundfun</code> = <a href="#rational::round_unbiased"><code>round_unbiased</code></a> then |f| ≤ 1/2.</p>
+<dl>
+<dt><a name="rational::fraction"></a><code>rational::fraction roundfun q</code></dt>
+<dd>returns just the ‘fraction part’ as a rational, where the rounding operations are performed using <code>roundfun</code>. The corresponding function ‘integer’ is not provided, as integer <code>roundfun</code> q would be just <code>roundfun</code> q. The integer and fraction function (probably with <a href="purelib.html#trunc"><code>trunc</code></a> or <a href="purelib.html#floor"><code>floor</code></a> rounding mode) may be used in conjunction with <a href="#rational::num_den"><code>num_den</code></a> (see <a href="#deconstructors">‘Deconstructors’</a>) to decompose a rational into integer, numerator and denominator parts.
+</dd>
+<dt><a name="int/rational"></a><code>int q</code></dt>
+<dd>overloads the built-in int and returns the ‘integer part’ of q consistent with the built-in.
+</dd>
+<dt><a name="frac/rational"></a><code>frac q</code></dt>
+<dd>overloads the built-in frac and returns the ‘fraction part’ of q consistent with the built-in.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 29</strong> Standard integer and fraction parts:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> nc = -<span class="dv">22</span>%<span class="dv">7</span>;
+&gt; <span class="dt">int</span> nc;
+-<span class="dv">3</span>
+&gt; frac nc;
+(-1L)%7L</code></pre></div>
+<h2 id="rounding-to-multiples">Rounding to Multiples</h2>
+<dl>
+<dt><a name="rational::round_to_multiple"></a><code>rational::round_to_multiple roundfun multOf q</code></dt>
+<dd>returns q rounded to an integer multiple of a non-zero value multOf, using <code>roundfun</code> as the rounding mode (see <a href="#rounding-to-integer">Rounding to Integer</a>). Note that it is the multiple that is rounded in the prescribed way, and not the final result, which may make a difference in the case that multOf is negative. If that is not the desired behaviour, pass this function the absolute value of multOf rather than multOf. Similar comments apply to the following functions.
+</dd>
+<dt><a name="rational::floor_multiple"></a><code>rational::floor_multiple multOf q</code></dt>
+<dd>returns q rounded to a downwards integer multiple of multOf.
+</dd>
+<dt><a name="rational::ceil_multiple"></a><code>rational::ceil_multiple multOf q</code></dt>
+<dd>returns q rounded to an upwards integer multiple of multOf.
+</dd>
+<dt><a name="rational::trunc_multiple"></a><code>rational::trunc_multiple multOf q</code></dt>
+<dd>returns q rounded towards zero to an integer multiple of multOf.
+</dd>
+<dt><a name="rational::round_multiple"></a><code>rational::round_multiple multOf q</code></dt>
+<dd>returns q rounded towards the nearest integer multiple of multOf, with half-integer multiples rounded away from 0.
+</dd>
+<dt><a name="rational::round_multiple_zero_bias"></a><code>rational::round_multiple_zero_bias multOf q</code></dt>
+<dd>returns q rounded towards the nearest integer multiple of multOf, with half-integer multiples rounded towards 0.
+</dd>
+<dt><a name="rational::round_multiple_unbiased"></a><code>rational::round_multiple_unbiased multOf q</code></dt>
+<dd>returns q rounded towards the nearest integer multiple of multOf, with half-integer multiples rounded to an even multiple.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 30</strong> Round to multiple:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = [<span class="dv">34.9</span>, <span class="dv">35</span>, <span class="dv">35</span>%<span class="dv">1</span>, <span class="dv">35.0</span>, <span class="dv">35.1</span>];
+&gt; map <span class="dt">double</span> l; <span class="co">// (just to show the values in a familiar format)</span>
+[<span class="dv">34.9</span>,<span class="dv">35.0</span>,<span class="dv">35.0</span>,<span class="dv">35.0</span>,<span class="dv">35.1</span>]
+&gt; map (floor_multiple <span class="dv">10</span>) l;
+[<span class="dv">30.0</span>,30L,30L,<span class="dv">30.0</span>,<span class="dv">30.0</span>]
+&gt; map (ceil_multiple <span class="dv">10</span>) l;
+[<span class="dv">40.0</span>,40L,40L,<span class="dv">40.0</span>,<span class="dv">40.0</span>]
+&gt; map (trunc_multiple <span class="dv">10</span>) l;
+[<span class="dv">30.0</span>,30L,30L,<span class="dv">30.0</span>,<span class="dv">30.0</span>]
+&gt; map (round_multiple <span class="dv">10</span>) l;
+[<span class="dv">30.0</span>,40L,40L,<span class="dv">40.0</span>,<span class="dv">40.0</span>]
+&gt; map (round_multiple_zero_bias <span class="dv">10</span>) l;
+[<span class="dv">30.0</span>,30L,30L,<span class="dv">30.0</span>,<span class="dv">40.0</span>]
+&gt; map (round_multiple_unbiased <span class="dv">10</span>) l;
+[<span class="dv">30.0</span>,40L,40L,<span class="dv">40.0</span>,<span class="dv">40.0</span>]</code></pre></div>
+<p>(See the function <a href="purelib.html#double"><code>double</code></a>.)</p>
+<p>The round multiple functions may be used to find a fixed denominator approximation of a number. (The simplest denominator may actually be a proper factor of the chosen value.) To approximate for a bounded (rather than particular) denominator, use rational approx max den instead (see <a href="#best-approximation-with-bounded-denominator">Best Approximation with Bounded Denominator</a>).</p>
+<p><strong>Example 31</strong> Finding the nearest q = n/d value to 1/e ≈ 0.368 where d = 1000 (actually, where d|1000):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> co_E = exp (-<span class="dv">1</span>);
+co_E;
+<span class="dv">0.367879441171442</span>
+&gt; round_multiple (<span class="dv">1</span>%<span class="dv">1000</span>) (rational co_E);
+46L%125L
+&gt; <span class="dv">1000</span> * ans;
+368L%1L</code></pre></div>
+<p><strong>Example 32</strong> Finding the nearest q = n/d value to 1/φ ≈ 0.618 where d = 3 <sup>5</sup> = 243 (actually, where d|243):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> co_Phi = (sqrt <span class="dv">5</span> - <span class="dv">1</span>) / <span class="dv">2</span>;
+&gt; round_multiple (<span class="dv">1</span>%<span class="dv">243</span>) (rational co_Phi);
+50L%81L</code></pre></div>
+<p>Other methods for obtaining a rational approximation of a number are described in <a href="#r--gt-q-approximation">R -&gt; Q — Approximation</a>.</p>
+<h2 id="q---r-conversion-casting"><strong>Q</strong> -&gt; <strong>R</strong> — Conversion / Casting</h2>
+<dl>
+<dt><a name="double/rational"></a><code>double q</code></dt>
+<dd>(overload of built-in) returns a double having a value as close as possible to q. (Overflow, underflow and loss of accuracy are potential problems. rationals that are too absolutely large or too absolutely small may overflow or underflow; some rationals can not be represented exactly as a double.)
+</dd>
+</dl>
+<!-- -->
+<h2 id="r---q-approximation"><strong>R</strong> -&gt; <strong>Q</strong> — Approximation</h2>
+<p>This section describes functions that approximate a number (usually a double) by a rational. See <a href="#rounding-to-multiples">Rounding to Multiples</a> for approximation of a number by a rational with a fixed denominator. See <a href="#numeral-string--gt-q-approximation">Numeral String -&gt; Q — Approximation</a> for approximation by a rational of a string representation of a real number.</p>
+<h3 id="intervals">Intervals</h3>
+<p><a name="module-rat_interval"></a></p>
+<p>Some of the approximation functions return an <em>interval</em>. The file <code>rat_interval.pure</code> is a basic implementation of interval arithmetic, and is not included in the default prelude. It is not intended to provide a complete implementation of interval arithmetic. The notions of ‘open’ and ‘closed’ intervals are not distinguished. Infinite and half-infinite intervals are not specifically provided. Some operations and functions may be missing. The most likely functions to be used are simply the ‘deconstructors’; see <a href="#interval-constructors-and-deconstructors">Interval Constructors and ‘Deconstructors’</a>.</p>
+<h4 id="interval-constructors-and-deconstructors">Interval Constructors and ‘Deconstructors’</h4>
+<p>Intervals are constructed with the function interval.</p>
+<dl>
+<dt><a name="interval::interval"></a><code>interval::interval (n1, n2)</code></dt>
+<dd>given a pair of numbers (z1 &lt;= z2), this returns the interval z1..z2. This is the inverse of <code>lo_up</code>.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 33</strong> Constructing an interval:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> v = interval (<span class="dv">3</span>, <span class="dv">8</span>);
+&gt; v;
+interval::Ivl <span class="dv">3</span> <span class="dv">8</span></code></pre></div>
+<dl>
+<dt><a name="interval::lower"></a><code>interval::lower v</code></dt>
+<dd>returns the infimum (roughly, minimum) of v.
+</dd>
+<dt><a name="interval::upper"></a><code>interval::upper v</code></dt>
+<dd>returns the supremum (roughly, maximum) of v.
+</dd>
+<dt><a name="interval::lo_up"></a><code>interval::lo_up v</code></dt>
+<dd>returns a pair (l, u) containing the lower l and upper u extrema of the interval v. This is the inverse of interval as defined on number pairs.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 34</strong> Deconstructing an interval:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; lower v;
+<span class="dv">3</span>
+&gt; upper v;
+<span class="dv">8</span>
+&gt; lo_up v;
+<span class="dv">3</span>,<span class="dv">8</span></code></pre></div>
+<h4 id="interval-type-tests">Interval Type Tests</h4>
+<dl>
+<dt><a name="exactp/rational"></a><code>exactp v</code></dt>
+<dd>returns whether an interval v has exact extrema.
+</dd>
+<dt><a name="inexactp/rational"></a><code>inexactp v</code></dt>
+<dd>returns whether an interval v has an inexact extremum.
+</dd>
+<dt><a name="interval::intervalp"></a><code>interval::intervalp x</code></dt>
+<dd>returns whether x is of type interval.
+</dd>
+<dt><a name="interval::interval_valp"></a><code>interval::interval_valp x</code></dt>
+<dd>returns whether x has an interval value.
+</dd>
+<dt><a name="interval::ratinterval_valp"></a><code>interval::ratinterval_valp x</code></dt>
+<dd>returns whether x has an interval value with rational extrema.
+</dd>
+<dt><a name="interval::intinterval_valp"></a><code>interval::intinterval_valp x</code></dt>
+<dd>returns whether x has an interval value with integral extrema.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 35</strong> Interval value tests:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = [interval(<span class="dv">0</span>,<span class="dv">1</span>), interval(<span class="dv">0</span>,<span class="dv">1</span>%<span class="dv">1</span>), interval(<span class="dv">0</span>,<span class="dv">3</span>%<span class="dv">2</span>), interval(<span class="dv">0</span>,<span class="dv">1.5</span>)];
+&gt; map exactp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>]
+&gt; map inexactp l;
+[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>]
+&gt; map intervalp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>]
+&gt; map interval_valp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>]
+&gt; map ratinterval_valp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>]
+&gt; map intinterval_valp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>]</code></pre></div>
+<h4 id="interval-arithmetic-operators-and-relations">Interval Arithmetic Operators and Relations</h4>
+<p>The standard arithmetic operators (+), (−), (*), (/) and (%) are overloaded for intervals. The divide operators (/) and (%) do not produce a result if the right operand is an interval containing 0.</p>
+<p><a name="example-36"></a></p>
+<p><strong>Example 36</strong> Some intervals:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> a = interval (<span class="dv">11</span>, <span class="dv">19</span>);
+&gt; <span class="kw">let</span> b = interval (<span class="dv">16</span>, <span class="dv">24</span>);
+&gt; <span class="kw">let</span> c = interval (<span class="dv">21</span>, <span class="dv">29</span>);
+&gt; <span class="kw">let</span> d = interval (<span class="dv">23</span>, <span class="dv">27</span>);</code></pre></div>
+<p><strong>Example 37</strong> Interval arithmetic:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> p = interval (<span class="dv">0</span>, <span class="dv">1</span>);
+&gt; <span class="kw">let</span> s = interval (-<span class="dv">1</span>, <span class="dv">1</span>);
+&gt; a + b;
+interval::Ivl <span class="dv">27</span> <span class="dv">43</span>
+&gt; a - b;
+interval::Ivl (-<span class="dv">13</span>) <span class="dv">3</span>
+&gt; a * b;
+interval::Ivl <span class="dv">176</span> <span class="dv">456</span>
+&gt; p * <span class="dv">2</span>;
+interval::Ivl <span class="dv">0</span> <span class="dv">2</span>
+&gt; (-<span class="dv">2</span>) * p;
+interval::Ivl (-<span class="dv">2</span>) <span class="dv">0</span>
+&gt; -c;
+interval::Ivl (-<span class="dv">29</span>) (-<span class="dv">21</span>)
+&gt; s * a;
+interval::Ivl (-<span class="dv">19</span>) <span class="dv">19</span>
+&gt; a % <span class="dv">2</span>;
+interval::Ivl (11L%2L) (19L%2L)
+&gt; a / <span class="dv">2</span>;
+interval::Ivl <span class="dv">5.5</span> <span class="dv">9.5</span>
+&gt; reciprocal a;
+interval::Ivl (1L%19L) (1L%11L)
+&gt; <span class="dv">2</span> % a;
+interval::Ivl (2L%19L) (2L%11L)
+&gt; a % b;
+interval::Ivl (11L%24L) (19L%16L)
+&gt; a % a; <span class="co">// notice that the intervals are mutually independent here</span>
+interval::Ivl (11L%19L) (19L%11L)</code></pre></div>
+<p>There are also some relations defined for intervals. The standard relations (==) and (~=) are overloaded.</p>
+<p>However, rather than overloading (&lt;), (&lt;=), (&gt;), (&gt;=), which could be used for either ordering or containment with some ambiguity, the module defines <code>(before)</code>, <code>(within)</code>, and so on. ‘Strictness’ refers to the properties at the end-points.</p>
+<dl>
+<dt><a name="interval::before"></a><code>v1 interval::before v2</code></dt>
+<dd>returns whether v1 is entirely before v2.
+</dd>
+<dt><a name="interval::strictly_before"></a><code>v1 interval::strictly_before v2</code></dt>
+<dd>returns whether v1 is strictly entirely before v2.
+</dd>
+<dt><a name="interval::after"></a><code>v1 interval::after v2</code></dt>
+<dd>returns whether v1 is entirely after v2.
+</dd>
+<dt><a name="interval::strictly_after"></a><code>v1 interval::strictly_after v2</code></dt>
+<dd>returns whether v1 is strictly entirely after v2.
+</dd>
+<dt><a name="interval::within"></a><code>v1 interval::within v2</code></dt>
+<dd>returns whether v1 is entirely within v2; i.e. whether v1 is subinterval of v2.
+</dd>
+<dt><a name="interval::strictly_within"></a><code>v1 interval::strictly_within v2</code></dt>
+<dd>returns whether v1 is strictly entirely within v2; i.e. whether v1 is proper subinterval of v2.
+</dd>
+<dt><a name="interval::without"></a><code>v1 interval::without v2</code></dt>
+<dd>returns whether v1 entirely contains v2; i.e. whether v1 is superinterval of v2. ‘Without’ is used in the sense of outside or around.
+</dd>
+<dt><a name="interval::strictly_without"></a><code>v1 interval::strictly_without v2</code></dt>
+<dd>returns whether v1 strictly entirely contains v2; i.e. whether v1 is proper superinterval of v2.
+</dd>
+<dt><a name="interval::disjoint"></a><code>v1 interval::disjoint v2</code></dt>
+<dd>returns whether v1 and v2 are entirely disjoint.
+</dd>
+<dt><a name="interval::strictly_disjoint"></a><code>v interval::strictly_disjoint v2</code></dt>
+<dd>returns whether v1 and v2 are entirely strictly disjoint.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 38</strong> Interval relations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; a == b;
+<span class="dv">0</span>
+&gt; a == a;
+<span class="dv">1</span>
+&gt; a before b;
+<span class="dv">0</span>
+&gt; a before c;
+<span class="dv">1</span>
+&gt; c before a;
+<span class="dv">0</span>
+&gt; a disjoint b;
+<span class="dv">0</span>
+&gt; c disjoint a;
+<span class="dv">1</span>
+&gt; a within b;
+<span class="dv">0</span>
+&gt; a within c;
+<span class="dv">0</span>
+&gt; d within c;
+<span class="dv">1</span>
+&gt; c within d;
+<span class="dv">0</span>
+&gt; a strictly_within a;
+<span class="dv">0</span>
+&gt; a within a;
+<span class="dv">1</span></code></pre></div>
+<p>(The symbols a through d were defined in <a href="#example-36">Example 36</a>.)</p>
+<p>These may also be used with a simple (real) value, and in particular to test membership.</p>
+<p><strong>Example 39</strong> Membership:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">10</span> within a;
+<span class="dv">0</span>
+&gt; <span class="dv">11</span> within a;
+<span class="dv">1</span>
+&gt; <span class="dv">11.0</span> within a;
+<span class="dv">1</span>
+&gt; <span class="dv">12</span> within a;
+<span class="dv">1</span>
+&gt; <span class="dv">12.0</span> within a;
+<span class="dv">1</span>
+&gt; <span class="dv">10</span> strictly_within a;
+<span class="dv">0</span>
+&gt; <span class="dv">11</span> strictly_within a;
+<span class="dv">0</span>
+&gt; (<span class="dv">11</span>%<span class="dv">1</span>) strictly_within a;
+<span class="dv">0</span>
+&gt; <span class="dv">12</span> strictly_within a;
+<span class="dv">1</span>
+&gt; (<span class="dv">12</span>%<span class="dv">1</span>) strictly_within a;
+<span class="dv">1</span></code></pre></div>
+<p>(The symbol a was defined in <a href="#example-36">Example 36</a>.)</p>
+<h4 id="interval-maths">Interval Maths</h4>
+<p>Some standard functions are overloaded for intervals; some new functions are provided.</p>
+<dl>
+<dt><a name="abs/rational"></a><code>abs v</code></dt>
+<dd>returns the interval representing the range of (x) as x varies over v.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 40</strong> Absolute interval:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; abs (interval (<span class="dv">1</span>, <span class="dv">5</span>));
+interval::Ivl <span class="dv">1</span> <span class="dv">5</span>
+&gt; abs (interval (-<span class="dv">1</span>, <span class="dv">5</span>));
+interval::Ivl <span class="dv">0</span> <span class="dv">5</span>
+&gt; abs (interval (-<span class="dv">5</span>, -<span class="dv">1</span>));
+interval::Ivl <span class="dv">1</span> <span class="dv">5</span></code></pre></div>
+<dl>
+<dt><a name="sgn/rational"></a><code>sgn v</code></dt>
+<dd>returns the interval representing the range of sgn(x) as x varies over v.
+</dd>
+<dt><a name="#/rational"></a><code># v</code></dt>
+<dd>returns the length of an interval.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 41</strong> Absolute interval:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; #d;
+<span class="dv">4</span></code></pre></div>
+<p>(The symbol d was defined in <a href="#example-36">Example 36</a>.)</p>
+<h3 id="least-complex-approximation-within-epsilon">Least Complex Approximation within Epsilon</h3>
+<dl>
+<dt><a name="rational::rational_approx_epsilon"></a><code>rational::rational_approx_epsilon ε r</code></dt>
+<dd>Find the least complex (see <a href="#complexity-extrema">Complexity Extrema</a>) rational approximation to r (usually a double) that is ε-close. That is find the q with the smallest possible denominator such that such that |q − r| ≤ ε. (ε &gt; 0.)
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 42</strong> Rational approximation to π ≈ 3.142 ≈ 22/7:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approx_epsilon .<span class="dv">01</span> pi;
+22L%7L
+&gt; abs (ans - pi);
+<span class="dv">0.00126448926734968</span></code></pre></div>
+<p><a name="example-43"></a></p>
+<p><strong>Example 43</strong> The golden ratio φ = (1 + √5) / 2 ≈ 1.618:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> phi = (<span class="dv">1</span> + sqrt <span class="dv">5</span>) / <span class="dv">2</span>;
+&gt; rational_approx_epsilon .<span class="dv">001</span> phi;
+55L%34L
+&gt; abs (ans - phi);
+<span class="dv">0.000386929926365465</span></code></pre></div>
+<dl>
+<dt><a name="rational::rational_approxs_epsilon"></a><code>rational::rational_approxs_epsilon ε r</code></dt>
+<dd>Produce a list of ever better rational approximations to r (usually a double) that is eventually ε-close. (ε &gt; 0.)
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 44</strong> Rational approximations to π:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approxs_epsilon .<span class="dv">0001</span> pi;
+[3L%1L,25L%8L,47L%15L,69L%22L,91L%29L,113L%36L,135L%43L,157L%50L,179L%57L,
+201L%64L,223L%71L,245L%78L,267L%85L,289L%92L,311L%99L,333L%106L]</code></pre></div>
+<p><strong>Example 45</strong> Rational approximations to the golden ratio φ; these approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, …):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approxs_epsilon .<span class="dv">0001</span> phi;
+[1L%1L,3L%2L,8L%5L,21L%13L,55L%34L,144L%89L]</code></pre></div>
+<p>(The symbol phi was defined in <a href="#example-43">Example 43</a>.)</p>
+<dl>
+<dt><a name="rational::rational_interval_epsilon"></a><code>rational::rational_interval_epsilon ε r</code></dt>
+<dd>Find the least complex (see <a href="#complexity-extrema">Complexity Extrema</a>) rational interval containing r (usually a double) that is ε-small. That is find the least complex (see <a href="#complexity-extrema">Complexity Extrema</a>) q1 ≤ q2 such that r ∈ [q1, q2] and q2 − q1 ≤ ε. (ε &gt; 0.)
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 46</strong> Rational interval surrounding π:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> i_Pi = rational_interval_epsilon .<span class="dv">01</span> pi;
+&gt; i_Pi;
+interval::Ivl (47L%15L) (22L%7L)
+&gt; <span class="dt">double</span> (lower i_Pi); pi; <span class="dt">double</span> (upper i_Pi);
+<span class="dv">3.13333333333333</span>
+<span class="dv">3.14159265358979</span>
+<span class="dv">3.14285714285714</span></code></pre></div>
+<p>(The functions lower and upper are described in <a href="#interval-constructors-and-deconstructors">Interval Constructors and ‘Deconstructors’</a>.)</p>
+<p><strong>Example 47</strong> Rational interval surrounding the golden ratio φ:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_interval_epsilon .<span class="dv">001</span> phi;
+interval::Ivl (55L%34L) (89L%55L)
+&gt; #ans;
+1L%1870L</code></pre></div>
+<p>(The symbol phi was defined in <a href="#example-43">Example 43</a>. The function <a href="#rational::#/interval"><code>#</code></a> is described in <a href="#interval-maths">Interval Maths</a>.)</p>
+<h3 id="best-approximation-with-bounded-denominator">Best Approximation with Bounded Denominator</h3>
+<dl>
+<dt><a name="rational::rational_approx_max_den"></a><code>rational::rational_approx_max_den maxDen r</code></dt>
+<dd>Find the closest rational approximation to r (usually a double) that has a denominator no greater than maxDen. (maxDen &gt; 0).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 48</strong> Rational approximation to π:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approx_max_den <span class="dv">10</span> pi;
+22L%7L</code></pre></div>
+<p><strong>Example 49</strong> Rational approximation to the golden ratio φ:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approx_max_den <span class="dv">1000</span> phi;
+1597L%987L</code></pre></div>
+<p>(The symbol phi was defined in <a href="#example-43">Example 43</a>.)</p>
+<dl>
+<dt><a name="rational::rational_approxs_max_den"></a><code>rational::rational_approxs_max_den maxDen r</code></dt>
+<dd>Produce a list of ever better rational approximations to r (usually a double) while the denominator is bounded by maxDen (maxDen &gt; 0).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 50</strong> Rational approximations to π:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approxs_max_den <span class="dv">100</span> pi;
+[3L%1L,25L%8L,47L%15L,69L%22L,91L%29L,113L%36L,135L%43L,157L%50L,179L%57L,
+201L%64L,223L%71L,245L%78L,267L%85L,289L%92L,311L%99L]</code></pre></div>
+<p><strong>Example 51</strong> Rational approximations to the golden ratio φ:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_approxs_max_den <span class="dv">100</span> phi;
+[1L%1L,3L%2L,8L%5L,21L%13L,55L%34L,144L%89L]</code></pre></div>
+<p>(The symbol phi was defined in <a href="#example-43">Example 43</a>.)</p>
+<dl>
+<dt><a name="rational::rational_interval_max_den"></a><code>rational::rational_interval_max_den maxDen r</code></dt>
+<dd>Find the smallest rational interval containing r (usually a double) that has endpoints with denominators no greater than maxDen (maxDen &gt; 0).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 52</strong> Rational interval surrounding π:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> i_Pi = rational_interval_max_den <span class="dv">100</span> pi ; i_Pi;
+interval::Ivl (311L%99L) (22L%7L)
+&gt; <span class="dt">double</span> (lower i_Pi); pi; <span class="dt">double</span> (upper i_Pi);
+<span class="dv">3.14141414141414</span>
+<span class="dv">3.14159265358979</span>
+<span class="dv">3.14285714285714</span></code></pre></div>
+<p><strong>Example 53</strong> Rational interval surrounding the golden ratio φ:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; rational_interval_max_den <span class="dv">1000</span> phi;
+interval::Ivl (987L%610L) (1597L%987L)</code></pre></div>
+<p>(The symbol phi was defined in <a href="#example-43">Example 43</a>.)</p>
+<p>To approximate for a particular (rather than bounded) denominator, use round to multiple instead (see <a href="#rounding-to-multiples">Rounding to Multiples</a>).</p>
+<h2 id="decomposition">Decomposition</h2>
+<p>There is more than one way to ‘decompose’ a rational number into its ‘components’. It might be split into an integer and a fraction part — see <a href="#integer-and-fraction-parts">Integer and Fraction Parts</a>; or sign and absolute value — see <a href="#absolute-value-and-sign">Absolute Value and Sign</a>; or numerator and denominator — see <a href="#deconstructors">‘Deconstructors’</a>.</p>
+<h2 id="continued-fractions">Continued Fractions</h2>
+<h3 id="introduction-1">Introduction</h3>
+<p>In “pure-rational”, a continued fraction a<sub>0</sub> + (1 / (a<sub>1</sub> + (1 / (a<sub>2</sub> + ··· + 1 / a <sub>n</sub>)))) where ∀i &gt; 0 • a<sub>i</sub> ≠ 0, is represented by [a<sub>0</sub>, a <sub>1</sub>, a<sub>2</sub>, … , a<sub>n</sub>].</p>
+<p>A ‘simple’ continued fraction is one in which ∀i • a<sub>i</sub> ∈ <strong>Z</strong> and ∀i &gt; 0 • a<sub>i</sub> &gt; 0.</p>
+<p>Simple continued fractions for rationals are not quite unique since [a <sub>0</sub>, a<sub>1</sub>, … , a<sub>n</sub>, 1] = [a<sub>0</sub>, a<sub>1</sub>, … , a<sub>n+1</sub>]. We will refer to these as the ‘non-standard’ and ‘standard’ forms, respectively. The following functions return the standard form.</p>
+<h3 id="generating-continued-fractions">Generating Continued Fractions</h3>
+<h4 id="exact">Exact</h4>
+<dl>
+<dt><a name="rational::continued_fraction"></a><code>rational::continued_fraction q</code></dt>
+<dd>Find ‘the’ (exact) continued fraction of a rational (including, trivially, integer) value q.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 54</strong> The rational 1234/1001:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; continued_fraction (<span class="dv">1234</span>%<span class="dv">1001</span>);
+[1L,4L,3L,2L,1L,1L,1L,8L]
+&gt; evaluate_continued_fraction ans;
+1234L%1001L</code></pre></div>
+<h4 id="inexact">Inexact</h4>
+<dl>
+<dt><a name="rational::continued_fraction_max_terms"></a><code>rational::continued_fraction_max_terms n r</code></dt>
+<dd>Find up to n initial terms of continued fraction of the value r with the ‘remainder’, if any, in the final element. (If continued_fraction_max_terms n r returns a list of length n or less, then the result is exact.)
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 55</strong> First 5 terms of the continued fraction for the golden ratio φ:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; continued_fraction_max_terms <span class="dv">5</span> phi;
+  [<span class="dv">1.0</span>,<span class="dv">1.0</span>,<span class="dv">1.0</span>,<span class="dv">1.0</span>,<span class="dv">1.0</span>,<span class="dv">1.61803398874989</span>]
+&gt; evaluate_continued_fraction ans;
+<span class="dv">1.61803398874989</span></code></pre></div>
+<p>(The symbol phi was defined in <a href="#example-43">Example 43</a>.)</p>
+<dl>
+<dt><a name="rational::continued_fraction_epsilon"></a><code>rational::continued_fraction_epsilon ε r</code></dt>
+<dd>Find enough of the initial terms of a continued fraction to within ε of the value r with the ‘remainder’, if any, in the final element.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 56</strong> First few terms of the value √2:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; continued_fraction_epsilon .<span class="dv">001</span> (sqrt <span class="dv">2</span>);
+[<span class="dv">1.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.41421356237241</span>]
+&gt; map <span class="dt">double</span> (convergents ans);
+[<span class="dv">1.0</span>,<span class="dv">1.5</span>,<span class="dv">1.4</span>,<span class="dv">1.41666666666667</span>,<span class="dv">1.41379310344828</span>,<span class="dv">1.41421356237309</span>]</code></pre></div>
+<h3 id="evaluating-continued-fractions">Evaluating Continued Fractions</h3>
+<dl>
+<dt><a name="rational::evaluate_continued_fraction"></a><code>rational::evaluate_continued_fraction aa</code></dt>
+<dd>Fold a continued fraction aa into the value it represents. This function is not limited to simple continued fractions. (Exact simple continued fractions are folded into a rational.)
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 57</strong> The continued fraction [1, 2, 3, 4] and the non-standard form [4, 3, 2, 1]:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; evaluate_continued_fraction [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>];
+43L%30L
+&gt; continued_fraction ans;
+[1L,2L,3L,4L]
+&gt; evaluate_continued_fraction [<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>];
+43L%10L
+&gt; continued_fraction ans;
+[4L,3L,3L]</code></pre></div>
+<h4 id="convergents">Convergents</h4>
+<dl>
+<dt><a name="rational::convergents"></a><code>rational::convergents aa</code></dt>
+<dd>Calculate the convergents of the continued fraction aa. This function is not limited to simple continued fractions.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 58</strong> Convergents of a continued fraction approximation of the value √2:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; continued_fraction_max_terms <span class="dv">5</span> (sqrt <span class="dv">2</span>);
+[<span class="dv">1.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.41421356237241</span>]
+&gt; convergents ans;
+[<span class="dv">1.0</span>,<span class="dv">1.5</span>,<span class="dv">1.4</span>,<span class="dv">1.41666666666667</span>,<span class="dv">1.41379310344828</span>,<span class="dv">1.41421356237309</span>]</code></pre></div>
+<h2 id="rational-complex-numbers">Rational Complex Numbers</h2>
+<p>Pure together with <code>rational.pure</code> provide various types of number, including integers (<strong>Z</strong>), doubles (<strong>R</strong>, roughly), complex numbers (<strong>C</strong>) and Gaussian integers (<strong>Z</strong>[i]), rationals (<strong>Q</strong>) and rational complex numbers (<strong>Q</strong>[i]).</p>
+<p>Functions concerning ‘complex numbers’ are named with ‘comp’, whereas functions concerning ‘complexity’ (see <a href="#complexity">Complexity</a>) are named with ‘cplx’.</p>
+<h3 id="rational-complex-constructors-and-deconstructors">Rational Complex Constructors and ‘Deconstructors’</h3>
+<p>Complex numbers can have rational parts.</p>
+<p><strong>Example 59</strong> Forming a rational complex:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">1</span> +: <span class="dv">1</span> * (<span class="dv">1</span>%<span class="dv">2</span>);
+<span class="dv">1</span>+:1L%2L
+&gt; ans * ans;
+3L%4L+:1L%1L</code></pre></div>
+<p>And rational numbers can be given complex parts.</p>
+<p><strong>Example 60</strong> Complex rationals and complicated rationals:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; (<span class="dv">1</span> +: <span class="dv">2</span>) % (<span class="dv">3</span> +: <span class="dv">4</span>);
+11L%25L+:2L%25L
+&gt; ans * (<span class="dv">3</span> +: <span class="dv">4</span>);
+1L%1L+:2L%1L
+&gt; ((<span class="dv">4</span>%<span class="dv">1</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>)) % <span class="dv">2</span>;
+0L%1L+:2L%1L
+&gt; ((<span class="dv">4</span>%<span class="dv">1</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>)) % (<span class="dv">1</span>%<span class="dv">2</span>);
+0L%1L+:8L%1L
+&gt; ((<span class="dv">4</span>%<span class="dv">1</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>)) % (<span class="dv">1</span> + (<span class="dv">1</span>%<span class="dv">2</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>));
+8L%5L+:16L%5L
+&gt; ans * (<span class="dv">1</span>+(<span class="dv">1</span>%<span class="dv">2</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>));
+0L%1L+:4L%1L
+&gt; ((<span class="dv">4</span>%<span class="dv">1</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>)) / (<span class="dv">1</span> + (<span class="dv">1</span>%<span class="dv">2</span>) * (<span class="dv">0</span> +: <span class="dv">1</span>));
+<span class="dv">1.6</span>+:<span class="dv">3.2</span></code></pre></div>
+<p>The various parts of a complex rational may be deconstructed using combinations of num and den and the standard functions re and im.</p>
+<p>Thus, taking real and imaginary parts first, a rational complex number may be considered to be (x<sub>n</sub> / x<sub>d</sub>) + (y<sub>n</sub> / y<sub>d</sub>) * i with x<sub>n</sub>, x<sub>d</sub>, y<sub>n</sub>, y<sub>d</sub> ∈ <strong>Z</strong>.</p>
+<p>A rational complex number may also be decomposed into its ‘numerator’ and ‘denominator’, where these are both integral complex numbers, or ‘Gaussian integers’, and the denominatoris a minimal choice in some sense.</p>
+<p>One way to do this is so that the denominator is the minimum positive integer. The denominator is a complex number with zero imaginary part.</p>
+<p>Thus, taking numerator and denominator parts first, a rational complex number may be considered to be (n<sub>x</sub> + n<sub>y</sub> * i) / (d + 0 * i) with n <sub>x</sub>, n<sub>y</sub>, d ∈ <strong>Z</strong>.</p>
+<p>Another way to do this is so that the denominator is a Gaussian integer with minimal absolute value. Thus, taking numerator and denominator parts first, a rational complex number may be considered to be (n<sub>x</sub> + n<sub>y</sub> * i) / (d<sub>x</sub> + d<sub>y</sub> * i) with n<sub>x</sub>, n<sub>y</sub>, d<sub>x</sub>, d <sub>y</sub> ∈ <strong>Z</strong>.</p>
+<p>The d<sub>x</sub>, d<sub>y</sub> are not unique, but can be chosen such that d <sub>x</sub> &gt; 0 and either |d<sub>y</sub>| &lt; d<sub>x</sub> or d<sub>y</sub> = d <sub>x</sub> &gt; 0.</p>
+<dl>
+<dt><a name="rational::num_den_nat"></a><code>rational::num_den_nat c</code></dt>
+<dd><p>given a complex rational or integer c, returns a pair (n, d) containing an integral complex (Gaussian integral) numerator n, and the smallest natural (i.e. positive integral real) complex denominator d, i.e. a complex number where ℜ(d) ∈ <strong>Z</strong>, ℜ(d) &gt; 0, ℑ(d) = 0; i.e. the numerator and denominator of one ‘normalised’ form of c.</p>
+<p>This is an inverse (up to equivalence) of rational as defined on integral complex pairs (see <a href="#constructors">Constructors</a>).</p>
+</dd>
+<dt><a name="rational::num_den_gauss"></a><code>rational::num_den_gauss c</code></dt>
+<dd><p>given a complex rational or integer c, returns a pair (n, d) containing an integral complex (Gaussian integral) numerator n, and an absolutely smallest integral complex denominator d chosen s.t. ℜ(d),=(d) ∈ <strong>Z</strong>, ℜ(d) &gt; 0, and either |ℜ(d)| &lt; ℑ(d) or ℜ(d) = ℑ(d) &gt; 0; i.e. the numerator and denominator of another ‘normalised’ form of c.</p>
+<p>This is an inverse (up to equivalence) of rational as defined on integral complex pairs (see <a href="#constructors">Constructors</a>).</p>
+</dd>
+<dt><a name="rational::num_den"></a><code>rational::num_den c</code></dt>
+<dd><p>synonymous with num_den_gauss.</p>
+<p>This is an inverse (up to equivalence) of rational as defined on integer pairs (see <a href="#constructors">Constructors</a>).</p>
+</dd>
+<dt><a name="num/rational"></a><code>num c</code></dt>
+<dd>given a complex rational or integer c, returns just the numerator of the normalised form of c given by num_den c.
+</dd>
+<dt><a name="den/rational"></a><code>den c</code></dt>
+<dd>given a complex rational or integer c, returns just the denominator of the normalised form of c given by num_den c.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 61</strong> Rational complex number deconstruction:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> cq = (<span class="dv">1</span>+<span class="dv">2</span>*i)%(<span class="dv">3</span>+<span class="dv">3</span>*i); cq;
+1L%2L+:1L%6L
+&gt; (re cq, im cq);
+1L%2L,1L%6L
+&gt; (num . re) cq;
+1L
+&gt; (den . re) cq;
+2L
+&gt; (num . im) cq;
+1L
+&gt; (den . im) cq;
+6L
+&gt; <span class="kw">let</span> (n_nat,d_nat) = num_den_nat cq;
+&gt; (n_nat, d_nat);
+<span class="dv">3</span>+:<span class="dv">1</span>,<span class="dv">6</span>+:<span class="dv">0</span>
+&gt; n_nat % d_nat;
+1L%2L+:1L%6L
+&gt; abs d_nat;
+<span class="dv">6.0</span>
+&gt; <span class="kw">let</span> (n, d) = num_den_gauss cq; (n, d);
+1L+:2L,3L+:3L
+&gt; <span class="kw">let</span> (n,d) = num_den cq; (n, d);
+1L+:2L,3L+:3L
+&gt; n % d;
+1L%2L+:1L%6L
+&gt; abs d;
+<span class="dv">4.24264068711928</span>
+&gt; (re . num) cq;
+1L
+&gt; (im . num) cq;
+2L
+&gt; (re . den) cq; <span class="co">//always &gt; 0</span>
+3L
+&gt; (im . den) cq; <span class="co">//always &lt;= (re.den)</span>
+3L</code></pre></div>
+<h3 id="rational-complex-type-and-value-tests">Rational Complex Type and Value Tests</h3>
+<p>Beware that <code>intcompvalp</code> and <code>ratcompvapl</code> may return 1 even if the value is of complex type with double parts. However, these functions may be combined with <code>exactp</code>.</p>
+<dl>
+<dt><a name="complexp/rational"></a><code>complexp x</code></dt>
+<dd>standard function; returns whether x is of complex type.
+</dd>
+<dt><a name="compvalp/rational"></a><code>compvalp x</code></dt>
+<dd>standard function; returns whether x has a complex value (∈ <strong>C</strong> = <strong>R</strong>[i]).
+</dd>
+<dt><a name="rational::ratcompvalp"></a><code>rational::ratcompvalp x</code></dt>
+<dd>returns whether x has a rational complex value (∈ <strong>Q</strong>[i]).
+</dd>
+<dt><a name="rational::intcompvalp"></a><code>rational::intcompvalp x</code></dt>
+<dd>returns whether x has an integral complex value (∈ <strong>Z</strong>[i]), i.e. a Gaussian integer value.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 62</strong> Rational complex number value tests:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = [<span class="dv">9</span>, <span class="dv">9</span>%<span class="dv">1</span>, <span class="dv">9</span>%<span class="dv">2</span>, <span class="dv">4.5</span>, sqrt <span class="dv">2</span>, <span class="dv">1</span>+:<span class="dv">1</span>, <span class="dv">1</span>%<span class="dv">2</span>+:<span class="dv">1</span>, <span class="dv">0.5</span>+:<span class="dv">1</span>, inf, nan];
+&gt; map exactp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map inexactp l;
+[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>]
+&gt; map complexp l;
+[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map compvalp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>]
+&gt; map (\x -&gt; (exactp x and compvalp x)) l; <span class="co">// &quot;has exact complex value&quot;</span>
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map ratcompvalp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map (\x -&gt; (exactp x and ratcompvalp x)) l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map intcompvalp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map (\x -&gt; (exactp x and intcompvalp x)) l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map ratvalp l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map (\x -&gt; (exactp x and ratvalp x)) l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map intvalp l; <span class="co">// for comparison</span>
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+&gt; map (\x -&gt; (exactp x and intvalp x)) l;
+[<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>]
+
+See `Type and Value Tests`_ for some details <span class="kw">of</span> rational <span class="kw">type</span> and value tests.</code></pre></div>
+<h3 id="rational-complex-arithmetic-operators-and-relations">Rational Complex Arithmetic Operators and Relations</h3>
+<p>The standard arithmetic operators (+), (−), (*), (/), (%), (), (==) and (~=) are overloaded to have at least one complex and/or rational operand, but (&lt;), (&lt;=), (&gt;), (&gt;=) are not, as complex numbers are unordered.</p>
+<p><strong>Example 63</strong> Rational complex arithmetic:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> w = <span class="dv">1</span>%<span class="dv">2</span> +: <span class="dv">3</span>%<span class="dv">4</span>;
+&gt; <span class="kw">let</span> z = <span class="dv">5</span>%<span class="dv">6</span> +: <span class="dv">7</span>%<span class="dv">8</span>;
+&gt; w + z;
+4L%3L+:13L%8L
+&gt; w % z;
+618L%841L+:108L%841L
+&gt; w / z;
+<span class="dv">0.734839476813318</span>+:<span class="dv">0.128418549346017</span>
+&gt; w ^ <span class="dv">2</span>;
+-<span class="dv">0.3125</span>+:<span class="dv">0.75</span>
+&gt; w == z;
+<span class="dv">0</span>
+&gt; w == w;
+<span class="dv">1</span></code></pre></div>
+<h3 id="rational-complex-maths">Rational Complex Maths</h3>
+<p>The standard functions <code>re</code> and <code>im</code> work with rational complex numbers (see <a href="#rational-complex-constructors-and-deconstructors">Rational Complex Constructors and ‘Deconstructors’</a>).</p>
+<p>The standard functions <code>polar</code>, <code>abs</code> and <code>arg</code> work with rational complex numbers, but the results are inexact.</p>
+<p><strong>Example 64</strong> Rational complex maths:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; polar (<span class="dv">1</span>%<span class="dv">2</span>+:<span class="dv">1</span>%<span class="dv">2</span>);
+<span class="dv">0.707106781186548</span>&lt;:<span class="dv">0.785398163397448</span>
+&gt; abs (<span class="dv">4</span>%<span class="dv">2</span>+:<span class="dv">3</span>%<span class="dv">2</span>);
+<span class="dv">2.5</span>
+&gt; arg (-<span class="dv">1</span>%<span class="dv">1</span>);
+<span class="dv">3.14159265358979</span></code></pre></div>
+<p>There are some additional useful functions for calculating with rational complex numbers and more general mathematical values.</p>
+<dl>
+<dt><a name="rational::norm_gauss"></a><code>rational::norm_gauss c</code></dt>
+<dd>returns the Gaussian norm ||c|| of any complex (or real) number c; this is the square of the absolute value, and is returned as an (exact) integer.
+</dd>
+<dt><a name="rational::div_mod_gauss"></a><code>rational::div_mod_gauss n d</code></dt>
+<dd>performs Gaussian integer division, returning (q, r) where q is a (not always unique) quotient, and r is a (not always unique) remainder. q and r are such that n = q * d + r and ||r|| &lt; ||d|| (equivalently, |r| &lt; |d|).
+</dd>
+<dt><a name="rational::n_div_gauss"></a><code>rational::n_div_gauss d</code></dt>
+<dd>returns just a quotient from Gaussian integer division as produced by div_mod_gauss n d.
+</dd>
+<dt><a name="rational::n_mod_gauss"></a><code>rational::n_mod_gauss d</code></dt>
+<dd>returns just a remainder from Gaussian integer division as produced by div_mod_gauss n d.
+</dd>
+<dt><a name="rational::gcd_gauss"></a><code>rational::gcd_gauss c1 c2</code></dt>
+<dd>returns a GCD G of the Gaussian integers c1,c2. This is chosen so that s.t. ℜ(G) &gt; 0, and either |ℑ(G)| &lt; ℜ(G) or ℑ(G) = ℜ(G) &gt; 0;
+</dd>
+<dt><a name="rational::euclid_gcd"></a><code>rational::euclid_gcd zerofun modfun x y</code></dt>
+<dd>returns a (non-unique) GCD calculated by performing the Euclidean algorithm on the values x and y (of any type) where zerofun is a predicate for equality to 0, and modfun is a binary modulus (remainder) function.
+</dd>
+<dt><a name="rational::euclid_alg"></a><code>rational::euclid_alg zerofun divfun x y</code></dt>
+<dd>returns (g, a, b) where the g is a (non-unique) GCD and a, b are (arbitrary, non-unique) values such that a * x + b * y = g calculated by performing the generalised Euclidean algorithm on the values x and y (of any type) where zerofun is a predicate for equality to 0, and div is a binary quotient function.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 65</strong> More rational complex and other maths:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; norm_gauss (<span class="dv">1</span> +: <span class="dv">3</span>);
+<span class="dv">10</span>
+&gt; abs (<span class="dv">1</span> +: <span class="dv">3</span>);
+<span class="dv">3.16227766016838</span>
+&gt; norm_gauss (-<span class="dv">5</span>);
+<span class="dv">25</span>
+&gt; <span class="kw">let</span> (q, r) = div_mod_gauss <span class="dv">100</span> (<span class="dv">12</span> +: <span class="dv">5</span>);
+&gt; (q, r);
+7L+:-3L,1L+:1L
+&gt; q * (<span class="dv">12</span> +: <span class="dv">5</span>) + r;
+100L+:0L
+&gt; <span class="dv">100</span> div_gauss (<span class="dv">12</span> +: <span class="dv">5</span>);
+7L+:-3L
+&gt; <span class="dv">100</span> mod_gauss (<span class="dv">12</span> +: <span class="dv">5</span>);
+1L+:1L
+&gt; div_mod_gauss <span class="dv">23</span> <span class="dv">5</span>;
+5L+:0L,-2L+:0L
+&gt; gcd_gauss (<span class="dv">1</span> +: <span class="dv">2</span>) (<span class="dv">3</span> +: <span class="dv">4</span>);
+1L+:0L
+&gt; gcd_gauss <span class="dv">25</span> <span class="dv">15</span>;
+5L+:0L
+&gt; euclid_gcd (==<span class="dv">0</span>) (mod_gauss) (<span class="dv">1</span>+: <span class="dv">2</span>) (<span class="dv">3</span> +: <span class="dv">4</span>);
+1L+:0L
+&gt; euclid_gcd (==<span class="dv">0</span>) (mod) <span class="dv">25</span> <span class="dv">15</span>;
+<span class="dv">5</span>
+&gt; <span class="kw">let</span> (g, a, b) = euclid_alg (==<span class="dv">0</span>) (div_gauss) (<span class="dv">1</span> +: <span class="dv">2</span>) (<span class="dv">3</span> +: <span class="dv">4</span>); g;
+1L+:0L
+&gt; (a, b);
+-2L+:0L,1L+:0L
+&gt; a * (<span class="dv">1</span> +: <span class="dv">2</span>) + b * (<span class="dv">3</span> +: <span class="dv">4</span>);
+1L+:0L
+&gt; <span class="kw">let</span> (g, a, b) = euclid_alg (==<span class="dv">0</span>) (div) <span class="dv">25</span> <span class="dv">15</span>; g;
+<span class="dv">5</span>
+&gt; (a, b);
+-<span class="dv">1</span>,<span class="dv">2</span>
+&gt; a * <span class="dv">25</span> + b * <span class="dv">15</span>;
+<span class="dv">5</span></code></pre></div>
+<h3 id="rational-complex-type-simplification">Rational Complex Type Simplification</h3>
+<dl>
+<dt><a name="rational::comp_simplify"></a><code>rational::comp_simplify c</code></dt>
+<dd>returns q with complex numbers simplified to reals, if possible.
+</dd>
+<dt><a name="rational::ratcomp_simplify"></a><code>rational::ratcomp_simplify c</code></dt>
+<dd>returns q with rationals simplified to integers, and complex numbers simplified to reals, if possible.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 66</strong> Rational complex number type simplification:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = [<span class="dv">9</span>+:<span class="dv">1</span>, <span class="dv">9</span>%<span class="dv">1</span>+:<span class="dv">1</span>, <span class="dv">9</span>%<span class="dv">2</span>+:<span class="dv">1</span>, <span class="dv">4.5</span>+:<span class="dv">1</span>, <span class="dv">9</span>%<span class="dv">1</span>+:<span class="dv">0</span>, <span class="dv">9</span>%<span class="dv">2</span>+:<span class="dv">0</span>, <span class="dv">4.5</span>+:<span class="dv">0.0</span>];
+&gt; l;
+[<span class="dv">9</span>+:<span class="dv">1</span>,9L%1L+:<span class="dv">1</span>,9L%2L+:<span class="dv">1</span>,<span class="dv">4.5</span>+:<span class="dv">1</span>,9L%1L+:<span class="dv">0</span>,9L%2L+:<span class="dv">0</span>,<span class="dv">4.5</span>+:<span class="dv">0.0</span>]
+&gt; map comp_simplify l;
+[<span class="dv">9</span>+:<span class="dv">1</span>,9L%1L+:<span class="dv">1</span>,9L%2L+:<span class="dv">1</span>,<span class="dv">4.5</span>+:<span class="dv">1</span>,9L%1L,9L%2L,<span class="dv">4.5</span>+:<span class="dv">0.0</span>]
+&gt; map ratcomp_simplify l;
+[<span class="dv">9</span>+:<span class="dv">1</span>,<span class="dv">9</span>+:<span class="dv">1</span>,9L%2L+:<span class="dv">1</span>,<span class="dv">4.5</span>+:<span class="dv">1</span>,<span class="dv">9</span>,9L%2L,<span class="dv">4.5</span>+:<span class="dv">0.0</span>]
+
+See `Rational Type Simplification`_ for some details <span class="kw">of</span> rational <span class="kw">type</span>
+simplification.</code></pre></div>
+<h2 id="string-formatting-and-evaluation">String Formatting and Evaluation</h2>
+<h3 id="the-naming-of-the-string-conversion-functions">The Naming of the String Conversion Functions</h3>
+<p>There are several families of functions for converting between strings and rationals.</p>
+<p>The functions that convert from rationals to strings have names based on that of the standard function <code>str</code>. The <code>str_*</code> functions convert to a formatted string, and depend on a ‘format structure’ parameter (see <a href="#internationalisation-and-format-structures">Internationalisation and Format Structures</a>). The <code>strs_*</code> functions convert to a tuple of string fragments.</p>
+<p>The functions that convert from strings to rationals have names based on that of the standard function <code>eval</code> (<code>val</code> in Q). The <code>val_*</code> functions convert from a formatted string, and depend on a format structure parameter. The <code>sval_*</code> functions convert from a tuple of string fragments.</p>
+<p>There are also <code>join_*</code> and <code>split_*</code> functions to join string fragments into formatted strings, and to split formatted strings into string fragments, respectively; these depend on a format structure parameter. These functions are not always invertible, because some of the functions reduce an error term to just a sign, e.g. <a href="#rational::str_real_approx_dp"><code>str_real_approx_dp</code></a> may round a value. Thus sometimes the <code>join_*</code> and <code>split_*</code> pairs, and the <code>str_*</code> and <code>val_*</code> pairs are not quite mutual inverses.</p>
+<h3 id="internationalisation-and-format-structures">Internationalisation and Format Structures</h3>
+<p>Many of the string formatting functions in the following sections are parameterised by a ‘format structure’. Throughout this document, the formal parameter for the format structure will be <code>fmt</code>. This is simply a record mapping some string ‘codes’ to functions as follows. The functions are mostly from strings to a string, or from a string to a tuple of strings.</p>
+<dl>
+<dt><code>&quot;sm&quot;</code></dt>
+<dd><p>a function mapping a sign and an unsigned mantissa (or integer) strings to a signed mantissa (or integer) string.</p>
+</dd>
+<dt><code>&quot;se&quot;</code></dt>
+<dd><p>a function mapping a sign and an unsigned exponent string to a signed exponent string.</p>
+</dd>
+<dt><code>&quot;-s&quot;</code></dt>
+<dd><p>a function mapping a signed number string to a pair containing a sign and the unsigned number string.</p>
+</dd>
+<dt><code>&quot;gi&quot;</code></dt>
+<dd><p>a function mapping an integer representing the group size and an integer string to a grouped integer string.</p>
+</dd>
+<dt><code>&quot;gf&quot;</code></dt>
+<dd><p>a function mapping an integer representing the group size and a fraction-part string to a grouped fraction-part string.</p>
+</dd>
+<dt><code>&quot;-g&quot;</code></dt>
+<dd><p>a function mapping a grouped number string to an ungrouped number string.</p>
+</dd>
+<dt><code>&quot;zi&quot;</code></dt>
+<dd><p>a function mapping an integer number string to a number string. The input string representing zero integer part is “”, which should be mapped to the desired representation of zero. All other number strings should be returned unaltered.</p>
+</dd>
+<dt><code>&quot;zf&quot;</code></dt>
+<dd><p>a function mapping a fraction-part number string to a number string. The input string representing zero fraction part is “”, which should be mapped to the desired representation of zero. All other number strings should be returned unaltered.</p>
+</dd>
+<dt><code>&quot;ir&quot;</code></dt>
+<dd><p>a function mapping initial and recurring parts of a fraction part to the desired format.</p>
+</dd>
+<dt><code>&quot;-ir&quot;</code></dt>
+<dd><p>a function mapping a formatted fraction part to the component initial and recurring parts.</p>
+</dd>
+<dt><code>&quot;if&quot;</code></dt>
+<dd><p>a function mapping an integer string and fraction part string to the radix-point formatted string.</p>
+</dd>
+<dt><code>&quot;-if&quot;</code></dt>
+<dd><p>a function mapping a radix-point formatted string to the component integer fraction part strings</p>
+</dd>
+<dt><code>&quot;me&quot;</code></dt>
+<dd><p>a function mapping a mantissa string and exponent string to the formatted exponential string.</p>
+</dd>
+<dt><code>&quot;-me&quot;</code></dt>
+<dd><p>a function mapping a formatted exponential string to the component mantissa and exponent strings.</p>
+</dd>
+<dt><code>&quot;e&quot;</code></dt>
+<dd><p>a function mapping an ‘error’ number (not string) and a number string to a formatted number string indicating the sign of the error.</p>
+</dd>
+<dt><code>&quot;-e&quot;</code></dt>
+<dd><p>a function mapping a formatted number string indicating the sign of the error to the component ‘error’ string (not number) and number strings.</p>
+</dd>
+</dl>
+<p>Depending upon the format structure, some parameters of some of the functions taking a format structure may have no effect. For example, an <code>intGroup</code> parameter specifying the size of the integer digit groups will have no effect if the integer group separator is the empty string.</p>
+<dl>
+<dt><a name="rational::create_format"></a><code>rational::create_format options</code></dt>
+<dd>is a function that provides an easy way to prepare a ‘format structure’ from the simpler ‘options structure’. The options structure is another record, but from more descriptive strings to a string or tuple of strings.
+</dd>
+</dl>
+<!-- -->
+<p>For example, <code>format_uk</code> is generated from <code>options_uk</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">public</span> options_uk;
+<span class="kw">const</span> options_uk =
+  {
+    <span class="st">&quot;sign&quot;</span> =&gt; (<span class="st">&quot;-&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>),             <span class="co">// alternative: (&quot;-&quot;,&quot; &quot;,&quot;+&quot;)</span>
+    <span class="st">&quot;exponent sign&quot;</span> =&gt; (<span class="st">&quot;-&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>),    <span class="co">// alternative: (&quot;-&quot;,&quot;&quot;,&quot;+&quot;)</span>
+    <span class="st">&quot;group separator&quot;</span> =&gt; <span class="st">&quot;,&quot;</span>,          <span class="co">// might be &quot; &quot; or &quot;.&quot; or &quot;&#39;&quot; elsewhere</span>
+    <span class="st">&quot;zero&quot;</span> =&gt; <span class="st">&quot;0&quot;</span>,
+    <span class="st">&quot;radix point&quot;</span> =&gt; <span class="st">&quot;.&quot;</span>,              <span class="co">// might be &quot;,&quot; elsewhere</span>
+    <span class="st">&quot;fraction group separator&quot;</span> =&gt; <span class="st">&quot;,&quot;</span>,
+    <span class="st">&quot;fraction zero&quot;</span> =&gt; <span class="st">&quot;0&quot;</span>,            <span class="co">// alternative: &quot;&quot;</span>
+    <span class="st">&quot;recur brackets&quot;</span> =&gt; (<span class="st">&quot;[&quot;</span>,<span class="st">&quot;...]&quot;</span>),
+    <span class="st">&quot;exponent&quot;</span> =&gt; <span class="st">&quot;*10^&quot;</span>,              <span class="co">// (poor) alternative: &quot;e&quot;</span>
+    <span class="st">&quot;error sign&quot;</span> =&gt; (<span class="st">&quot;-&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;+&quot;</span>),
+    <span class="st">&quot;error brackets&quot;</span> =&gt; (<span class="st">&quot;(&quot;</span>,<span class="st">&quot;)&quot;</span>)
+  };
+
+<span class="kw">public</span> format_uk;
+<span class="kw">const</span> format_uk = create_format options_uk;</code></pre></div>
+<p>The exponent string need not depend on the radix, as the numerals for the number radix in that radix are always “10”.</p>
+<p>Beware of using “e” or “E” as an exponent string as these have the potential of being treated as digits in, e.g., hexadecimal.</p>
+<p>Format structures do not have to be generated via create format; they may also be constructed directly.</p>
+<h3 id="digit-grouping">Digit Grouping</h3>
+<p>Some functions take <code>group</code> parameters. A value of 0 means “don’t group”.</p>
+<h3 id="radices">Radices</h3>
+<p>The functions that produce a decimal expansion take a Radix argument. The fraction parts are expanded in that radix (or ‘base’), in addition to the integer parts. The parameter Radix is not restricted to the usual {2, 8, 10, 16}, but may be any integer from 2 to 36; the numerals (‘digits’) are chosen from [“0”, … , “9”, “A”, … , “Z”]. The letter-digits are always upper case.</p>
+<p>The functions do not attach a prefix (such as “0x” for hexadecimal) to the resulting string.</p>
+<h3 id="error-terms">Error Terms</h3>
+<p>Some functions return a value including an ‘error’ term (in a tuple) or sign (at the end of a string). Such an error is represents what the next digit would be as a fraction of the radix.</p>
+<p><strong>Example 67</strong> Error term in the tuple of string ‘fragments’:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; strs_real_approx_sf <span class="dv">10</span> floor <span class="dv">3</span> (<span class="dv">234567</span>%<span class="dv">100000</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;2&quot;</span>,<span class="st">&quot;34&quot;</span>,567L%1000L
+&gt; strs_real_approx_sf <span class="dv">10</span> ceil <span class="dv">3</span> (<span class="dv">234567</span>%<span class="dv">100000</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;2&quot;</span>,<span class="st">&quot;35&quot;</span>,(-433L)%1000L</code></pre></div>
+<p>(See the function <a href="#rational::strs_real_approx_sf"><code>strs_real_approx_sf</code></a>.)</p>
+<p>In strings, only the sign of the error term is given. A “+” should be read as “and a bit more”; “-” as “but a bit less”.</p>
+<p><strong>Example 68</strong> Error sign in the string:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_approx_sf format_uk <span class="dv">10</span> <span class="dv">0</span> <span class="dv">0</span> floor <span class="dv">3</span> (<span class="dv">234567</span>%<span class="dv">100000</span>);
+<span class="st">&quot;2.34(+)&quot;</span>
+&gt; str_real_approx_sf format_uk <span class="dv">10</span> <span class="dv">0</span> <span class="dv">0</span> ceil <span class="dv">3</span> (<span class="dv">234567</span>%<span class="dv">100000</span>);
+<span class="st">&quot;2.35(-)&quot;</span></code></pre></div>
+<p>(See the function <a href="#rational::str_real_approx_sf"><code>str_real_approx_sf</code></a>.)</p>
+<h2 id="q---fraction-string-i-nd"><strong>Q</strong> &lt;-&gt; Fraction String (“i + n/d”)</h2>
+<h3 id="formatting-to-fraction-strings">Formatting to Fraction Strings</h3>
+<dl>
+<dt><a name="rational::str_vulgar"></a><code>rational::str_vulgar q</code></dt>
+<dd><p>returns a String representing the rational (or integer) q in the form</p>
+<ul>
+<li>“[−]n/d”</li>
+</ul>
+</dd>
+<dt><a name="rational::str_vulgar_or_int"></a><code>rational::str_vulgar_or_int q</code></dt>
+<dd><p>returns a String representing the rational (or integer) q in one of the forms</p>
+<ul>
+<li>“[−]n/d”</li>
+<li>“[−]i”</li>
+</ul>
+</dd>
+<dt><a name="rational::str_mixed"></a><code>rational::str_mixed q</code></dt>
+<dd><p>returns a String representing the rational (or integer) q in one of the forms</p>
+<ul>
+<li>“i + n/d”</li>
+<li>“−(i + n/d)”</li>
+<li>“[−]n/d”</li>
+<li>“[−]i”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 69</strong> The fraction string representations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> l = iterwhile (&lt;= <span class="dv">3</span>%<span class="dv">2</span>) (+(<span class="dv">1</span>%<span class="dv">2</span>)) (-<span class="dv">3</span>%<span class="dv">2</span>);
+&gt; l;
+[(-3L)%2L,(-1L)%1L,(-1L)%2L,0L%1L,1L%2L,1L%1L,3L%2L]
+&gt; map str_vulgar l;
+[<span class="st">&quot;-3L/2L&quot;</span>,<span class="st">&quot;-1L/1L&quot;</span>,<span class="st">&quot;-1L/2L&quot;</span>,<span class="st">&quot;0L/1L&quot;</span>,<span class="st">&quot;1L/2L&quot;</span>,<span class="st">&quot;1L/1L&quot;</span>,<span class="st">&quot;3L/2L&quot;</span>]
+&gt; map str_vulgar_or_int l;
+[<span class="st">&quot;-3L/2L&quot;</span>,<span class="st">&quot;-1L&quot;</span>,<span class="st">&quot;-1L/2L&quot;</span>,<span class="st">&quot;0L&quot;</span>,<span class="st">&quot;1L/2L&quot;</span>,<span class="st">&quot;1L&quot;</span>,<span class="st">&quot;3L/2L&quot;</span>]
+&gt; map str_mixed l;
+[<span class="st">&quot;-(1L+1L/2L)&quot;</span>,<span class="st">&quot;-1L&quot;</span>,<span class="st">&quot;-1L/2L&quot;</span>,<span class="st">&quot;0L&quot;</span>,<span class="st">&quot;1L/2L&quot;</span>,<span class="st">&quot;1L&quot;</span>,<span class="st">&quot;1L+1L/2L&quot;</span>]</code></pre></div>
+<p>These might be compared to the behaviour of the standard function <code>str</code>.</p>
+<dl>
+<dt><a name="str/rational"></a><code>str x</code></dt>
+<dd>returns a string representing the value x.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 70</strong> The standard function str:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; map str l;
+[<span class="st">&quot;(-3L)%2L&quot;</span>,<span class="st">&quot;(-1L)%1L&quot;</span>,<span class="st">&quot;(-1L)%2L&quot;</span>,<span class="st">&quot;0L%1L&quot;</span>,<span class="st">&quot;1L%2L&quot;</span>,<span class="st">&quot;1L%1L&quot;</span>,<span class="st">&quot;3L%2L&quot;</span>]</code></pre></div>
+<h3 id="evaluation-of-fraction-strings">Evaluation of Fraction Strings</h3>
+<dl>
+<dt><a name="rational::val_vulgar"></a><code>rational::val_vulgar strg</code></dt>
+<dd><p>returns a rational q represented by the string strg in the form</p>
+<ul>
+<li>“[−]n/d”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p>Such strings can also be evaluated by the <code>val_mixed</code> function.</p>
+<dl>
+<dt><a name="rational::val_mixed"></a><code>rational::val_mixed strg</code></dt>
+<dd><p>returns a rational q represented by the string strg</p>
+<ul>
+<li>“i + n/d”</li>
+<li>“−(i + n/d)”</li>
+<li>“[−]n/d” — thus val_mixed strictly extends val_vulgar</li>
+<li>“[−]i”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 71</strong> Evaluating fraction strings:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; val_vulgar <span class="st">&quot;-22/7&quot;</span>;
+(-22L)%7L
+&gt; val_mixed <span class="st">&quot;1L+5L/6L&quot;</span>;
+11L%6L</code></pre></div>
+<p>These might be compared to the behaviour of the standard function eval.</p>
+<dl>
+<dt><a name="eval/rational"></a><code>eval s</code></dt>
+<dd>evaluates the string s.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 72</strong> The standard function eval:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; eval <span class="st">&quot;1+5%6&quot;</span>;
+11L%6L
+&gt; eval <span class="st">&quot;1L+5L/6L&quot;</span>;
+<span class="dv">1.83333333333333</span></code></pre></div>
+<h2 id="q---recurring-numeral-expansion-string-i.fr"><strong>Q</strong> &lt;-&gt; Recurring Numeral Expansion String (“I.FR”)</h2>
+<p>See <a href="#internationalisation-and-format-structures">Internationalisation and Format Structures</a> for information about the formatting structure to be supplied in the <code>fmt</code> parameter.</p>
+<h3 id="formatting-to-recurring-expansion-strings">Formatting to Recurring Expansion Strings</h3>
+<dl>
+<dt><a name="rational::str_real_recur"></a><code>rational::str_real_recur fmt radix intGroup q</code></dt>
+<dd><p>returns a string (exactly) representing the rational (or integer) q as base-Radix expansion of one the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.init frac part[smallest recurring frac part …]”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p>Note that there is no fracGroup parameter.</p>
+<p>Beware that the string returned by this function can be very long. The length of the recurring part of such a decimal expansion may be up to one less than the simplest denominator of q.</p>
+<p><strong>Example 73</strong> The recurring radix expansion-type string representations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">3</span> (<span class="dv">4000001</span>%<span class="dv">4</span>); <span class="co">// grouped with commas</span>
+<span class="st">&quot;1,000,000.25&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">0</span> (<span class="dv">4000001</span>%<span class="dv">4</span>); <span class="co">// no grouping</span>
+<span class="st">&quot;1000000.25&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">3</span> (<span class="dv">1000000</span>%<span class="dv">3</span>);
+<span class="st">&quot;333,333.[3...]&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">3</span> (<span class="dv">1000000</span>%<span class="dv">7</span>);
+<span class="st">&quot;142,857.[142857...]&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">3</span> (-<span class="dv">1</span>%<span class="dv">700</span>);
+<span class="st">&quot;-0.00[142857...]&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">3</span> (<span class="dv">127</span>%<span class="dv">128</span>);
+<span class="st">&quot;0.9921875&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">2</span> <span class="dv">4</span> (-<span class="dv">127</span>%<span class="dv">128</span>);
+<span class="st">&quot;-0.1111111&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">16</span> <span class="dv">4</span> (<span class="dv">127</span>%<span class="dv">128</span>);
+<span class="st">&quot;0.FE&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">0</span> (<span class="dv">70057</span>%<span class="dv">350</span>); <span class="co">// 1%7 + 10001%50;</span>
+<span class="st">&quot;200.16[285714...]&quot;</span></code></pre></div>
+<p>The function allows expansion to different radices (bases).</p>
+<p><strong>Example 74</strong> The recurring radix expansion in decimal and hexadecimal:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_recur format_uk <span class="dv">10</span> <span class="dv">0</span> (<span class="dv">1</span>%<span class="dv">100</span>);
+<span class="st">&quot;0.01&quot;</span>
+&gt; str_real_recur format_uk <span class="dv">16</span> <span class="dv">0</span> (<span class="dv">1</span>%<span class="dv">100</span>);
+<span class="st">&quot;0.0[28F5C...]&quot;</span></code></pre></div>
+<p><strong>Example 75</strong> The recurring radix expansion in duodecimal:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_recur format_uk <span class="dv">12</span> <span class="dv">0</span> (<span class="dv">1</span>%<span class="dv">100</span>);
+<span class="st">&quot;0.0[15343A0B62A68781B059...]&quot;</span></code></pre></div>
+<p>Note that this bracket notation is not standard in the literature. Usually the recurring numerals are indicated by a single dot over the initial and final numerals of the recurring part, or an overline over the recurring part. For example 1/70 = 0.0˙14285˙7 = 0.0142857 and 1/3 = 0.˙3 = 0.3.</p>
+<dl>
+<dt><a name="rational::strs_real_recur"></a><code>rational::strs_real_recur radix q</code></dt>
+<dd><p>returns a quadruple of the four strings:</p>
+<ul>
+<li>the sign,</li>
+<li>integer part (which is empty for 0),</li>
+<li>initial fraction part</li>
+<li>and recurring fraction part (either and both of which may be empty).</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 76</strong> The recurring radix expansion in decimal — the fragments:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; strs_real_recur <span class="dv">10</span> (<span class="dv">100</span>%<span class="dv">7</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;285714&quot;</span>
+&gt; strs_real_recur <span class="dv">10</span> (-<span class="dv">1</span>%<span class="dv">700</span>);
+<span class="st">&quot;-&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;00&quot;</span>,<span class="st">&quot;142857&quot;</span>
+&gt; strs_real_recur <span class="dv">10</span> (<span class="dv">70057</span>%<span class="dv">350</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;200&quot;</span>,<span class="st">&quot;16&quot;</span>,<span class="st">&quot;285714&quot;</span></code></pre></div>
+<p>This function may be used to also, e.g. format the integer part with comma-separated groupings.</p>
+<dl>
+<dt><a name="rational::join_str_real_recur"></a><code>rational::join_str_real_recur fmt intGroup sign i fracInit fracRecur</code></dt>
+<dd>formats the parts in the quadruple returned by <a href="#rational::strs_real_recur"><code>strs_real_recur</code></a> to the sort of string as returned by <a href="#rational::str_real_recur"><code>str_real_recur</code></a>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="evaluation-of-recurring-expansion-strings">Evaluation of Recurring Expansion Strings</h3>
+<p>The <code>str_*</code> and <code>val_*</code> functions depend on a ‘format structure’ parameter (fmt) such as format uk. Conversions may be performed between rationals and differently formatted strings if a suitable alternative format structure is supplied. See <a href="#internationalisation-and-format-structures">Internationalisation and Format Structures</a> for information about formatting structures.</p>
+<dl>
+<dt><a name="rational::val_real_recur"></a><code>rational::val_real_recur fmt radix strg</code></dt>
+<dd><p>returns the rational q represented by the base-radix expansion string strg of one the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.init frac part[recurring frac part …]”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 77</strong> Conversion from the recurring radix expansion-type string representations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; val_real_recur format_uk <span class="dv">10</span> <span class="st">&quot;-12.345&quot;</span>;
+(-2469L)%200L
+&gt; val_real_recur format_uk <span class="dv">10</span> <span class="st">&quot;0.3&quot;</span>;
+3L%10L
+&gt; val_real_recur format_uk <span class="dv">10</span> <span class="st">&quot;0.[3...]&quot;</span>;
+1L%3L
+&gt; val_real_recur format_uk <span class="dv">10</span> <span class="st">&quot;.333[33...]&quot;</span>;
+1L%3L
+&gt; val_real_recur format_uk <span class="dv">10</span> <span class="st">&quot;.[9...]&quot;</span>;
+1L%1L</code></pre></div>
+<dl>
+<dt><a name="rational::sval_real_recur"></a><code>rational::sval_real_recur radix sign iStr fracStr recurPartStr</code></dt>
+<dd><p>returns the rational q represented by the parts</p>
+<ul>
+<li>sign</li>
+<li>integer part</li>
+<li>initial fraction part</li>
+<li>recurring fraction part</li>
+</ul>
+</dd>
+<dt><a name="rational::split_str_real_recur"></a><code>rational::split_str_real_recur Fmt strg</code></dt>
+<dd><p>returns a tuple containing the parts</p>
+<ul>
+<li>sign</li>
+<li>integer part</li>
+<li>initial fraction part</li>
+<li>recurring fraction part of one the forms
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.init frac part[recurring frac part …]”</li>
+</ul></li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<h2 id="q---numeral-expansion-string-i.f-10e"><strong>Q</strong> &lt;-&gt; Numeral Expansion String (“I.F × 10E”)</h2>
+<p>See <a href="#internationalisation-and-format-structures">Internationalisation and Format Structures</a> for information about the formatting structure to be supplied in the <code>fmt</code> parameter.</p>
+<p>The exponent string “*10^” need not depend on the radix, as the numerals for the number radix in that radix are always “10”.</p>
+<h3 id="formatting-to-expansion-strings">Formatting to Expansion Strings</h3>
+<h4 id="functions-for-fixed-decimal-places">Functions for Fixed Decimal Places</h4>
+<dl>
+<dt><a name="rational::str_real_approx_dp"></a><code>rational::str_real_approx_dp fmt radix intGroup fracGroup roundfun dp q</code></dt>
+<dd>returns a string representing a numeral expansion approximation of q to dp decimal places, using rounding mode <code>roundfun</code> (see <a href="#rounding-to-integer">Rounding to Integer</a>) <code>roundfun</code> is usually <a href="purelib.html#round"><code>round</code></a> or <a href="#rational::round_unbiased"><code>round_unbiased</code></a>. (dp may be positive, zero or negative; non-positive dps may look misleading — use e.g. scientific notation instead.)
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 78</strong> Decimal places:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_approx_dp format_uk <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> round <span class="dv">2</span> (<span class="dv">22</span>%<span class="dv">7</span>);
+<span class="st">&quot;3.14(+)&quot;</span>
+&gt; str_real_approx_dp format_uk <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> ceil <span class="dv">2</span> (<span class="dv">22</span>%<span class="dv">7</span>);
+<span class="st">&quot;3.15(-)&quot;</span></code></pre></div>
+<dl>
+<dt><a name="rational::strs_real_approx_dp"></a><code>rational::strs_real_approx_dp radix roundfun do q</code></dt>
+<dd><p>returns a tuple of strings</p>
+<ul>
+<li>sign</li>
+<li>integer part</li>
+<li>fraction part</li>
+</ul>
+<p>representing an expansion to a number of decimal places, together with</p>
+<ul>
+<li>the rounding “error”: a fraction representing the next numerals.</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 79</strong> Decimal places — the fragments:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; strs_real_approx_dp <span class="dv">10</span> round <span class="dv">2</span> (<span class="dv">22</span>%<span class="dv">7</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;3&quot;</span>,<span class="st">&quot;14&quot;</span>,2L%7L
+&gt; strs_real_approx_dp <span class="dv">10</span> ceil <span class="dv">2</span> (<span class="dv">22</span>%<span class="dv">7</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;3&quot;</span>,<span class="st">&quot;15&quot;</span>,(-5L)%7L</code></pre></div>
+<dl>
+<dt><a name="rational::join_str_real_approx"></a><code>rational::join_str_real_approx fmt intGroup fracGroup sign i frac err</code></dt>
+<dd>formats the parts in the quadruple returned by <a href="#rational::strs_real_approx_dp"><code>strs_real_approx_dp</code></a> or <a href="#rational::strs_real_approx_sf"><code>strs_real_approx_sf</code></a> to the sort of string as returned by <a href="#rational::str_real_approx_dp"><code>str_real_approx_dp</code></a> or <a href="#rational::str_real_approx_sf"><code>str_real_approx_sf</code></a>.
+</dd>
+</dl>
+<!-- -->
+<h4 id="functions-for-significant-figures">Functions for Significant Figures</h4>
+<dl>
+<dt><a name="rational::str_real_approx_sf"></a><code>rational::str_real_approx_sf fmt radix intGroup fracGroup roundfun sf q</code></dt>
+<dd>returns a string representing a numeral expansion approximation of q to sf significant figures, using rounding mode <code>roundfun</code> (see <a href="#rounding-to-integer">Rounding to Integer</a>).
+</dd>
+</dl>
+<!-- -->
+<p><code>roundfun</code> is usually <a href="purelib.html#round"><code>round</code></a> or <a href="#rational::round_unbiased"><code>round_unbiased</code></a>. (sf must be positive.)</p>
+<p><strong>Example 80</strong> Significant figures:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_approx_sf format_uk <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> floor <span class="dv">2</span> (<span class="dv">22</span>%<span class="dv">7</span>);
+<span class="st">&quot;3.1(+)&quot;</span>
+&gt; str_real_approx_sf format_uk <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> floor <span class="dv">2</span> ((-<span class="dv">22</span>)%<span class="dv">7</span>);
+<span class="st">&quot;-3.2(+)&quot;</span></code></pre></div>
+<dl>
+<dt><a name="rational::strs_real_approx_sf"></a><code>rational::strs_real_approx_sf radix roundfun sf q</code></dt>
+<dd><p>returns a tuple of strings</p>
+<ul>
+<li>sign,</li>
+<li>integer part,</li>
+<li>fraction part, representing an expansion to a number of significant figures, together with</li>
+<li>the rounding “error”: a fraction representing the next numerals</li>
+</ul>
+</dd>
+<dt><a name="join_str_real_approx"></a><code>join_str_real_approx</code></dt>
+<dd>see <a href="#rational::join_str_real_approx"><code>join_str_real_approx</code></a>.
+</dd>
+</dl>
+<!-- -->
+<h4 id="functions-for-scientific-notation-and-engineering-notation">Functions for Scientific Notation and Engineering Notation</h4>
+<dl>
+<dt><a name="rational::str_real_approx_sci"></a><code>rational::str_real_approx_sci fmt radix intGroup fracGroup roundfun sf q</code></dt>
+<dd><p>returns a string expansion with a number of significant figures in scientific notation, using rounding mode <code>roundfun</code> (see <a href="#rounding-to-integer">Rounding to Integer</a>).</p>
+<p>(sf must be positive; expStep is usually 3, radix is usually 10, <code>roundfun</code> is usually <a href="purelib.html#round"><code>round</code></a> or <a href="#rational::round_unbiased"><code>round_unbiased</code></a>; <a href="#rational::str_real_approx_sci"><code>str_real_approx_sci</code></a> is equivalent to <a href="#rational::str_real_approx_eng"><code>str_real_approx_eng</code></a> (below) with expStep = 1.)</p>
+</dd>
+<dt><a name="rational::strs_real_approx_sci"></a><code>rational::strs_real_approx_sci radix roundfun sf q</code></dt>
+<dd><p>returns a tuple of strings:</p>
+<ul>
+<li>sign of mantissa,</li>
+<li>integer part of mantissa,</li>
+<li>fraction part of mantissa,</li>
+<li>sign of exponent,</li>
+<li>exponent magnitude</li>
+</ul>
+<p>representing an expansion to a number of significant figures in scientific notation together with</p>
+<ul>
+<li>the rounding “error”: a fraction representing the next numerals.</li>
+</ul>
+</dd>
+<dt><a name="rational::str_real_approx_eng"></a><code>rational::str_real_approx_eng fmt expStep radix intGroup fracGroup round sf q</code></dt>
+<dd><p>returns a string expansion with a number of significant figures in engineering notation, using rounding mode roundfun.</p>
+<p>The ExpStep parameter specifies the granularity of the exponent; specifically, the exponent will always be divisible by expStep.</p>
+<p>(sf must be positive; expStep is usually 3 and must be positive, radix is usually 10, <code>roundfun</code> is usually <a href="purelib.html#round"><code>round</code></a> or <a href="#rational::round_unbiased"><code>round_unbiased</code></a>.)</p>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 81</strong> Engineering notation:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; str_real_approx_eng format_uk <span class="dv">3</span> <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> round <span class="dv">7</span> (rational <span class="dv">999950</span>);
+<span class="st">&quot;999.950,0*10^3&quot;</span>
+&gt; str_real_approx_eng format_uk <span class="dv">3</span> <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> round <span class="dv">4</span> <span class="dv">999950</span>;
+<span class="st">&quot;1.000*10^6(-)&quot;</span></code></pre></div>
+<dl>
+<dt><a name="rational::strs_real_approx_eng"></a><code>rational::strs_real_approx_eng expStep radix roundfun sf q</code></dt>
+<dd><p>returns a tuple of strings:</p>
+<ul>
+<li>sign of mantissa,</li>
+<li>integer part of mantissa,</li>
+<li>fraction part of mantissa,</li>
+<li>sign of exponent,</li>
+<li>exponent magnitude</li>
+</ul>
+<p>representing an expansion to a number of significant figures in engineering notation together with</p>
+<ul>
+<li>the rounding “error”: a fraction representing the next numerals.</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 82</strong> Engineering notation — the fragments:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; strs_real_approx_eng <span class="dv">3</span> <span class="dv">10</span> round <span class="dv">7</span> (rational <span class="dv">999950</span>);
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;999&quot;</span>,<span class="st">&quot;9500&quot;</span>,<span class="st">&quot;+&quot;</span>,<span class="st">&quot;3&quot;</span>,0L%1L
+&gt; strs_real_approx_eng <span class="dv">3</span> <span class="dv">10</span> round <span class="dv">4</span> <span class="dv">999950</span>;
+<span class="st">&quot;+&quot;</span>,<span class="st">&quot;1&quot;</span>,<span class="st">&quot;000&quot;</span>,<span class="st">&quot;+&quot;</span>,<span class="st">&quot;6&quot;</span>,(-1L)%20L</code></pre></div>
+<dl>
+<dt><a name="rational::join_str_real_eng"></a><code>rational::join_str_real_eng fmt intGroup fracGroup mantSign mantI mantF rac expSign expI err</code></dt>
+<dd>formats the parts in the quadruple returned by <code>strs_real_approx_eng</code> or strs_real_approx_sci to the sort of string as returned by <a href="#rational::str_real_approx_eng"><code>str_real_approx_eng</code></a> or <a href="#rational::str_real_approx_sci"><code>str_real_approx_sci</code></a>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="evaluation-of-expansion-strings">Evaluation of Expansion Strings</h3>
+<p>The <code>str_*</code> and <code>val_*</code> functions depend on a ‘format structure’ parameter (fmt) such as format uk. Conversions may be performed between rationals and differently formatted strings if a suitable alternative format structure is supplied. See <a href="#internationalisation-and-format-structures">Internationalisation and Format Structures</a> for information about formatting structures.</p>
+<dl>
+<dt><a name="rational::val_real_eng"></a><code>rational::val_real_eng fmt radix strg</code></dt>
+<dd><p>returns the rational q represented by the base-radix expansion string strg of one the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.frace[−]exponent”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 83</strong> Conversion from the recurring radix expansion-type string representations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; val_real_eng format_uk <span class="dv">10</span> <span class="st">&quot;-12.345&quot;</span>;
+(-2469L)%200L
+&gt; val_real_eng format_uk <span class="dv">10</span> <span class="st">&quot;-12.345*10^2&quot;</span>;
+(-2469L)%2L</code></pre></div>
+<dl>
+<dt><a name="rational::sval_real_eng"></a><code>rational::sval_real_eng radix signStr mantIStr mantF racStr expSignStr expStr</code></dt>
+<dd><p>returns the rational q represented by the parts</p>
+<ul>
+<li>sign</li>
+<li>integer part of mantissa</li>
+<li>fraction part of mantissa</li>
+<li>sign of exponent</li>
+<li>exponent</li>
+</ul>
+</dd>
+<dt><a name="rational::split_str_real_eng"></a><code>rational::split_str_real_eng fmt strg</code></dt>
+<dd><p>returns a tuple containing the string parts</p>
+<ul>
+<li>sign</li>
+<li>integer part of mantissa</li>
+<li>fraction part of mantissa</li>
+<li>sign of exponent</li>
+<li>exponent</li>
+<li>the “error” sign</li>
+</ul>
+<p>of one the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.frac ×10^[−]exponent”</li>
+</ul>
+</dd>
+</dl>
+<!-- -->
+<p>These functions can deal with the fixed decimal places, the significant figures and the scientific notation in addition to the engineering notation.</p>
+<h2 id="numeral-string---q-approximation">Numeral String -&gt; <strong>Q</strong> — Approximation</h2>
+<p>This section describes functions to approximate by a rational a real number represented by a string. See <a href="#r--gt-q-approximation">R -&gt; Q — Approximation</a> for approximation by a rational of a double.</p>
+<p>The <code>str_*</code> and <code>val_*</code> functions depend on a ‘format structure’ parameter (fmt) such as format uk. Conversions may be performed between rationals and differently formatted strings if a format structure is supplied. See <a href="#internationalisation-and-format-structures">Internationalisation and Format Structures</a> for information about formatting structures.</p>
+<dl>
+<dt><a name="rational::val_eng_approx_epsilon"></a><code>rational::val_eng_approx_epsilon fmt radix epsilon strg</code></dt>
+<dd><p>Find the least complex rational approximation q to the number represented by the base-radix expansion string str in one of the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.frac ×10^[−]exponent”</li>
+</ul>
+<p>that is ε-close. That is find a q such that |q − eval str| ≤ ε.</p>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 84</strong> Rational from a long string:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> strg = <span class="st">&quot;123.456,789,876,543,212,345,678,987,654,321*10^27&quot;</span>;
+&gt; <span class="kw">let</span> x = val_real_eng format_uk <span class="dv">10</span> strg;
+&gt; x;
+123456789876543212345678987654321L%1000L
+&gt; <span class="kw">let</span> q = val_eng_approx_epsilon format_uk <span class="dv">10</span> (<span class="dv">1</span>%<span class="dv">100</span>) strg;
+&gt; q;
+1975308638024691397530863802469L%16L
+&gt; <span class="dt">double</span> (x - q);
+<span class="dv">0.0085</span>
+&gt; str_real_approx_eng format_uk <span class="dv">3</span> <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> round <span class="dv">30</span> q;
+<span class="st">&quot;123.456,789,876,543,212,345,678,987,654*10^27(+)&quot;</span>
+&gt; str_real_approx_eng format_uk <span class="dv">3</span> <span class="dv">10</span> <span class="dv">3</span> <span class="dv">3</span> round <span class="dv">42</span> q;
+<span class="st">&quot;123.456,789,876,543,212,345,678,987,654,312,500,000,000*10^27&quot;</span>
+&gt; <span class="dt">double</span> q;
+<span class="dv">1.23456789876543e+029</span></code></pre></div>
+<dl>
+<dt><a name="rational::val_eng_interval_epsilon"></a><code>rational::val_eng_interval_epsilon fmt radix epsilon strg</code></dt>
+<dd><p>Find the least complex rational interval containing the number represented by the base-radix expansion string strg in one of the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.frac ×10^[−]exponent”</li>
+</ul>
+<p>that is “-small.</p>
+</dd>
+<dt><a name="rational::val_eng_approx_max_den"></a><code>rational::val_eng_approx_max_den fmt radix maxDen strg</code></dt>
+<dd><p>Find the closest rational approximation to the number represented by the base-rRadix expansion string strg in one of the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.frac ×10^[−]exponent”</li>
+</ul>
+<p>that has a denominator no greater than maxDen. (maxDen &gt; 0)</p>
+</dd>
+<dt><a name="rational::val_eng_interval_max_den"></a><code>rational::val_eng_interval_max_den fmt radix maxDen strg</code></dt>
+<dd><p>Find the smallest rational interval containing the number represented by the base-radix expansion string strg in one of the forms</p>
+<ul>
+<li>“[−]int.frac”</li>
+<li>“[−]int.frac ×10^[−]exponent”</li>
+</ul>
+<p>that has endpoints with denominators no greater than maxDen. (maxDen &gt; 0)</p>
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example 85</strong> Other rationals from a long string:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; val_eng_approx_epsilon format_uk <span class="dv">10</span> (<span class="dv">1</span>%<span class="dv">100</span>) strg;
+1975308638024691397530863802469L%16L
+&gt; val_eng_interval_epsilon format_uk <span class="dv">10</span> (<span class="dv">1</span>%<span class="dv">100</span>) strg;
+interval::Ivl (3086419746913580308641974691358L%25L)
+(3456790116543209945679011654321L%28L)
+&gt; val_eng_approx_max_den format_uk <span class="dv">10</span> <span class="dv">100</span> strg;
+9999999980000000199999998000000L%81L
+&gt; val_eng_interval_max_den format_uk <span class="dv">10</span> <span class="dv">100</span> strg;
+interval::Ivl 9999999980000000199999998000000L%81L
+3456790116543209945679011654321L%28L</code></pre></div>
+</body>
+</html>

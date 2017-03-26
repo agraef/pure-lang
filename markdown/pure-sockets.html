@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-sockets"></a></p>
+<h1 id="pure-sockets-pure-sockets-interface">pure-sockets: Pure Sockets Interface</h1>
+<p><a name="module-sockets"></a></p>
+<p>Version 0.7, March 06, 2017</p>
+<p>Albert Gräf &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>This is an interface to the Berkeley socket functions. It provides most of the core functionality, so you can create sockets for both stream and datagram based protocols and use these to transmit messages. Unix-style file sockets are also available if the host system supports them.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-sockets-0.7.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-sockets-0.7.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the module and <code>sudo make install</code> to install it in the Pure library directory. To uninstall the module, use <code>sudo make uninstall</code>. There are a number of other targets (mostly for maintainers), please see the Makefile for details.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix, and <code>make PIC=-fPIC</code> or some similar flag might be needed for compilation on 64 bit systems. You can also set custom compilation options with the CFLAGS variable, e.g.: <code>make CFLAGS=-O3</code>. Again, please see the Makefile for details.</p>
+<h2 id="usage">Usage</h2>
+<p>To use the operations of this module, put the following in your Pure script:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> sockets;</code></pre></div>
+<p>With the <a href="#module-sockets">sockets</a> module loaded, all the standard socket functions are available and work pretty much like in C. The only real difference is that, for convenience, functions taking socket addresses as parameters (<code>struct_sockaddr*</code> pointers in Pure), are called without the <code>addrlen</code> parameter; the size of the socket address structure will be inferred automatically and passed to the underlying C functions. Also, there are some convenience functions which act as wrappers around <code>getaddrinfo</code> and <code>getnameinfo</code> to create socket addresses from symbolic information (hostname or ip, port names or numbers) and return information about existing address pointers, see <a href="#creating-and-inspecting-socket-addresses">Creating and Inspecting Socket Addresses</a> below.</p>
+<p>Below is a list of the provided functions. Please see the corresponding manual pages for details, and check the Pure scripts in the examples subdirectory for some examples.</p>
+<h3 id="creating-and-inspecting-socket-addresses">Creating and Inspecting Socket Addresses</h3>
+<p>These functions are Pure-specific. The created socket addresses are malloc’ed and free themselves automatically when garbage-collected.</p>
+<dl>
+<dt><a name="sockaddr"></a><code>sockaddr ()</code></dt>
+<dd>Create a pointer to an empty socket address suitable to hold the socket address result of routines like <a href="pure-fastcgi.html#accept"><code>accept</code></a>, <a href="#getsockname"><code>getsockname</code></a>, <a href="#recvfrom"><code>recvfrom</code></a>, etc. which return a socket address.
+</dd>
+<dt><a name="sockaddr"></a><code>sockaddr ([int family,] char *path)</code></dt>
+<dd>Create a local (a.k.a. file) socket address for the given pathname. The <code>family</code> parameter, if specified, must be <a href="#AF_UNIX"><code>AF_UNIX</code></a> here. Please note that <a href="#AF_UNIX"><code>AF_UNIX</code></a> is not supported on all platforms. You can check for this by testing the <a href="#HAVE_AF_UNIX"><code>HAVE_AF_UNIX</code></a> constant, which is a truth value specifying whether <a href="#AF_UNIX"><code>AF_UNIX</code></a> is available on your system.
+</dd>
+<dt><a name="sockaddr"></a><code>sockaddr ([int family,] char *host, char *port)</code>, <a name="sockaddr"></a><code>sockaddr ([int family,] char *host, int port)</code></dt>
+<dd>This uses <code>getaddrinfo</code> to retrieve an <a href="#AF_INET"><code>AF_INET</code></a> or <a href="#AF_INET6"><code>AF_INET6</code></a> address for the given hostname (or numeric IP address in string form) and port (specified either as an int or a string). If <code>family</code> is omitted, it defaults to <a href="#AF_UNSPEC"><code>AF_UNSPEC</code></a> which matches both <a href="#AF_INET"><code>AF_INET</code></a> and <a href="#AF_INET6"><code>AF_INET6</code></a> addresses.
+</dd>
+<dt><a name="sockaddrs"></a><code>sockaddrs ([int family,] char *host, char *port)</code>, <a name="sockaddrs"></a><code>sockaddrs ([int family,] char *host, int port)</code></dt>
+<dd>This works like <a href="#sockaddr"><code>sockaddr</code></a> above, but returns a list with <em>all</em> matching addresses.
+</dd>
+<dt><a name="sockaddr_family"></a><code>sockaddr_family addr</code></dt>
+<dd>Returns the address family of the given address.
+</dd>
+<dt><a name="sockaddr_path"></a><code>sockaddr_path addr</code></dt>
+<dd>Returns the pathname for <a href="#AF_UNIX"><code>AF_UNIX</code></a> addresses.
+</dd>
+<dt><a name="sockaddr_hostname"></a><code>sockaddr_hostname addr</code></dt>
+<dd>Returns the hostname if available, the IP address otherwise.
+</dd>
+<dt><a name="sockaddr_ip"></a><code>sockaddr_ip addr</code></dt>
+<dd>Returns the IP address.
+</dd>
+<dt><a name="sockaddr_service"></a><code>sockaddr_service addr</code></dt>
+<dd>Returns the service (a.k.a. port) name.
+</dd>
+<dt><a name="sockaddr_port"></a><code>sockaddr_port addr</code></dt>
+<dd>Returns the port number.
+</dd>
+<dt><a name="sockaddr_info"></a><code>sockaddr_info addr</code></dt>
+<dd>Returns a readable description of a socket address, as a <code>(family,hostname,port)</code> tuple. You should be able to pass this into <a href="#sockaddr"><code>sockaddr</code></a> again to get the original address.
+</dd>
+</dl>
+<!-- -->
+<h3 id="creating-and-closing-sockets">Creating and Closing Sockets</h3>
+<dl>
+<dt><a name="socket"></a><code>socket domain type protocol</code></dt>
+<dd>Creates a socket for the given protocol family (<a href="#AF_UNIX"><code>AF_UNIX</code></a>, <a href="#AF_INET"><code>AF_INET</code></a> or <a href="#AF_INET6"><code>AF_INET6</code></a>), socket type (<a href="#SOCK_STREAM"><code>SOCK_STREAM</code></a>, <a href="#SOCK_DGRAM"><code>SOCK_DGRAM</code></a>, etc.) and protocol. Note that on Linux we also support the <a href="#SOCK_NONBLOCK"><code>SOCK_NONBLOCK</code></a> (non-blocking) and <a href="#SOCK_CLOEXEC"><code>SOCK_CLOEXEC</code></a> (close-on-exec) flags which can be or’ed with the socket type to get sockets with the corresponding features. The protocol number is usually 0, denoting the default protocol, but it can also be any of the prescribed <a href="#IPPROTO"><code>IPPROTO</code></a> constants (a few common ones are predefined by this module, try <code>show -g IPPROTO_*</code> for a list of those).
+</dd>
+<dt><a name="socketpair"></a><code>socketpair domain type protocol sv</code></dt>
+<dd>Create a pair of sockets. The descriptors are returned in the integer vector <code>sv</code> passed in the last argument.
+</dd>
+<dt><a name="shutdown"></a><code>shutdown fd how</code></dt>
+<dd>Perform shutdown on a socket. The second argument should be one of <a href="#SHUT_RD"><code>SHUT_RD</code></a>, <a href="#SHUT_WR"><code>SHUT_WR</code></a> and <a href="#SHUT_RDWR"><code>SHUT_RDWR</code></a>.
+</dd>
+<dt><a name="closesocket"></a><code>closesocket fd</code></dt>
+<dd>This is provided for Windows compatibility. On POSIX systems this is just <code>close</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="establishing-connections">Establishing Connections</h3>
+<dl>
+<dt><a name="accept"></a><code>accept sockfd addr</code>, <a name="bind"></a><code>bind sockfd addr</code>, <a name="connect"></a><code>connect sockfd addr</code>, <a name="listen"></a><code>listen sockfd backlog</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<h3 id="socket-io">Socket I/O</h3>
+<dl>
+<dt><a name="recv"></a><code>recv fd buf len flags</code>, <a name="send"></a><code>send fd buf len flags</code>, <a name="recvfrom"></a><code>recvfrom fd buf len flags addr</code>, <a name="sendto"></a><code>sendto fd buf len flags addr</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p>The usual <a href="#send"><code>send</code></a>/<a href="#recv"><code>recv</code></a> flags specified by POSIX (<a href="#MSG_EOR"><code>MSG_EOR</code></a>, <a href="#MSG_OOB"><code>MSG_OOB</code></a>, <a href="#MSG_PEEK"><code>MSG_PEEK</code></a>, <a href="#MSG_WAITALL"><code>MSG_WAITALL</code></a>) are provided. On Linux we also support <a href="#MSG_DONTWAIT"><code>MSG_DONTWAIT</code></a>. Note that on POSIX systems you can also just <a href="purelib.html#fdopen"><code>fdopen</code></a> the socket descriptor and use the standard file I/O operations from the <a href="purelib.html#module-system">system</a> module instead.</p>
+<h3 id="socket-information">Socket Information</h3>
+<dl>
+<dt><a name="getsockname"></a><code>getsockname fd addr</code>, <a name="getpeername"></a><code>getpeername fd addr</code>, <a name="getsockopt"></a><code>getsockopt fd level name val len</code>, <a name="setsockopt"></a><code>setsockopt fd level name val len</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p>For <a href="#getsockopt"><code>getsockopt</code></a> and <a href="#setsockopt"><code>setsockopt</code></a>, currently only the <a href="#SOL_SOCKET"><code>SOL_SOCKET</code></a> level is defined (<code>level</code> argument) along with the available POSIX socket options (<code>name</code> argument). Try <code>show -g SO_*</code> to get a list of those. Also note that for most socket level options the <code>val</code> argument is actually an <code>int*</code>, so you can pass a Pure int vector (with <code>len = SIZEOF_INT</code>) for that parameter.</p>
+<h2 id="example">Example</h2>
+<p>Here is a fairly minimal example using Unix stream sockets. To keep things simple, this does no error checking whatsoever and just keeps sending strings back and forth. More elaborate examples can be found in the examples directory in the sources.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> sockets, system;
+
+<span class="kw">const</span> path = <span class="st">&quot;server_socket&quot;</span>;
+<span class="kw">extern</span> <span class="dt">int</span> unlink(<span class="dt">char</span> *name);
+
+server = loop <span class="kw">with</span>
+  loop = loop <span class="kw">if</span> ~null s &amp;&amp; ~response fp s <span class="kw">when</span>
+    <span class="co">// Connect to a client.</span>
+    cfd = accept fd $ sockaddr ();
+    <span class="co">// Open the client socket as a FILE* and read a request.</span>
+    fp = fdopen cfd <span class="st">&quot;r+&quot;</span>; s = fgets fp;
+  <span class="kw">end</span>;
+  loop = puts <span class="st">&quot;server is exiting&quot;</span> $$ closesocket fd $$
+         unlink path $$ () <span class="kw">otherwise</span>;
+  response fp s::<span class="dt">string</span> = s==<span class="st">&quot;quit</span><span class="ch">\n</span><span class="st">&quot;</span> <span class="kw">when</span>
+    <span class="co">// Process the request. (Here we just print the received</span>
+    <span class="co">// message and echo it back to the client.)</span>
+    printf <span class="st">&quot;server&gt; %s&quot;</span> s;
+    fputs s fp;
+  <span class="kw">end</span>;
+<span class="kw">end</span> <span class="kw">when</span>
+  <span class="co">// Create the server socket and start listening.</span>
+  unlink path;
+  fd = socket AF_UNIX SOCK_STREAM <span class="dv">0</span>;
+  bind fd (sockaddr path); listen fd <span class="dv">5</span>;
+  printf <span class="st">&quot;server listening at &#39;%s&#39;</span><span class="ch">\n</span><span class="st">&quot;</span> path;
+<span class="kw">end</span>;
+
+client = loop <span class="kw">with</span>
+  <span class="co">// Keep reading requests from stdin.</span>
+  loop = loop <span class="kw">if</span> ~null s &amp;&amp; ~request s <span class="kw">when</span>
+    fputs <span class="st">&quot;client&gt; &quot;</span> stdout; s = fgets stdin;
+  <span class="kw">end</span>;
+  loop = puts <span class="st">&quot;client is exiting&quot;</span> $$ () <span class="kw">otherwise</span>;
+  request s::<span class="dt">string</span> = s==<span class="st">&quot;quit</span><span class="ch">\n</span><span class="st">&quot;</span> <span class="kw">when</span>
+    fd = socket AF_UNIX SOCK_STREAM <span class="dv">0</span>;
+    connect fd (sockaddr path);
+    <span class="co">// Send the request to the server.</span>
+    fp = fdopen fd <span class="st">&quot;r+&quot;</span>; fputs s fp;
+    <span class="co">// Get the reply.</span>
+    s = fgets fp;
+  <span class="kw">end</span>;
+<span class="kw">end</span>;</code></pre></div>
+<p>To use this example, run the <code>server</code> function in one instance of the Pure interpreter and the <code>client</code> function in another. Enter a line when the client prompts you for input; it will be printed by the server. Behind the scenes, the server also sends the line back to the client. After receiving the reply, the client prompts for the next input line. Entering end-of-file at the client prompt terminates the client but keeps the server running, so that you can start another client and reconnect to the server. Entering just <code>quit</code> in the client terminates both server and client. Here is how a typical interaction may look like:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; client;
+client&gt; <span class="dv">1</span>+<span class="dv">1</span>
+client&gt; foo bar
+client&gt; quit
+client is exiting
+()
+
+&gt; server;
+server listening at &#39;server_socket&#39;
+server&gt; <span class="dv">1</span>+<span class="dv">1</span>
+server&gt; foo bar
+server&gt; quit
+server is exiting
+()</code></pre></div>
+<p>Note that while the server processes requests sequentially, it accepts connections from a new client after each request, so that you can run as many clients as you like.</p>
+</body>
+</html>

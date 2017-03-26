@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-readline"></a></p>
+<p><a name="module-readline"></a></p>
+<h1 id="pure-readline">pure-readline</h1>
+<p>Version 0.3, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-readline-0.3.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-readline-0.3.tar.gz</a>.</p>
+<p>This is a trivial wrapper around GNU readline, which gives Pure scripts access to the most important facilities of the readline interface. This includes support for the <code>readline</code> function itself (without custom completion at present) and basic history management. The wrapper can also be used with the BSD editline a.k.a. libedit library, a readline replacement licensed under the 3-clause BSD license. You can find these at:</p>
+<ul>
+<li>GNU readline: <a href="http://tiswww.tis.case.edu/~chet/readline/rltop.html" class="uri">http://tiswww.tis.case.edu/~chet/readline/rltop.html</a></li>
+<li>BSD editline/libedit: <a href="http://www.thrysoee.dk/editline" class="uri">http://www.thrysoee.dk/editline</a></li>
+</ul>
+<p>We recommend GNU readline because it’s easier to use and has full UTF-8 support, but in some situations BSD editline/libedit may be preferable for license reasons or because it’s what the operating system provides. Note that in either case Pure programs using this module are subject to the license terms of the library that you use (GPLv3+ in case of GNU readline, BSD license in the case of BSD editline/libedit).</p>
+<p>Normally, you should choose the same library that you use with the Pure interpreter, to avoid having two different versions of the library linked into your program. (This doesn’t matter if you only use this module with batch-compiled scripts, though, since the Pure runtime doesn’t depend on readline in any way.) By default, the module will be built with GNU readline. To select editline/libedit instead, you only have to uncomment a line at the beginning of the Makefile. Also, you might want to check the beginning of readline.c for the proper location of the corresponding header files.</p>
+<p>The module provides the following functions:</p>
+<dl>
+<dt><a name="readline"></a><code>readline prompt</code></dt>
+<dd>Read a line of input from the user, with prompting and command line editing. Returns the input line (with the trailing newline removed), or <a href="purelib.html#NULL"><code>NULL</code></a> when reaching end of file.
+</dd>
+<dt><a name="add_history"></a><code>add_history line</code></dt>
+<dd>Adds the given line (a string) to the command history.
+</dd>
+<dt><a name="clear_history"></a><code>clear_history</code></dt>
+<dd>Clears the command history.
+</dd>
+<dt><a name="read_history"></a><code>read_history fname</code></dt>
+<dd>Reads the command history from the given file. Note that this in fact <em>adds</em> the contents of the history file to the current history, so you may want to call <a href="#clear_history"><code>clear_history</code></a> beforehand if this function is called multiple times.
+</dd>
+<dt><a name="write_history"></a><code>write_history fname</code></dt>
+<dd>Writes the current command history to the given file.
+</dd>
+</dl>
+<!-- -->
+<p>Example:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> readline;
+&gt; readline <span class="st">&quot;input&gt; &quot;</span>;
+input&gt; Hello, world!
+<span class="st">&quot;Hello, world!&quot;</span>
+&gt; add_history ans;
+()
+&gt; readline <span class="st">&quot;input&gt; &quot;</span>;
+input&gt; &lt;EOF&gt;
+#&lt;<span class="dt">pointer</span> <span class="dv">0x0</span>&gt;
+&gt; write_history <span class="st">&quot;history&quot;</span>; <span class="co">// save the history</span>
+<span class="dv">0</span>
+&gt; clear_history;
+&gt; read_history <span class="st">&quot;history&quot;</span>; <span class="co">// read the history</span>
+<span class="dv">0</span></code></pre></div>
+</body>
+</html>

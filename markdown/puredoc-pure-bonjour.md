@@ -1,0 +1,206 @@
+<a name="doc-pure-bonjour"></a>
+
+pure-bonjour: Pure Bonjour Interface
+====================================
+
+<a name="module-bonjour"></a>
+
+Version 0.1, March 06, 2017
+
+Albert Gräf &lt;<aggraef@gmail.com>&gt;
+
+This is a simple interface to [Bonjour](http://developer.apple.com/bonjour/),
+Apple's [Zeroconf](http://en.wikipedia.org/wiki/Zero-configuration_networking)
+implementation. The module lets you publish and query Zeroconf network
+services using Bonjour, allowing you to establish connections for various
+kinds of TCP and UDP network services without having to manually configure
+network addresses. It is typically used along with the
+[sockets](#module-sockets) module which lets you create the network
+connections discovered with [bonjour](#module-bonjour).
+
+To keep things simple and easy to use, the module only exposes the most
+essential functionality of Bonjour right now, but the provided functions
+should hopefully be sufficient for most programs which require
+interoperability with other Zeroconf applications. One known limitation is
+that the module allows you to publish and discover services in the default
+Bonjour domain only. Typically this is the `local` domain, limiting you to
+services in the local network. However, this should cover most common uses of
+Zeroconf.
+
+There's a companion [avahi](#module-avahi) module which implements the same
+API for [Avahi](http://avahi.org/), the prevalent Zeroconf implementation on
+Linux systems. Since both modules implement the same functions, albeit in
+different namespaces, they can be used as drop-in replacements for each other.
+We also offer a compatibility module named `zeroconf` which can be used with
+either pure-avahi or pure-bonjour in a transparent fashion, so that no source
+changes are needed when switching the underlying implementation; please check
+the zeroconf.pure script included in the sources for details.
+
+This module is in its early stages, so it may still contain bugs or lack some
+features. Please report bugs on the issue tracker at the Pure Bitbucket site,
+and use the Pure mailing list for general discussion of the module.
+
+Copying
+-------
+
+Copyright (c) 2014 by Albert Graef.
+
+pure-bonjour is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+pure-bonjour is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program. If not, see &lt;<http://www.gnu.org/licenses/>&gt;.
+
+Installation
+------------
+
+Get the latest source from
+<https://bitbucket.org/purelang/pure-lang/downloads/pure-bonjour-0.1.tar.gz>.
+
+Run `make` to compile the module and `make install` (as root) to install it in
+the Pure library directory. This requires GNU make, and of course you need to
+have Pure and Bonjour installed. The latter should be readily available on
+most Linux systems, and ports are available for BSD systems as well.
+
+`make` tries to guess your Pure installation directory and platform-specific
+setup. If it gets this wrong, you can set some variables manually, please
+check the Makefile for details.
+
+Please note that the zeroconf.pure compatibility module is not installed by
+default, so you may want to copy it to the Pure library directory if needed.
+
+Usage
+-----
+
+To use the operations of this module, you need to have Bonjour (or a
+compatible Zeroconf implementation such as Avahi) installed and the
+corresponding service running on your system. If you have a Mac running OS X,
+then most likely Bonjour is already up and running, but for other systems
+you'll have to consult your system documentation for instructions.
+
+The following import declaration loads the functions of the bonjour module in
+your Pure script:
+
+    using bonjour;
+
+All operations are in the `bonjour` namespace, so you might want to add the
+following declaration to access the functions using their unqualified
+identifiers:
+
+    using namespace bonjour;
+
+Publishing Services
+-------------------
+
+These functions allow you to advertise a network service using Bonjour, so
+that the service can be discovered by other applications participating in the
+Zeroconf protocol. Each service has a name (a string which uniquely identifies
+the service), a type (indicating the application and transport protocols
+utilized by the service) and a port number (TCP or UDP port number, depending
+on the service type). The service type normally takes the form `_app._tcp`
+(for TCP services) or `_app._udp` (for UDP), where `_app` specifies the
+protocol of the particular application (such as `_ipp` for network-connected
+printers, or `_osc` for applications speaking the OSC a.k.a. Open Sound
+Control protocol).
+
+<a name="bonjour::publish"></a>`bonjour::publish name stype port`
+:   Advertise a service in the local domain, given by its name (a string),
+    service type (a string) and (TCP or UDP) port number (an integer). Note
+    that this operation is actually carried out asynchronously. Use
+    [`bonjour::check`](#bonjour::check) below to wait for and report the
+    result of the operation. The returned result is a pointer to the service
+    object which can be passed to the following operations, or `NULL` in case
+    of error. (A `NULL` pointer can be passed safely to
+    [`bonjour::check`](#bonjour::check); it will fail in this case.) The
+    service will be unpublished automatically when the service object is
+    garbage-collected.
+
+<a name="bonjour::check"></a>`bonjour::check service`
+:   Check for the result of a [`bonjour::publish`](#bonjour::publish)
+    operation. This blocks until a result is available. A negative integer
+    value indicates failure (in this case the result is the Bonjour error
+    code). Otherwise the result is a triple with the actual service name, type
+    and port. Note that the name may be different from the one passed to
+    [`bonjour::publish`](#bonjour::publish) if there was a name collision with
+    another service. Such collisions are usually resolved automatically by
+    tacking on a suffix to the service name.
+
+<!-- -->
+Discovering Services
+--------------------
+
+These functions let you discover services of a given service type. For each
+(resolvable) service you'll be able to retrieve the corresponding network
+address and port, which is what you'll need to actually open a network
+connection to communicate with the service.
+
+<a name="bonjour::browse"></a>`bonjour::browse stype`
+:   Browse available services of a given type in the local domain. This
+    operation is carried out asynchronously; use
+    [`bonjour::avail`](#bonjour::avail) below to check whether new information
+    is available, and [`bonjour::get`](#bonjour::get) to retrieve the actual
+    service list. The result returned by [`bonjour::browse`](#bonjour::browse)
+    is a pointer to the browser object which can be passed to the following
+    operations, or `NULL` in case of error. (A `NULL` pointer can be passed
+    safely to the other operations; they will fail in this case.) Any
+    resources allocated to the browser will be released automatically when the
+    browser object is garbage-collected.
+
+<a name="bonjour::avail"></a>`bonjour::avail browser`
+:   Check whether the service information was updated since the last
+    invocation of [`bonjour::get`](#bonjour::get). Returns an integer (truth
+    value), which may also be negative (indicating the Bonjour error code) in
+    case of error.
+
+<a name="bonjour::get"></a>`bonjour::get browser`
+:   Retrieve the current list of services. Each list entry is a tuple with the
+    name, type, domain, IP address (all string values) and port number (an
+    integer) of a service. The entries are in the same order as returned by
+    Bonjour, but only include services whose network addresses can actually be
+    resolved using Bonjour. Note that this information may change over time,
+    as new services are announced on the network or removed from it. An
+    application will typically call [`bonjour::avail`](#bonjour::avail) from
+    time to time to check whether new information is available and then
+    retrieve the updated service list using [`bonjour::get`](#bonjour::get).
+    The result may also be a negative integer (indicating the Bonjour error
+    code) in case of error.
+
+<!-- -->
+Example
+-------
+
+Here's an example showing how to publish an UDP OSC (Open Sound Control)
+service which might be used to connect to mobile OSC applications such as
+hexler's TouchOSC:
+
+    using bonjour;
+    using namespace bonjour;
+
+    let s = publish "OSC Server" "_osc._udp" 8000;
+    check s;
+
+The last line checks for the result of the operation and returns the actual
+service name, type and port number if all went well. A TouchOSC instance
+running on the local network will then offer you to connect to the service.
+
+Continuing the example, here's how you can obtain a list of OSC services
+currently available on your local network:
+
+    let t = browse "_osc._udp";
+    avail t;
+    get t;
+
+If you're running TouchOSC somewhere on your local network, it will be listed
+there, along with our own service which we published above. The call in the
+second line can be used to check whether any new information is available.
+Applications typically invoke these two from time to time to update their
+service list, using code like the following:
+
+    avail t && get t;

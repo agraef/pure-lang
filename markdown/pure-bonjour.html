@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-bonjour"></a></p>
+<h1 id="pure-bonjour-pure-bonjour-interface">pure-bonjour: Pure Bonjour Interface</h1>
+<p><a name="module-bonjour"></a></p>
+<p>Version 0.1, March 06, 2017</p>
+<p>Albert Gräf &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>This is a simple interface to <a href="http://developer.apple.com/bonjour/">Bonjour</a>, Apple’s <a href="http://en.wikipedia.org/wiki/Zero-configuration_networking">Zeroconf</a> implementation. The module lets you publish and query Zeroconf network services using Bonjour, allowing you to establish connections for various kinds of TCP and UDP network services without having to manually configure network addresses. It is typically used along with the <a href="pure-sockets.html#module-sockets">sockets</a> module which lets you create the network connections discovered with <a href="#module-bonjour">bonjour</a>.</p>
+<p>To keep things simple and easy to use, the module only exposes the most essential functionality of Bonjour right now, but the provided functions should hopefully be sufficient for most programs which require interoperability with other Zeroconf applications. One known limitation is that the module allows you to publish and discover services in the default Bonjour domain only. Typically this is the <code>local</code> domain, limiting you to services in the local network. However, this should cover most common uses of Zeroconf.</p>
+<p>There’s a companion <a href="pure-avahi.html#module-avahi">avahi</a> module which implements the same API for <a href="http://avahi.org/">Avahi</a>, the prevalent Zeroconf implementation on Linux systems. Since both modules implement the same functions, albeit in different namespaces, they can be used as drop-in replacements for each other. We also offer a compatibility module named <code>zeroconf</code> which can be used with either pure-avahi or pure-bonjour in a transparent fashion, so that no source changes are needed when switching the underlying implementation; please check the zeroconf.pure script included in the sources for details.</p>
+<p>This module is in its early stages, so it may still contain bugs or lack some features. Please report bugs on the issue tracker at the Pure Bitbucket site, and use the Pure mailing list for general discussion of the module.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2014 by Albert Graef.</p>
+<p>pure-bonjour is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-bonjour is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-bonjour-0.1.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-bonjour-0.1.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the module and <code>make install</code> (as root) to install it in the Pure library directory. This requires GNU make, and of course you need to have Pure and Bonjour installed. The latter should be readily available on most Linux systems, and ports are available for BSD systems as well.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually, please check the Makefile for details.</p>
+<p>Please note that the zeroconf.pure compatibility module is not installed by default, so you may want to copy it to the Pure library directory if needed.</p>
+<h2 id="usage">Usage</h2>
+<p>To use the operations of this module, you need to have Bonjour (or a compatible Zeroconf implementation such as Avahi) installed and the corresponding service running on your system. If you have a Mac running OS X, then most likely Bonjour is already up and running, but for other systems you’ll have to consult your system documentation for instructions.</p>
+<p>The following import declaration loads the functions of the bonjour module in your Pure script:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> bonjour;</code></pre></div>
+<p>All operations are in the <code>bonjour</code> namespace, so you might want to add the following declaration to access the functions using their unqualified identifiers:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> <span class="kw">namespace</span> bonjour;</code></pre></div>
+<h2 id="publishing-services">Publishing Services</h2>
+<p>These functions allow you to advertise a network service using Bonjour, so that the service can be discovered by other applications participating in the Zeroconf protocol. Each service has a name (a string which uniquely identifies the service), a type (indicating the application and transport protocols utilized by the service) and a port number (TCP or UDP port number, depending on the service type). The service type normally takes the form <code>_app._tcp</code> (for TCP services) or <code>_app._udp</code> (for UDP), where <code>_app</code> specifies the protocol of the particular application (such as <code>_ipp</code> for network-connected printers, or <code>_osc</code> for applications speaking the OSC a.k.a. Open Sound Control protocol).</p>
+<dl>
+<dt><a name="bonjour::publish"></a><code>bonjour::publish name stype port</code></dt>
+<dd>Advertise a service in the local domain, given by its name (a string), service type (a string) and (TCP or UDP) port number (an integer). Note that this operation is actually carried out asynchronously. Use <a href="#bonjour::check"><code>bonjour::check</code></a> below to wait for and report the result of the operation. The returned result is a pointer to the service object which can be passed to the following operations, or <code>NULL</code> in case of error. (A <code>NULL</code> pointer can be passed safely to <a href="#bonjour::check"><code>bonjour::check</code></a>; it will fail in this case.) The service will be unpublished automatically when the service object is garbage-collected.
+</dd>
+<dt><a name="bonjour::check"></a><code>bonjour::check service</code></dt>
+<dd>Check for the result of a <a href="#bonjour::publish"><code>bonjour::publish</code></a> operation. This blocks until a result is available. A negative integer value indicates failure (in this case the result is the Bonjour error code). Otherwise the result is a triple with the actual service name, type and port. Note that the name may be different from the one passed to <a href="#bonjour::publish"><code>bonjour::publish</code></a> if there was a name collision with another service. Such collisions are usually resolved automatically by tacking on a suffix to the service name.
+</dd>
+</dl>
+<!-- -->
+<h2 id="discovering-services">Discovering Services</h2>
+<p>These functions let you discover services of a given service type. For each (resolvable) service you’ll be able to retrieve the corresponding network address and port, which is what you’ll need to actually open a network connection to communicate with the service.</p>
+<dl>
+<dt><a name="bonjour::browse"></a><code>bonjour::browse stype</code></dt>
+<dd>Browse available services of a given type in the local domain. This operation is carried out asynchronously; use <a href="#bonjour::avail"><code>bonjour::avail</code></a> below to check whether new information is available, and <a href="#bonjour::get"><code>bonjour::get</code></a> to retrieve the actual service list. The result returned by <a href="#bonjour::browse"><code>bonjour::browse</code></a> is a pointer to the browser object which can be passed to the following operations, or <code>NULL</code> in case of error. (A <code>NULL</code> pointer can be passed safely to the other operations; they will fail in this case.) Any resources allocated to the browser will be released automatically when the browser object is garbage-collected.
+</dd>
+<dt><a name="bonjour::avail"></a><code>bonjour::avail browser</code></dt>
+<dd>Check whether the service information was updated since the last invocation of <a href="#bonjour::get"><code>bonjour::get</code></a>. Returns an integer (truth value), which may also be negative (indicating the Bonjour error code) in case of error.
+</dd>
+<dt><a name="bonjour::get"></a><code>bonjour::get browser</code></dt>
+<dd>Retrieve the current list of services. Each list entry is a tuple with the name, type, domain, IP address (all string values) and port number (an integer) of a service. The entries are in the same order as returned by Bonjour, but only include services whose network addresses can actually be resolved using Bonjour. Note that this information may change over time, as new services are announced on the network or removed from it. An application will typically call <a href="#bonjour::avail"><code>bonjour::avail</code></a> from time to time to check whether new information is available and then retrieve the updated service list using <a href="#bonjour::get"><code>bonjour::get</code></a>. The result may also be a negative integer (indicating the Bonjour error code) in case of error.
+</dd>
+</dl>
+<!-- -->
+<h2 id="example">Example</h2>
+<p>Here’s an example showing how to publish an UDP OSC (Open Sound Control) service which might be used to connect to mobile OSC applications such as hexler’s TouchOSC:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> bonjour;
+<span class="kw">using</span> <span class="kw">namespace</span> bonjour;
+
+<span class="kw">let</span> s = publish <span class="st">&quot;OSC Server&quot;</span> <span class="st">&quot;_osc._udp&quot;</span> <span class="dv">8000</span>;
+check s;</code></pre></div>
+<p>The last line checks for the result of the operation and returns the actual service name, type and port number if all went well. A TouchOSC instance running on the local network will then offer you to connect to the service.</p>
+<p>Continuing the example, here’s how you can obtain a list of OSC services currently available on your local network:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">let</span> t = browse <span class="st">&quot;_osc._udp&quot;</span>;
+avail t;
+get t;</code></pre></div>
+<p>If you’re running TouchOSC somewhere on your local network, it will be listed there, along with our own service which we published above. The call in the second line can be used to check whether any new information is available. Applications typically invoke these two from time to time to update their service list, using code like the following:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">avail t &amp;&amp; get t;</code></pre></div>
+</body>
+</html>

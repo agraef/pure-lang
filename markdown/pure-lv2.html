@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-lv2"></a></p>
+<h1 id="pure-lv2">pure-lv2</h1>
+<p><a name="module-lv2"></a></p>
+<p>Version 0.2, March 06, 2017</p>
+<p>Albert Gräf &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<h2 id="copying">Copying</h2>
+<p>pure-lv2 is Copyright (c) 2014 by Albert Gräf. It is distributed under a 3-clause BSD license, please check the COPYING file included in the distribution for details.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-lv2-0.2.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-lv2-0.2.tar.gz</a>.</p>
+<p>Make sure that you have the latest Pure version installed. Pure 0.60 or later is needed.</p>
+<p>Run <code>make</code> to compile and <code>sudo make install</code> to install the module. This installs the lv2.pure module and the source of the LV2 plugin wrapper (lv2pure.c, lv2pure.h) in the Pure library directory, and the pure2lv2 script in the bin directory, under the same installation prefix as the Pure interpreter. To uninstall the module, use <code>sudo make uninstall</code>. There are a number of other targets (mostly for maintainers), please see the Makefile for details.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually, please see the Makefile for details.</p>
+<h2 id="description">Description</h2>
+<p><a href="http://lv2plug.in/">LV2</a> is the new Linux audio plugin standard (successor of the venerable <a href="http://www.ladspa.org/">LADSPA</a> standard) which aims to be portable and extensible. LV2 plugins can process any combination of audio, MIDI and control data in order to implement various kinds of real-time signal processing modules for use in digital audio and MIDI software such as <a href="http://ardour.org/">Ardour</a> and <a href="http://qtractor.sourceforge.net/">Qtractor</a>. A companion module is available which lets you implement LV2 plugin hosts in Pure, see <a href="pure-lilv.html">pure-lilv: Pure Lilv Interface</a>. Support for Miller Puckette’s graphical computer music and multimedia software <a href="http://puredata.info/">Pd</a> is available through the author’s <a href="#lv2plugin">lv2plugin~</a> external. Moreover, stand-alone LV2 hosts such as <a href="http://drobilla.net/software/jalv/">jalv</a> can be used to interface with other software which doesn’t support LV2 directly, via the <a href="http://jackaudio.org/">Jack audio connection kit</a>.</p>
+<p>This package provides a generic LV2 plugin wrapper for Pure which can be linked with batch-compiled Pure scripts to obtain LV2 plugin modules. For convenience, a shell script named pure2lv2 is included, which lets you compile the plugin and turn it into a complete LV2 bundle (consisting of an LV2 plugin manifest and the plugin binary), ready to be loaded by any LV2 host. The package also includes an lv2.pure module which provides the operations needed to implement the functionality of a plugin, such as functions to read and write LV2 port data in Pure.</p>
+<p>Our implementation supports all standard LV2 port types (including MIDI via LV2 atom ports) and should thus be able to work with most LV2 hosts right out of the box. Experimental support for the LV2 time extension is also available, so that MIDI plugins written in Pure can obtain musical time and position data if the host supports this; please check lv2.pure for details. The package includes several examples which demonstrate how to write LV2 plugins of various kinds in Pure, specifically:</p>
+<ul>
+<li>pure_amp.pure shows how to do basic audio and control processing in order to amplify an incoming audio signal.</li>
+<li>pure_transp.pure demonstrates how to implement a simple MIDI processing module which transposes incoming MIDI notes.</li>
+<li>pure_metro.pure shows how to implement a MIDI metronome by making use of the musical time and tempo data provided by the LV2 time extension (this currently requires Ardour to work).</li>
+</ul>
+<p>Please also check the <a href="#usage">Usage</a> section below for information on how to run the pure2lv2 script.</p>
+<h2 id="requirements-and-limitations">Requirements and Limitations</h2>
+<p>Our implementation uses LV2’s <a href="http://lv2plug.in/ns/ext/dynmanifest/">dynamic manifests</a>, so that the plugin manifest, which describes the ports and other properties of the plugin, can be included in the plugin module. This makes things easier, but requires an LV2 host which supports the dynamic manifest extension (most LV2 hosts nowadays do; this includes all the hosts we mentioned above).</p>
+<p>As the Pure runtime isn’t thread-safe yet, our implementation effectively serializes the plugin callbacks (invocations of the <code>plugin</code> function) across <em>all</em> Pure plugins running inside a host. While this won’t make a difference for single-threaded LV2 hosts such as jalv and Pd, it also makes the Pure plugins work reliably in heavily multi-threaded hosts such as Ardour. However, the serialization of callbacks may become a major bottleneck if a multi-threaded host runs many Pure plugins concurrently on a multi-processor machine. At present there is no way around this, but hopefully this limitation will go away in the not-too-distant future when the Pure runtime becomes thread-safe.</p>
+<h2 id="usage">Usage</h2>
+<p>A summary of the command syntax and options of the pure2lv2 script can be printed with <code>purelv2 -h</code>. Usually the script is invoked simply as <code>pure2lv2 myplugin.pure</code>, where <code>myplugin.pure</code> is the Pure script implementing the plugin. The plugin script must provide two functions in order to implement the functionality of the plugin:</p>
+<ul>
+<li>The <code>manifest</code> function returns the port descriptions from which the plugin manifest is created when the LV2 host performs plugin discovery. This may be implemented either as a parameter-less function or a global variable in the Pure script. In either case it should return the list of port descriptions in a format described in the lv2.pure module.</li>
+<li>The <code>plugin</code> function implements the plugin itself. It gets invoked with a pointer object representing the plugin data which can be passed to the operations in the lv2.pure module. Often the plugin will actually be implemented as a closure which also encapsulates the local state maintained by the plugin; please check the included examples for details. At runtime, the <code>plugin</code> function gets invoked repeatedly with an additional parameter, either a truth value denoting a change in the activation status, or the value <code>()</code> to indicate that a block of samples (and/or MIDI messages and control data) is to be processed.</li>
+</ul>
+<p>Please check the included examples to get an idea how the plugin scripts look like. Here is a simple example (an abridged version of pure_amp.pure) which multiplies an incoming audio signal with a volume control:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> lv2;
+
+manifest = [(<span class="st">&quot;vol&quot;</span>, <span class="st">&quot;Volume&quot;</span>, lv2::controlin, <span class="dv">0.5</span>, <span class="dv">0.0</span>, <span class="dv">1.0</span>),
+            (<span class="st">&quot;audioin&quot;</span>, lv2::audioin), (<span class="st">&quot;audioout&quot;</span>, lv2::audioout)];
+
+plugin self () = () <span class="kw">when</span>
+  <span class="co">// Process a block of samples.</span>
+  vol = lv2::get_port self <span class="dv">0</span>; <span class="co">// control value from port #0 (control input)</span>
+  wav = lv2::get_port self <span class="dv">1</span>; <span class="co">// sample data from port #1 (audio input)</span>
+  <span class="co">// Multiply the sample data with the vol control value and output the</span>
+  <span class="co">// resulting wave on port #2 (audio output).</span>
+  lv2::set_port self <span class="dv">2</span> (map (*vol) wav);
+<span class="kw">end</span>;</code></pre></div>
+<p>Running <code>pure2lv2 myplugin.pure</code> turns the plugin script into an LV2 bundle, which will be written to <code>myplugin.lv2</code> by default (i.e., using the same basename as the plugin script). You can also specify a different name and path for the bundle directory with the <code>-o</code> (or <code>--output</code>) option, and a custom URI prefix for the bundle with the <code>-u</code> (or <code>--uriprefix</code>) option. Before you can use the plugin with your LV2 hosts, you still have to move the bundle directory to a directory on your <code>LV2_PATH</code> (unless you already specified a suitable target path with <code>-o</code>). The examples folder in the source package contains a GNU Makefile which shows how to automate this process.</p>
+<p>Normally the Pure code of the plugin will be compiled to a native object file which gets linked directly into the plugin binary. However, there’s also a <code>-s</code> (or <code>--script</code>) option which copies the source script (along with any additional source files specified after the plugin script on the command line) to the bundle directory instead, from where it will be loaded dynamically when the plugin is used. This increases load times, sometimes substantially, since the Pure interpreter will have to JIT-compile the Pure script every time the host starts up and loads the plugins. But it also reduces turnaround times since you can easily change the plugin script right inside the bundle, without having to run pure2lv2 in between; this may be convenient when developing and testing a plugin.</p>
+</body>
+</html>

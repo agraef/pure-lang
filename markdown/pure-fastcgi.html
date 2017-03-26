@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-fastcgi"></a></p>
+<h1 id="pure-fastcgi-fastcgi-module-for-pure">pure-fastcgi: FastCGI module for Pure</h1>
+<p><a name="module-fastcgi"></a></p>
+<p>Version 0.6, March 06, 2017</p>
+<p>Albert Gräf &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>This module lets you write <a href="http://www.fastcgi.com">FastCGI</a> scripts with Pure, to be run by web servers like <a href="http://www.apache.org/">Apache</a>. Compared to normal CGI scripts, this has the advantage that the script keeps running and may process as many requests from the web server as you like, in order to reduce startup times and enable caching techniques. Most ordinary CGI scripts can be converted to use FastCGI with minimal changes.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2009 by Albert Graef. pure-fastcgi is distributed under a 3-clause BSD-style license, please see the included COPYING file for details.</p>
+<h2 id="installation">Installation</h2>
+<p>Besides Pure, you’ll need to have the <a href="http://www.fastcgi.com">FastCGI</a> library installed to compile this module. Also, to run FastCGI scripts, your web server must be configured accordingly; see the documentation of FastCGI and your web server for details.</p>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-fastcgi-0.6.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-fastcgi-0.6.tar.gz</a>.</p>
+<p>Running <code>make</code> compiles the module, <code>make install</code> installs it in your Pure library directory. You might have to adjust the path to the fcgi_stdio.h header file in fastcgi.c and/or the option to link in the FastCGI library in the Makefile.</p>
+<p>The Makefile tries to guess the host system type and Pure version, and set up some platform-specific things accordingly. If this doesn’t work for your system then you’ll have to edit the Makefile accordingly.</p>
+<h2 id="usage">Usage</h2>
+<p>pure-fastcgi provides the <code>accept</code> function with which you tell the FastCGI server that your script is ready to accept another request.</p>
+<dl>
+<dt><a name="accept"></a><code>accept</code></dt>
+<dd>Accept a FastCGI request.
+</dd>
+</dl>
+<!-- -->
+<p>The module also overrides a number of standard I/O functions so that they talk to the server instead. These routines are all in the <code>fastcgi</code> namespace. In your Pure script, you can set up a simple loop to process requests as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">#!/usr/local/bin/pure -x
+
+<span class="kw">using</span> fastcgi;
+<span class="kw">using</span> <span class="kw">namespace</span> fastcgi;
+
+<span class="kw">extern</span> <span class="dt">char</span> *getenv(<span class="dt">char</span>*);
+
+main count = main count <span class="kw">when</span>
+  count = count+<span class="dv">1</span>;
+  printf <span class="st">&quot;Content-type: text/html</span><span class="ch">\n\n</span><span class="st">\</span>
+<span class="st">&lt;title&gt;FastCGI Hello! (Pure, fcgi_stdio library)&lt;/title&gt;\</span>
+<span class="st">&lt;h1&gt;FastCGI Hello! (Pure, fcgi_stdio library)&lt;/h1&gt;\</span>
+<span class="st">Request number %d running on host &lt;i&gt;%s&lt;/i&gt;</span><span class="ch">\n</span><span class="st">&quot;</span>
+  (count,getenv <span class="st">&quot;SERVER_NAME&quot;</span>);
+<span class="kw">end</span> <span class="kw">if</span> accept &gt;= <span class="dv">0</span>;
+
+main <span class="dv">0</span>;</code></pre></div>
+<p>(You might have to adjust the “shebang” in the first line above, so that the shell finds the Pure interpreter. Also, remember to make the script executable. If you’re worried about startup times, or if your operating system doesn’t support shebangs, then you can also use the Pure interpreter to compile the script to a native executable instead.)</p>
+<p>This script keeps running until <a href="#fastcgi::accept"><code>accept</code></a> returns <code>-1</code> to indicate that the script should exit. Each call to <a href="#fastcgi::accept"><code>accept</code></a> blocks until either a request is available or the FastCGI server detects an error or other kind of termination condition. As with ordinary CGI, additional information about the request is available through various environment variables. A list of commonly supported environment variables and their meaning can be found in <a href="http://hoohoo.ncsa.uiuc.edu/cgi/">The Common Gateway Interface</a> specification.</p>
+<p>A number of other routines are provided to deal with data filters, finish a request and set an exit status for a request. These correspond to operations provided by the FastCGI library, see the FastCGI documentation and the FCGI_Accept(3), FCGI_StartFilterData(3), FCGI_Finish(3) and FCGI_SetExitStatus(3) manpages for details. An interface to the FCGI_ToFILE macro is also available. Note that in Pure these functions are called <code>accept</code>, <code>start_filter_data</code>, <code>finish</code>, <code>set_exit_status</code> and <code>to_file</code>, respectively, and are all declared in the <code>fastcgi</code> namespace. A detailed listing of all routines can be found in the fastcgi.pure module.</p>
+<p>Please see the examples subdirectory in the pure-fastcgi sources for some more elaborate examples.</p>
+<p>Note that to run your FastCGI scripts in a browser, your web server must have the FastCGI module loaded and must also be set up to execute the scripts. E.g., when using Apache, the following configuration file entry will set up a directory for FastCGI scripts:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">ScriptAlias /fastcgi-bin/ <span class="st">&quot;/srv/www/fastcgi-bin/&quot;</span>
+&lt;Location /fastcgi-bin/&gt;
+    Options ExecCGI 
+    SetHandler fastcgi-script
+    Order allow,deny
+    Allow from all
+&lt;/Location&gt;</code></pre></div>
+<p>(Replace <code>fastcgi-script</code> with <code>fcgid-script</code> if you’re running <code>mod_fcgid</code> rather than <code>mod_fastcgi</code>.)</p>
+<p>Put this entry into http.conf or a similar file provided by your Apache installation (usually under /etc/apache2), and restart Apache. After that you can just throw your scripts into the <code>fastcgi-bin</code> directory to have them executed via an URL like <code>http://localhost/fastcgi-bin/myscript</code>.</p>
+<p>You can also set up a handler for the <code>.pure</code> filename extension as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&lt;IfModule mod_fastcgi.c&gt;
+&lt;FilesMatch <span class="st">&quot;\.pure$&quot;</span>&gt;
+    AddHandler fastcgi-script .pure
+    Options +ExecCGI
+&lt;/FilesMatch&gt;
+&lt;/IfModule&gt;</code></pre></div>
+<p>(Again, you’ll have to adjust the <code>IfModule</code> statement and replace <code>fastcgi-script</code> with <code>fcgid-script</code> if you’re running <code>mod_fcgid</code>.) After that you should be able to execute scripts with the proper extension anywhere under your server’s document root.</p>
+</body>
+</html>

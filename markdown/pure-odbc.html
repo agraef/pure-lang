@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-odbc"></a></p>
+<h1 id="pure-odbc---odbc-interface-for-the-pure-programming-language">Pure-ODBC - ODBC interface for the Pure programming language</h1>
+<p><a name="module-odbc"></a></p>
+<p>Version 0.10, March 06, 2017</p>
+<div style="white-space: pre-line;">Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;
+Jiri Spitz &lt;<a href="mailto:jiri.spitz@bluetone.cz">jiri.spitz@bluetone.cz</a>&gt;</div>
+<p>This module provides a simple ODBC interface for the Pure programming language, which lets you access a large variety of open source and commercial database systems from Pure. ODBC a.k.a. “Open Database Connectivity” was originally developed by Microsoft for Windows, but is now available on many different platforms, and two open source implementations exist for Unix-like systems: iODBC (<a href="http://www.iodbc.org" class="uri">http://www.iodbc.org</a>) and unixODBC (<a href="http://www.unixodbc.org" class="uri">http://www.unixodbc.org</a>).</p>
+<p>ODBC has become the industry standard for portable and vendor independent database access. Most modern relational databases provide an ODBC interface so that they can be used with this module. This includes the popular open source DBMSs MySQL (<a href="http://www.mysql.com" class="uri">http://www.mysql.com</a>) and PostgreSQL (<a href="http://www.postgresql.org" class="uri">http://www.postgresql.org</a>). The module provides the necessary operations to connect to an ODBC data source and retrieve or modify data using SQL statements.</p>
+<p>To make this module work, you must have an ODBC installation on your system, as well as the driver backend for the DBMS you want to use (and, of course, the DBMS itself). You also have to configure the DBMS as a data source for the ODBC system. On Windows this is done with the ODBC applet in the system control panel. For iODBC and unixODBC you can either edit the corresponding configuration files (/etc/odbc.ini and/or ~/.odbc.ini) by hand, or use one of the available graphical setup tools. More information about the setup process can be found on the iODBC and unixODBC websites.</p>
+<h2 id="copying">Copying</h2>
+<div style="white-space: pre-line;">Copyright (c) 2009 by Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;.
+Copyright (c) 2009 by Jiri Spitz &lt;<a href="mailto:jiri.spitz@bluetone.cz">jiri.spitz@bluetone.cz</a>&gt;.</div>
+<p>pure-odbc is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-odbc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-odbc-0.10.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-odbc-0.10.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the module and <code>make install</code> (as root) to install it in the Pure library directory. This requires GNU make, and of course you need to have Pure installed. The only other dependency is the GNU Multiprecision Library (GMP).</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix, and <code>make PIC=-fPIC</code> or some similar flag might be needed for compilation on 64 bit systems. The variable <code>ODBCLIB</code> specifies the ODBC library to be linked with. The default value is <code>ODBCLIB=-lodbc</code>. Please see the Makefile for details.</p>
+<h2 id="opening-and-closing-a-data-source">Opening and Closing a Data Source</h2>
+<p>To open an ODBC connection, you have to specify a “connect string” which names the data source to be used with the <code>odbc::connect</code> function. A list of available data sources can be obtained with the <code>odbc::sources</code> function. For instance, on my Linux system running MySQL and PostgreSQL it shows the following:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sources;
+[(<span class="st">&quot;myodbc&quot;</span>,<span class="st">&quot;MySQL ODBC 2.50&quot;</span>),(<span class="st">&quot;psqlodbc&quot;</span>,<span class="st">&quot;PostgreSQL ODBC&quot;</span>)]</code></pre></div>
+<p>The first component in each entry of the list is the name of the data source, which can be used as the value of the <code>DSN</code> option in the connect string, the second component provides a short description of the data source.</p>
+<p>Likewise, the list of ODBC drivers available on your system can be obtained with the <code>odbc::drivers</code> function which returns a list of pairs of driver names and attributes. (Older ODBC implementations on Unix lacked this feature, but it seems to be properly supported in recent unixODBC implementations at least.) This function can be used to determine a legal value for the <code>DRIVER</code> attribute in the connect string, see below.</p>
+<p>The <code>odbc::connect</code> function is invoked with a single parameter, the connect string, which is used to describe the data source and various other parameters such as user id and password. For instance, on my system I can connect to the local <code>myodbc</code> data source from above as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> db = odbc::connect <span class="st">&quot;DSN=myodbc&quot;</span>;</code></pre></div>
+<p>The <code>odbc::connect</code> function returns a pointer to an <code>ODBCHandle</code> object which is used to refer to the database connection in the other routines provided by this module. An <code>ODBCHandle</code> object is closed automatically when it is no longer accessible. You can also close it explicitly with a call to the <code>odbc::disconnect</code> function:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::disconnect db;</code></pre></div>
+<p>After <code>odbc::disconnect</code> has been invoked on a handle, any further operations on it will fail.</p>
+<p><code>odbc::connect</code> allows a number of attributes to be passed to the ODBC driver when opening the database connection. E.g., here’s how to specify a username and password; note that the different attributes are separated with a semicolon:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> db = odbc::connect <span class="st">&quot;DSN=myodbc;UID=root;PWD=guess&quot;</span>;</code></pre></div>
+<p>The precise set of attributes in the connect string depends on your ODBC driver, but at least the following options should be available on most systems. (Case is insignificant in the attribute names, so e.g. the <code>DATABASE</code> attribute may be specified as either <code>DATABASE</code>, <code>Database</code> or <code>database</code>.)</p>
+<ul>
+<li>DSN=&lt;data source name&gt;</li>
+<li>DRIVER=&lt;driver name&gt;</li>
+<li>HOST=&lt;server host name&gt;</li>
+<li>DATABASE=&lt;database path&gt;</li>
+<li>UID=&lt;user name&gt;</li>
+<li>PWD=&lt;password&gt;</li>
+</ul>
+<p>The following attributes appear to be Windows-specific:</p>
+<ul>
+<li>FILEDSN=&lt;DSN file name&gt;</li>
+<li>DBQ=&lt;database file name&gt;</li>
+</ul>
+<p>Using the <code>FILEDSN</code> option you can establish a connection to a data source described in a .dsn file on Windows, as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::connect <span class="st">&quot;FILEDSN=test.dsn&quot;</span>;</code></pre></div>
+<p>Usually it is also possible to directly connect to a driver and name a database file as the data source. For instance, using the MS Access ODBC driver you can connect to a database file test.mdb as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::connect <span class="st">&quot;DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb&quot;</span>;</code></pre></div>
+<p>SQLite (<a href="http://www.sqlite.org" class="uri">http://www.sqlite.org</a>) provides another way to get a database up and running quickly. For that you need the SQLite library and the SQLite ODBC driver available at <a href="http://www.ch-werner.de/sqliteodbc" class="uri">http://www.ch-werner.de/sqliteodbc</a>. Then you can open an SQLite database as follows (the database file is named with the <code>DATABASE</code> attribute and is created automatically if it doesn’t exist):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::connect <span class="st">&quot;DRIVER=SQLite3;Database=test.db&quot;</span>;</code></pre></div>
+<p>SQLite generally performs very well if you avoid some pitfalls (in particular, big batches of updates/inserts should be done within a transaction, otherwise they will take forever). It is certainly good enough for smaller databases and very easy to set up. Basically, after installing SQLite and its ODBC driver you’re ready to go immediately. This makes it a very convenient alternative if you don’t want to go through the tedium of setting up one of the big hulking DBMS.</p>
+<h2 id="getting-information-about-a-data-source">Getting Information about a Data Source</h2>
+<p>You can get general information about an open database connection with the <code>odbc::info</code> function. This function returns a tuple of strings with the following items (see the description of the SQLGetInfo() function in the ODBC API reference for more information):</p>
+<ul>
+<li>DATA_SOURCE_NAME: the data source name</li>
+<li>DATABASE_NAME: the default database</li>
+<li>DBMS_NAME: the host DBMS name</li>
+<li>DBMS_VER: the host DBMS version</li>
+<li>DRIVER_NAME: the name of the ODBC driver</li>
+<li>DRIVER_VER: the version of the ODBC driver</li>
+<li>DRIVER_ODBC_VER: the ODBC version supported by the driver</li>
+<li>ODBC_VER: the ODBC version of the driver manager</li>
+</ul>
+<p>E.g., here is what the connection to MySQL shows on my Linux system:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::info db;
+<span class="st">&quot;myodbc&quot;</span>,<span class="st">&quot;test&quot;</span>,<span class="st">&quot;MySQL&quot;</span>,<span class="st">&quot;5.0.18&quot;</span>,<span class="st">&quot;myodbc3.dll&quot;</span>,<span class="st">&quot;03.51.12&quot;</span>,<span class="st">&quot;03.51&quot;</span>,<span class="st">&quot;03.52&quot;</span></code></pre></div>
+<p>The odbc module also provides a number of operations to retrieve a bunch of additional meta information about the given database connection. In particular, the <code>odbc::getinfo</code> function provides a direct interface to the SQLGetInfo() routine. The result of <code>odbc::getinfo</code> is a pointer which can be converted to an integer or string value, depending on the type of information requested. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; get_short $ odbc::getinfo db odbc::SQL_MAX_TABLES_IN_SELECT;
+<span class="dv">31</span>
+
+&gt; cstring_dup $ odbc::getinfo db odbc::SQL_IDENTIFIER_QUOTE_CHAR;
+<span class="st">&quot;`&quot;</span></code></pre></div>
+<p>Information about supported SQL data types is available with the <code>odbc::typeinfo</code> routine (this returns a lot of data, see odbc.pure for an explanation):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::typeinfo db odbc::SQL_ALL_TYPES;</code></pre></div>
+<p>Moreover, information about the tables in the current database, as well as the structure of the tables and their primary and foreign keys can be retrieved with the <code>odbc::tables</code>, <code>odbc::columns</code>, <code>odbc::primary_keys</code> and <code>odbc::foreign_keys</code> functions:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::tables db;
+[(<span class="st">&quot;event&quot;</span>,<span class="st">&quot;TABLE&quot;</span>),(<span class="st">&quot;pet&quot;</span>,<span class="st">&quot;TABLE&quot;</span>)]
+
+&gt; odbc::columns db <span class="st">&quot;pet&quot;</span>;
+[(<span class="st">&quot;name&quot;</span>,<span class="st">&quot;varchar&quot;</span>,<span class="st">&quot;NO&quot;</span>,<span class="st">&quot;&#39;&#39;&quot;</span>),(<span class="st">&quot;owner&quot;</span>,<span class="st">&quot;varchar&quot;</span>,<span class="st">&quot;YES&quot;</span>,odbc::SQLNULL),
+(<span class="st">&quot;species&quot;</span>,<span class="st">&quot;varchar&quot;</span>,<span class="st">&quot;YES&quot;</span>,odbc::SQLNULL),(<span class="st">&quot;sex&quot;</span>,<span class="st">&quot;char&quot;</span>,<span class="st">&quot;YES&quot;</span>,odbc::SQLNULL),
+(<span class="st">&quot;birth&quot;</span>,<span class="st">&quot;date&quot;</span>,<span class="st">&quot;YES&quot;</span>,odbc::SQLNULL),(<span class="st">&quot;death&quot;</span>,<span class="st">&quot;date&quot;</span>,<span class="st">&quot;YES&quot;</span>,odbc::SQLNULL)]
+
+&gt; odbc::primary_keys db <span class="st">&quot;pet&quot;</span>;
+[<span class="st">&quot;name&quot;</span>]
+
+&gt; odbc::foreign_keys db <span class="st">&quot;event&quot;</span>;
+[(<span class="st">&quot;name&quot;</span>,<span class="st">&quot;pet&quot;</span>,<span class="st">&quot;name&quot;</span>)]</code></pre></div>
+<p>This often provides a convenient and portable means to retrieve basic information about table structures, at least on RDBMS which properly implement the corresponding ODBC calls. Also note that while this information is also available through special system catalogs in most databases, the details of accessing these vary a lot among implementations.</p>
+<h2 id="executing-sql-queries">Executing SQL Queries</h2>
+<p>As soon as a database connection has been opened, you can execute SQL queries on it using the <code>sql</code> function which executes a query and collects the results in a list. Note that SQL queries generally come in two different flavours: queries returning data (so-called <em>result sets</em>), and statements modifying the data (which have as their result the number of affected rows). The <code>sql</code> function returns a nonempty list of lists (where the first list denotes the column titles, and each subsequent list corresponds to a single row of the result set) in the former, and the row count in the latter case.</p>
+<p>For instance, here is how you can select some entries from a table. (The following examples assume the sample “menagerie” tables from the MySQL documentation. The <code>initdb</code> function in the examples/menagerie.pure script can be used to create these tables in your default database.)</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql db <span class="st">&quot;select name,species from pet where owner=&#39;Harold&#39;&quot;</span> [];
+[[<span class="st">&quot;name&quot;</span>,<span class="st">&quot;species&quot;</span>],[<span class="st">&quot;Fluffy&quot;</span>,<span class="st">&quot;cat&quot;</span>],[<span class="st">&quot;Buffy&quot;</span>,<span class="st">&quot;dog&quot;</span>]]</code></pre></div>
+<p>Often the third parameter of <code>sql</code>, as above, is just the empty list, indicating a parameterless query. Queries involving marked input parameters can be executed by specifying the parameter values in the third argument of the <code>sql</code> call. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql db <span class="st">&quot;select name,species from pet where owner=?&quot;</span> [<span class="st">&quot;Harold&quot;</span>];
+[[<span class="st">&quot;name&quot;</span>,<span class="st">&quot;species&quot;</span>],[<span class="st">&quot;Fluffy&quot;</span>,<span class="st">&quot;cat&quot;</span>],[<span class="st">&quot;Buffy&quot;</span>,<span class="st">&quot;dog&quot;</span>]]</code></pre></div>
+<p>Multiple parameters are specified as a list:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql db <span class="st">&quot;select name,species from pet where owner=? and species=?&quot;</span>
+&gt; [<span class="st">&quot;Harold&quot;</span>,<span class="st">&quot;cat&quot;</span>];
+[[<span class="st">&quot;name&quot;</span>,<span class="st">&quot;species&quot;</span>],[<span class="st">&quot;Fluffy&quot;</span>,<span class="st">&quot;cat&quot;</span>]]</code></pre></div>
+<p>Parameterized queries are particularly useful for the purpose of inserting data into a table:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql db <span class="st">&quot;insert into pet values (?,?,?,?,?,?)&quot;</span>
+&gt; [<span class="st">&quot;Puffball&quot;</span>,<span class="st">&quot;Diane&quot;</span>,<span class="st">&quot;hamster&quot;</span>,<span class="st">&quot;f&quot;</span>,<span class="st">&quot;1999-03-30&quot;</span>,odbc::SQLNULL];
+<span class="dv">1</span></code></pre></div>
+<p>In this case we could also have hard-coded the data to be inserted right into the SQL statement, but a parameterized query like the one above can easily be applied to a whole collection of data rows, e.g., as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; do (odbc::sql db <span class="st">&quot;insert into pet values (?,?,?,?,?,?)&quot;</span>) data;</code></pre></div>
+<p>Parameterized queries also let you insert data which cannot be specified easily inside an SQL query, such as long strings or binary data.</p>
+<p>The following SQL types of result and parameter values are recognized and converted to/from the corresponding Pure types:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">SQL value/type</th>
+<th align="left">Pure value/type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">SQL NULL (no value)</td>
+<td align="left"><code>odbc::SQLNULL</code></td>
+</tr>
+<tr class="even">
+<td align="left">integer types (INTEGER and friends)</td>
+<td align="left"><code>int</code></td>
+</tr>
+<tr class="odd">
+<td align="left">64-bit integers</td>
+<td align="left"><code>bigint</code></td>
+</tr>
+<tr class="even">
+<td align="left">floating point types (REAL, FLOAT and friends)</td>
+<td align="left"><code>double</code></td>
+</tr>
+<tr class="odd">
+<td align="left">binary data (BINARY, BLOB, etc.)</td>
+<td align="left"><code>(size, data)</code></td>
+</tr>
+<tr class="even">
+<td align="left">character strings (CHAR, VARCHAR, TEXT, etc.)</td>
+<td align="left"><code>string</code></td>
+</tr>
+</tbody>
+</table>
+<p>Note the special constant (nonfix symbol) <code>odbc::SQLNULL</code> which is used to represent SQL NULL values.</p>
+<p>Also note that binary data is specified as a pair <code>(size, data)</code> consisting of an int or bigint <code>size</code> which denotes the size of the data in bytes, and a pointer <code>data</code> (which must not be a null pointer unless <code>size</code> is 0 as well) pointing to the binary data itself.</p>
+<p>All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented in Pure using its character representation, encoded as a Pure string.</p>
+<p>Some databases also allow special types of queries (e.g., “batch” queries consisting of multiple SQL statements) which may return multiple result sets and/or row counts. The <code>sql</code> function only returns the first result set, which is appropriate in most cases. If you need to determine all result sets returned by a query, the <code>msql</code> function must be used. This function is invoked in exactly the same way as the <code>sql</code> function, but returns a list with all the result sets and/or row counts of the query.</p>
+<p>Example:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::msql db <span class="st">&quot;select * from pet; select * from event&quot;</span> [];</code></pre></div>
+<p>This will return a list with two result sets, one for each query.</p>
+<h2 id="low-level-operations">Low-Level Operations</h2>
+<p>The <code>sql</code> and <code>msql</code> operations are in fact just ordinary Pure functions which are implemented in terms of the low-level operations <code>sql_exec</code>, <code>sql_fetch</code>, <code>sql_more</code> and <code>sql_close</code>. You can also invoke these functions directly if necessary. The <code>sql_exec</code> function starts executing a query and returns either a row count or the column names of the first result set as a tuple of strings. After that you can use <code>sql_fetch</code> to obtain the results in the set one by one. When all rows have been delivered, <code>sql_fetch</code> fails. The <code>sql_more</code> function can then be used to check for additional result sets. If there are further results, <code>sql_more</code> returns either the next row count, or a tuple of column names, after which you can invoke <code>sql_fetch</code> again to obtain the data rows in the second set, etc. When the last result set has been processed, <code>sql_more</code> fails.</p>
+<p>Example:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql_exec db <span class="st">&quot;select name,species from pet where owner=&#39;Harold&#39;&quot;</span> [];
+[<span class="st">&quot;name&quot;</span>,<span class="st">&quot;species&quot;</span>]
+&gt; odbc::sql_fetch db; <span class="co">// get the 1st row</span>
+[<span class="st">&quot;Fluffy&quot;</span>,<span class="st">&quot;cat&quot;</span>]
+&gt; odbc::sql_fetch db; <span class="co">// get the 2nd row</span>
+[<span class="st">&quot;Buffy&quot;</span>,<span class="st">&quot;dog&quot;</span>]
+&gt; odbc::sql_fetch db; <span class="co">// no more results</span>
+odbc::sql_fetch #&lt;<span class="dt">pointer</span> <span class="dv">0x24753e0</span>&gt;
+&gt; odbc::sql_more db; <span class="co">// no more result sets</span>
+odbc::sql_more #&lt;<span class="dt">pointer</span> <span class="dv">0x24753e0</span>&gt;</code></pre></div>
+<p>Moreover, the <code>sql_close</code> function can be called at any time to terminate an SQL query, after which subsequent calls to <code>sql_fetch</code> and <code>sql_more</code> will fail:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql_close db; <span class="co">// terminate query</span>
+()</code></pre></div>
+<p>This is not strictly necessary (it will be done automatically as soon as the next SQL query is invoked), but it is useful in order to release all resources associated with the query, such as parameter values which have to be cached so that they remain accessible to the SQL server. Since these parameters in some cases may use a lot of memory it is better to call <code>sql_close</code> as soon as you are finished with a query. This is also done automatically by the <code>sql</code> and <code>msql</code> functions.</p>
+<p>Also note that only a single query can be in progress per database connection at any one time. That is, if you invoke <code>sql_exec</code> to initiate a new query, a previous query will be terminated automatically. (However, it is possible to execute multiple queries on the same database simultaneously, if you process them through different connections to that database.)</p>
+<p>The low-level operations are useful when you have to deal with large result sets where you want to avoid to build the complete list of results in main memory. Instead, these functions allow you to process the individual elements immediately as they are delivered by the <code>sql_fetch</code> function. (An alternative method which combines the space efficiency of immediate processing with the convenience of the list representation is discussed in the following section.) Using the low-level operations you can also build your own specialized query engines; take the definitions of <code>sql</code> or <code>msql</code> as a start and change them according to your needs.</p>
+<h2 id="lazy-processing">Lazy Processing</h2>
+<p>As an experimental feature, the odbc module also provides two operations <code>odbc::lsql</code> and <code>odbc::lmsql</code> which work like <code>odbc::sql</code> and <code>odbc::msql</code> (see <a href="#executing-sql-queries">Executing SQL Queries</a> above), but return lazy lists (streams) instead. This offers the convenience of a list-based representation without the overhead of keeping entire result sets in memory, which can be prohibitive when working with large amounts of data.</p>
+<p>These functions are invoked just like <code>odbc::sql</code> and <code>odbc::msql</code>, but they return a lazy list of rows (or a lazy list of lazy lists of rows in the case of <code>lmsql</code>). For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::lsql db <span class="st">&quot;select * from pet&quot;</span> [];
+[<span class="st">&quot;name&quot;</span>,<span class="st">&quot;owner&quot;</span>,<span class="st">&quot;species&quot;</span>,<span class="st">&quot;sex&quot;</span>,<span class="st">&quot;birth&quot;</span>,<span class="st">&quot;death&quot;</span>]:#&lt;thunk <span class="dv">0x7ffbb9aa2eb8</span>&gt;</code></pre></div>
+<p>Note that the tail of the result list is “thunked” and will only be produced on demand, as you traverse the list. As a simple example, suppose that we just want to print the <code>name</code> field of each data row:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> system;
+&gt; do (\(name:_)-&gt;puts name) $ tail $ odbc::lsql db <span class="st">&quot;select * from pet&quot;</span> [];
+Fluffy
+Claws
+Buffy
+Fang
+Bowser
+Chirpy
+Whistler
+Slim
+()</code></pre></div>
+<p>Here only one row is in memory at any time while the <code>do</code> function is in progress. This keeps memory requirements much lower than when using the <code>odbc::sql</code> function which first loads the entire result set into memory. Another advantage is that only those data rows are fetched from the database which are actually needed in the course of the computation. This can speed up the processing significantly if only a part of the result set is needed. For instance, in the following example we only look at the first two data rows until the desired row is found, so the remaining rows are never fetched from the database:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; head [row | row@(name:_) = tail $ odbc::lsql db <span class="st">&quot;select * from pet&quot;</span> [];
+&gt;             name == <span class="st">&quot;Claws&quot;</span>];
+[<span class="st">&quot;Claws&quot;</span>,<span class="st">&quot;Gwen&quot;</span>,<span class="st">&quot;cat&quot;</span>,<span class="st">&quot;m&quot;</span>,<span class="st">&quot;1994-03-17&quot;</span>,odbc::SQLNULL]</code></pre></div>
+<p>On the other hand, <code>lsql</code>/<code>lmsql</code> will usually be somewhat slower than <code>sql</code>/<code>msql</code> if the entire result set is being processed. So you should always consider the time/space tradeoffs when deciding which functions to use in a given situation.</p>
+<p>Also note that when using <code>lsql</code>/<code>lmsql</code>, the query remains in progress as long as the result list is still being processed. (This is different from <code>sql</code>/<code>msql</code> which load the complete result set(s) at once after which the query is terminated immediately.) Since only one query can be executed per database connection, this means that only one lazy result set can be processed per database connection at any time. However, as with the lowlevel operations it is possible to do several lazy queries simultaneously if you assign them to different database connections.</p>
+<h2 id="error-handling">Error Handling</h2>
+<p>When one of the above operations fails because the SQL server reports an error, an error term of the form <code>odbc::error msg state</code> will be returned, which specifies an error message and the corresponding SQL state (i.e., error code). A detailed explanation of the state codes can be found in the ODBC documentation. For instance, a reference to a non-existent table will cause a report like the following:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; odbc::sql db <span class="st">&quot;select * from pets&quot;</span> [];
+odbc::error <span class="st">&quot;[TCX][MyODBC]Table &#39;test.pets&#39; doesn&#39;t exist&quot;</span> <span class="st">&quot;S1000&quot;</span></code></pre></div>
+<p>You can check for such return values and take some appropriate action. By redefining odbc::error accordingly, you can also have it generate exceptions or print an error message. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">odbc::error msg state = fprintf stderr <span class="st">&quot;%s (%s)</span><span class="ch">\n</span><span class="st">&quot;</span> (msg,state) $$ ();</code></pre></div>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> When redefining <code>odbc::error</code> in this manner, you should be aware that the return value of <code>odbc::error</code> is what will be returned by the other operations of this module in case of an error condition. These return values are checked by other functions such as <code>sql</code>. Thus the return value should still indicate that an error has happened, and not be something that might be interpreted as a legal return value, such as an integer or a nonempty tuple. It is usually safe to have <code>odbc::error</code> return an empty tuple or throw an exception, but other types of return values should be avoided.</p>
+</blockquote>
+<hr />
+<h2 id="caveats-and-bugs">Caveats and Bugs</h2>
+<p>Be warned that multiple result sets are not supported by all databases. I also found that some ODBC drivers do not properly implement this feature, even though the database supports it. So you better stay away from this if you want your application to be portable. You can easily implement batched queries using a sequence of single queries instead.</p>
+<p>Note that since the exact numeric SQL data types (NUMERIC, DECIMAL) are mapped to Pure double values (which are double precision floating point numbers), there might be a loss of precision in extreme cases. If this is a problem you should explicitly convert these values to strings in your query, which can be done using the SQL CAST function, as in <code>select cast(1234.56 as char)</code>.</p>
+<h2 id="further-information-and-examples">Further Information and Examples</h2>
+<p>For further details about the operations provided by this module please see the odbc.pure file. A sample script illustrating the usage of the module can be found in the examples directory.</p>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-gplot"></a></p>
+<h1 id="gnuplot-bindings">Gnuplot bindings</h1>
+<p>Kay-Uwe Kirstein</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2009, 2010 by Kay-Uwe Kirstein.</p>
+<p>pure-gplot is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<h2 id="introduction">Introduction</h2>
+<p>This module contains a pure binding to gnuplot. Communication to gnuplot is performed via pipes. The usual work flow to generate plot via gnuplot is the following:</p>
+<ol style="list-style-type: decimal">
+<li>open pipe via <code>open</code></li>
+<li>send plot commands, e.g., with <code>plot</code></li>
+<li>close pipe with <code>close</code></li>
+</ol>
+<h2 id="function-reference">Function Reference</h2>
+<h3 id="open-closing-functions">Open / Closing Functions</h3>
+<blockquote>
+<p><code>gplot::open cmd;</code></p>
+</blockquote>
+<p>opens a pipe to gnuplot, using <em>cmd</em>. <em>cmd</em> usually is something like <code>gnuplot</code> or <code>/path/to/gnuplot/bin/gnuplot</code> depending on your path configuration. <code>open</code> returns a pointer to the actual pipe for later usage, so a typical call to open might look like this:</p>
+<blockquote>
+<p><code>let gp = gplot::open &quot;/path_to_gnuplot/gnuplot&quot;;</code></p>
+</blockquote>
+<p>gplot::GPLOT_EXE is a predefined variable with the standard Gnuplot executable. It is set to <code>pgnuplot</code> on Windows and to <code>gnuplot</code> otherwise and can be overridden bythe GPLOT_EXE environment variable. (<code>pgnuplot.exe</code> is a special executable for Windows, which is capable of stdin pipes in contrast to the normal <code>gnuplot.exe</code>). Usage of <code>gplot::GPLOT_EXE</code> might look like this:</p>
+<blockquote>
+<p><code>let gp = gplot::open gplot::GPLOT_EXE;</code></p>
+<p><code>gplot::close gp;</code></p>
+</blockquote>
+<p>closes a gnuplot session, given by the handle <em>gp</em>.</p>
+<h3 id="low-level-commands">Low-Level Commands</h3>
+<blockquote>
+<p><code>gplot::puts_no_echo string gp;</code></p>
+</blockquote>
+<p>sends the string to the gnuplot session <em>gp</em> points to. As the name states, there is no echo read back from gnuplot (Don’t know whether <em>gnuplot</em> or <em>pgnuplot.exe</em> supports reading/bidirectional pipes at all).</p>
+<blockquote>
+<p><code>gplot::puts string gp;</code></p>
+</blockquote>
+<p>is a convenience wrapper to <code>gplot::puts_no_echo</code>.</p>
+<h3 id="plot-commands">Plot Commands</h3>
+<p>The main (versatile) function to generate plots is the simple plot command, which expects a list of the data to be plotted.</p>
+<blockquote>
+<p><code>gplot::plot gp data opt;</code></p>
+</blockquote>
+<p>where <em>gp</em> is the pointer to the gnuplot session, <em>data</em> is a list containing the data to be plotted and <em>opt</em> is a tuple, containing options for the plot. <em>opt</em> might be empty () or <code>DEFAULT</code> for default options (refer to gnuplot for them).</p>
+<p>If data for the x-axis (ordinate) should be explicitely given <em>plotxy</em> should be used instead:</p>
+<blockquote>
+<p><code>gplot::plotxy_deprecated gp (xdata, ydata) opt;</code></p>
+<p><code>gplot::plotxy gp (xdata, ydata) opt [];</code></p>
+</blockquote>
+<p>Multiple datasets can be plotted into a single graph by combining them to tuples of lists:</p>
+<blockquote>
+<p><code>gplot::plotxy gp (xdata, y1data, y2data, ..) opt;</code></p>
+<p><code>gplot::plotxy gp (xdata, y1data, y2data, ..) opt [];</code></p>
+<p><code>gplot::plotxy gp (xdata, y1data, y2data, ..) opt titles;</code></p>
+</blockquote>
+<p>where the latter form gives additional titles for each y-data set.</p>
+<h3 id="plot-options">Plot Options</h3>
+<blockquote>
+<p><code>gplot::xtics gp list_of_tic_labels;</code></p>
+</blockquote>
+<p>Sets the tic labels of the x-axis to the given text labels. The labels can be given aas a simple list of strings, which are taken as successive labels or as a list of tuples with the form <code>(value, label)</code>, in which case each label is placed at its <code>value</code> position.</p>
+<blockquote>
+<p><code>gplot::xtics gp ()</code> or <code>gplot::xtics gp &quot;default&quot;;</code></p>
+</blockquote>
+<p>This restores the default tics on the y-axis.</p>
+<p>Sets a title string on top of the plot (default location)</p>
+<p>Sets the terminal and output name for the successive plots. For some terminal additional options might be given:</p>
+<blockquote>
+<p><code>gplot::output gp (terminal, options) name</code>.</p>
+</blockquote>
+<p>For terminals like x11 or windows, name can be empty <code>()</code>.</p>
+<p>Adds labels to the x- or y-axis, respectively. An empty name removes the label for successive plots, e.g., <code>gplot::xlabel gp &quot;&quot;</code>.</p>
+<h3 id="private-functions">Private Functions</h3>
+<blockquote>
+<p><code>gpdata data</code>, <code>gpxydata (xdata, y1data, ..)</code></p>
+</blockquote>
+<p>Internal functions to handle lists of data point (<code>gpdata</code>) or tuples of lists of data points (<code>gpxydata</code>) and convert them to be understood by Gnuplot.</p>
+<p>Internal function to generate the plotting command for multiple datasets. <code>gpxycmdtitle</code> adds titles to each dataset, a.k.a plot legend.</p>
+<p><code>gplot::gpopt (&quot;style&quot;, style, args);</code></p>
+<p>Internal function to convert a plot style to the respective gnuplot syntax</p>
+<p>Internal function to generate title information for individual datasets</p>
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-stldict"></a></p>
+<h1 id="pure-stldict">pure-stldict</h1>
+<p><a name="module-stldict"></a></p>
+<p><a name="module-hashdict"></a></p>
+<p><a name="module-orddict"></a></p>
+<p>Version 0.8, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>This package provides a light-weight, no frills interface to the C++ dictionary containers <code>map</code> and <code>unordered_map</code>. The <a href="#module-stldict">stldict</a> module makes these data structures available in Pure land and equips them with a (more or less) idiomatic Pure container interface.</p>
+<p>The C++ containers are part of the standard C++ library, see the <a href="http://en.cppreference.com/w/cpp">C++ standard library documentation</a> for details. They were originally based on the <a href="http://www.sgi.com/tech/stl/">Standard Template Library</a>, so they are also sometimes referred to as “STL containers”; hence the name of this package.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2011 by Albert Graef.</p>
+<p>pure-stldict is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-stldict is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-stldict-0.8.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-stldict-0.8.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the modules and <code>make install</code> (as root) to install them in the Pure library directory. This requires GNU make, and of course you need to have Pure (and a C++ library which includes the STL) installed.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually, please check the Makefile for details.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> This module requires Pure 0.50 or later and a recent version of the C++ library (GNU libstdc++ v3 has been tested). All proper C++11 libraries should work out of the box, while (recent) C++0x implementations may require some fiddling with the sources and/or the compilation options. Pre C++0x library versions surely require considerably more work, especially in the hashdict module.</p>
+</blockquote>
+<hr />
+<h2 id="usage">Usage</h2>
+<p>After installation, you can use the operations of this package by placing the following import declaration in your Pure programs:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stldict;</code></pre></div>
+<p>This imports the whole shebang. If you only need either the hashed or the ordered dictionaries, you can also import the corresponding modules separately, i.e.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> hashdict;</code></pre></div>
+<p>or:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> orddict;</code></pre></div>
+<h2 id="types">Types</h2>
+<p>In Pure land, the C++ <code>map</code> and <code>unordered_map</code> containers and their <code>multimap</code> variants are made available as a collection of four data structures:</p>
+<dl>
+<dt><a name="hashdict/type"></a><em>type</em> <code>hashdict</code>, <a name="hashmdict/type"></a><code>hashmdict</code></dt>
+<dd>Hashed (unordered) dictionary data structures. These work with arbitrary key (and value) types, like the hashed dictionary and set data structures in the standard library, and can be found in the <code>hashdict.pure</code> module.
+</dd>
+<dt><a name="orddict/type"></a><em>type</em> <code>orddict</code>, <a name="ordmdict/type"></a><code>ordmdict</code></dt>
+<dd>Ordered dictionary data structures. These require the keys to be ordered by the standard <code>&lt;</code> predicate, like the ordered dictionary and set data structures in the standard library, and can be found in the <code>orddict.pure</code> module.
+</dd>
+</dl>
+<!-- -->
+<p>Note that <a href="#hashdict/type"><code>hashdict</code></a> and <a href="#hashmdict/type"><code>hashmdict</code></a> differ in that the former has exactly one key-value association for each key in the dictionary, while the latter is a “multidict” which allows multiple values to be associated with a key. The same applies to the <a href="#orddict/type"><code>orddict</code></a> and <a href="#ordmdict/type"><code>ordmdict</code></a> types.</p>
+<p>In addition, there are various supertypes which correspond to different unions of the hashed and ordered dictionary types. These are:</p>
+<dl>
+<dt><a name="hashxdict/type"></a><em>type</em> <code>hashxdict</code>, <a name="ordxdict/type"></a><code>ordxdict</code></dt>
+<dd>Denotes any kind of hashed or ordered dictionary, respectively.
+</dd>
+<dt><a name="stldict/type"></a><em>type</em> <code>stldict</code>, <a name="stlmdict/type"></a><code>stlmdict</code></dt>
+<dd>Denotes any kind of singled-valued or multi-valued dictionary, respectively.
+</dd>
+<dt><a name="stlxdict/type"></a><em>type</em> <code>stlxdict</code></dt>
+<dd>Denotes any kind of dictionary.
+</dd>
+</dl>
+<!-- -->
+<p>For instance, you can use <a href="#hashxdict/type"><code>hashxdict</code></a> to match both <a href="#hashdict/type"><code>hashdict</code></a> and <a href="#hashmdict/type"><code>hashmdict</code></a> values. Likewise, <a href="#stlmdict/type"><code>stlmdict</code></a> matches both <a href="#hashmdict/type"><code>hashmdict</code></a> and <a href="#ordmdict/type"><code>ordmdict</code></a> values. To match any kind of dictionary, use the <a href="#stlxdict/type"><code>stlxdict</code></a> type.</p>
+<p>These data structures are very thin wrappers around the C++ container types; in fact, they are just pointers to the C++ containers. Memory management of these objects is automatic, and customizable <a href="#pretty-printing">pretty-printing</a> is provided as well.</p>
+<p>All data structures offer most of the usual Pure container interface (as well as some extensions). In contrast to the standard library dictionaries, they can be used both as dictionaries (holding key =&gt; value pairs) and sets (holding only keys, without associated values), even at the same time.</p>
+<p>The other important difference to the standard library containers is that the stldict containers are <em>mutable</em> data structures; inserting and deleting members really modifies the underlying C++ containers. (However, it is possible to take copies of the containers in situations where it’s necessary to preserve value semantics.)</p>
+<h2 id="operations">Operations</h2>
+<p>All types of dictionaries are simply pointers to the corresponding C++ containers which hold key-value associations where both keys and values may be arbitrary Pure expressions. The <a href="#basic-operations">basic operations</a> described below can be used to create, query and modify these objects. <a href="#comparisons">Comparisons</a> of dictionaries are implemented as well, and the <a href="#set-like-operations">set-like operations</a> let you combine dictionaries in different ways. These operations provide an interface similar to the usual Pure container API.</p>
+<p>In addition, the <a href="#module-stldict">stldict</a> module provides some <a href="#list-like-operations">list-like operations</a> on dictionaries, so that the member data can be processed and aggregated in a convenient fashion (including the ability to use dictionaries as generators in list and matrix comprehensions), and there’s also an interface to C++ <a href="#iterators">iterators</a> which enables you to traverse, inspect and modify the containers in a more C++-like way. Some <a href="#low-level-operations">low-level operations</a> are available to access information about the underlying hash table of a hashed dictionary. Last but not least, the module also offers some operations to customize the <a href="#pretty-printing">pretty-printing</a> of dictionary values.</p>
+<p>When working with these data structures, please note the following special properties of this implementation:</p>
+<ul>
+<li>All dictionary types are <em>mutable</em>. Inserting and deleting members really modifies the underlying C++ data structure as a side effect of the operation. If you need value semantics, you should probably use one of the dictionary or set data structures from the standard Pure library instead. Another possibility is to take a copy of a hashdict using the <a href="#copy/stldict"><code>copy</code></a> function if you need to preserve the original value.</li>
+<li>Keys in a hashed dictionary may be stored in an apparently random order (not necessarily in the order in which they were inserted), while they are guaranteed to be in ascending order (by key) for ordered dictionaries. However, note that even in the latter case, the order of different members for the same key in a multi-valued dictionary is not specified. This must be taken into account when comparing dictionaries, see below. The order of members in a dictionary also matters when listing data from a container using, e.g., the <a href="#members/stldict"><code>members</code></a>, <a href="#keys/stldict"><code>keys</code></a> and <a href="#vals/stldict"><code>vals</code></a> operations.</li>
+<li>Two dictionaries are considered syntactically equal iff they contain the same elements in exactly the same order, using syntactic equality on both the keys and the associated values. This test can always be done in linear time, but is of limited usefulness for most kinds of dictionaries, since the exact order of members in the dictionary may vary depending on how the dictionary was constructed. Semantic equality operations are provided which check (albeit at the cost of increased running time) whether two containers contain the same members irrespective of element order, using semantic equality on the members. Various subset comparisons are provided as well, please check the <a href="#comparisons">Comparisons</a> section for details.</li>
+<li>Values in a dictionary can be omitted, so that a dictionary can also be used as a set data structure. This obviates the need for a separate set data structure at the cost of some (small) increase in memory usage. Also note that you can’t really have a hash pair <code>x=&gt;y</code> as a member of a set, since it always denotes a key-value association. As a remedy, you may use ordinary pairs <code>(x,y)</code> instead.</li>
+</ul>
+<h3 id="basic-operations">Basic Operations</h3>
+<dl>
+<dt><a name="hashdict"></a><code>hashdict xs</code>, <a name="hashmdict"></a><code>hashmdict xs</code>, <a name="orddict"></a><code>orddict xs</code>, <a name="ordmdict"></a><code>ordmdict xs</code></dt>
+<dd><p>Create a dictionary of the corresponding type from a list, tuple or vector of its members. Members can be specified as hash pairs <code>x=&gt;y</code> to denote a key-value association. Any other kind of value denotes a singleton key without associated value. Note that the ordered dictionaries require that the keys be ordered, i.e., the <a href="purelib.html#%3C"><code>&lt;</code></a> predicate must be defined on them.</p>
+<p>The same operations can also be used to construct a dictionary from another dictionary of any type. If the given dictionary is already of the corresponding type, this is a no-op (if you want to copy the dictionary instead, use the <a href="#copy/stldict"><code>copy</code></a> function below). Otherwise the given dictionary is converted to a new dictionary of the desired target type.</p>
+</dd>
+<dt><a name="mkhashdict"></a><code>mkhashdict y xs</code>, <a name="mkhashmdict"></a><code>mkhashmdict y xs</code>, <a name="mkorddict"></a><code>mkorddict y xs</code>, <a name="mkordmdict"></a><code>mkordmdict y xs</code></dt>
+<dd>Create a dictionary from a list of keys and a constant value. The resulting dictionary has the given keys and <code>y</code> as the value for each key.
+</dd>
+<dt><a name="copy/stldict"></a><code>copy m</code></dt>
+<dd><p>Create a new dictionary with the same type and content as <code>m</code>. This is useful if you want to preserve value semantics when using destructive update operations such as <a href="#insert/stldict"><code>insert</code></a> and <a href="#delete/stldict"><code>delete</code></a>. In such a case, <a href="#copy/stldict"><code>copy</code></a> can be used to take a copy of the dictionary beforehand, so that the original dictionary remains unmodified.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> This operation needs linear time with respect to the size of the dictionary (i.e., its number of members). If logarithmic update times are needed while still preserving value semantics, you should use the dictionary and set data structures from the standard library instead.</p>
+</blockquote>
+<hr />
+</dd>
+<dt><a name="hashdictp"></a><code>hashdictp m</code>, <a name="hashmdictp"></a><code>hashmdictp m</code>, <a name="orddictp"></a><code>orddictp m</code>, <a name="ordmdictp"></a><code>ordmdictp m</code></dt>
+<dd>Check whether the argument is a dictionary of the corresponding type.
+</dd>
+<dt><a name="hashxdictp"></a><code>hashxdictp m</code>, <a name="ordxdictp"></a><code>ordxdictp m</code>, <a name="stldictp"></a><code>stldictp m</code>, <a name="stlmdictp"></a><code>stlmdictp m</code></dt>
+<dd>
+</dd>
+<dt><a name="stlxdictp"></a><code>stlxdictp m</code></dt>
+<dd>Check whether the argument is a dictionary of the corresponding supertype.
+</dd>
+<dt><a name="#/stldict"></a><code># m</code></dt>
+<dd>The size of a dictionary (the number of members it contains).
+</dd>
+<dt><a name="!/stldict"></a><code>m ! x</code></dt>
+<dd>Get the value stored under key <code>x</code> in the dictionary <code>m</code>. This may be <code>x</code> itself if <code>x</code> is a member of <code>m</code> but has no associated value. In the case of a multidict this actually returns a list of values (which may be empty if <code>m</code> doesn’t contain <code>x</code>). Otherwise an <a href="purelib.html#out_of_bounds"><code>out_of_bounds</code></a> exception is thrown if <code>m</code> doesn’t contain <code>x</code>.
+</dd>
+<dt><a name="null/stldict"></a><code>null m</code></dt>
+<dd>Test whether <code>m</code> is empty, i.e., has zero members.
+</dd>
+<dt><a name="member/stldict"></a><code>member m x</code></dt>
+<dd>Test whether <code>m</code> contains a member with key <code>x</code>.
+</dd>
+<dt><a name="members/stldict"></a><code>members m</code>, <a name="list/stldict"></a><code>list m</code></dt>
+<dd>Return the list of members of <code>m</code>. The member list will be in an apparently random order in the hashed dictionary case, while it is guaranteed to be in ascending order (by key) for ordered dictionaries. The same order is also used for the other inspection operations below.
+</dd>
+<dt><a name="stream/stldict"></a><code>stream m</code></dt>
+<dd>Like <a href="#list/stldict"><code>list</code></a>, but the member list is returned as a lazy list (cf. <a href="pure.html#lazy-evaluation-and-streams">Lazy Evaluation and Streams</a>) whose members will be computed on the fly as the list is being traversed; cf. <a href="#iterators">Iterators</a>.
+</dd>
+<dt><a name="tuple/stldict"></a><code>tuple m</code>, <a name="vector/stldict"></a><code>vector m</code></dt>
+<dd>Return the members as a tuple or vector.
+</dd>
+<dt><a name="keys/stldict"></a><code>keys m</code></dt>
+<dd>Return the list of keys in the dictionary.
+</dd>
+<dt><a name="vals/stldict"></a><code>vals m</code></dt>
+<dd>Return the list of corresponding values. In the case of a singleton key <code>x</code> without associated value, <code>x</code> itself is returned instead.
+</dd>
+</dl>
+<!-- -->
+<p>As already mentioned, the following modification operations are destructive, i.e., they actually modify the underlying dictionary data structure. If this is not desired, you’ll first have to take a copy of the target dictionary, see <a href="#copy/stldict"><code>copy</code></a>.</p>
+<dl>
+<dt><a name="insert/stldict"></a><code>insert m x</code>, <a name="insert/stldict2"></a><code>insert m (x=&gt;y)</code>, <a name="update/stldict"></a><code>update m x y</code></dt>
+<dd>Insert a singleton key <code>x</code> or a key-value pair <code>x=&gt;y</code> into <code>m</code> and return the modified dictionary. This always adds a new member in a multidict, otherwise it replaces an existing value if there is one. <a href="#update/stldict"><code>update</code></a> is provided as a fully curried version of <a href="#insert/stldict2"><code>insert</code></a>, so <code>update m x y</code> behaves exactly like <code>insert m (x=&gt;y)</code>.
+</dd>
+<dt><a name="delete/stldict"></a><code>delete m x</code>, <a name="delete/stldict2"></a><code>delete m (x=&gt;y)</code></dt>
+<dd>Remove the key <code>x</code> or the specific key-value pair <code>x=&gt;y</code> from <code>m</code> (if present) and return the modified dictionary. In the multidict case, only the first member with the given key <code>x</code> or key-value pair <code>x=&gt;y</code> is removed.
+</dd>
+<dt><a name="clear/stldict"></a><code>clear m</code></dt>
+<dd>Remove all members from <code>m</code>, making <code>m</code> an empty dictionary. Returns <code>()</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="comparisons">Comparisons</h3>
+<p>The usual comparison predicates (<a href="purelib.html#=="><code>==</code></a>, <a href="purelib.html#~="><code>~=</code></a>, <a href="purelib.html#%3C="><code>&lt;=</code></a>, <a href="purelib.html#%3C"><code>&lt;</code></a> etc.) are defined on all dictionary types, where two dictionaries are considered “equal” (<code>m1==m2</code>) if they both contain the same <code>key=&gt;value</code> pairs, and <code>m1&lt;=m2</code> means that <code>m1</code> is a sub-dictionary of <code>m2</code>, i.e., all <code>key=&gt;value</code> pairs of <code>m1</code> are also contained in <code>m2</code> (taking into account multiplicities in the multidict case). Ordered dictionaries compare keys using equality (assuming two keys <code>a</code> and <code>b</code> to be equal if neither <code>a&lt;b</code> nor <code>b&lt;a</code> holds), while hashed dictionaries check for syntactical equality (using <a href="purelib.html#==="><code>===</code></a>). The associated values are compared using the <a href="purelib.html#=="><code>==</code></a> predicate if it is defined, falling back to syntactic equality otherwise.</p>
+<p>The module also defines syntactic equality on all dictionary types, so that two dictionaries of the same type are considered syntactically equal iff they contain the same (syntactically equal) members in the same order. This is always guaranteed if two dictionaries are “identical” (the same C++ pointer), but generally the member order will depend on how the dictionary was constructed. Thus if you need to check that two dictionaries contain the same members irrespective of the order in which the members are listed, the semantic equality operation <a href="purelib.html#=="><code>==</code></a> should be used instead; this will also handle the case of mixed operand types.</p>
+<p>Note that if you really need to check whether two dictionaries are the same object rather than just syntactically equal, you’ll have to cast them to generic C pointers before comparing them with <a href="purelib.html#==="><code>===</code></a>. This can be done with the following little helper function:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">same_dict x y = pointer_cast <span class="st">&quot;void*&quot;</span> x === pointer_cast <span class="st">&quot;void*&quot;</span> y;</code></pre></div>
+<h3 id="set-like-operations">Set-Like Operations</h3>
+<p>These operations work with mixed operand types, promoting less general types to more general ones (i.e., ordered to hashed, and single-valued to multi-valued dictionaries). The result is always a new dictionary, leaving the operands unmodified.</p>
+<dl>
+<dt><a name="+/stldict"></a><code>m1 + m2</code></dt>
+<dd>Sum: <code>m1+m2</code> adds the members of <code>m2</code> to <code>m1</code>.
+</dd>
+<dt><a name="-/stldict"></a><code>m1 - m2</code></dt>
+<dd>Difference: <code>m1-m2</code> removes the members of <code>m2</code> from <code>m1</code>.
+</dd>
+<dt><a name="*/stldict"></a><code>m1 * m2</code></dt>
+<dd>Intersection: <code>m1*m2</code> removes the members <em>not</em> in <code>m2</code> from <code>m1</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="list-like-operations">List-Like Operations</h3>
+<p>The following operations are all overloaded so that they work like their list counterparts, treating their dictionary argument as if it was the member list of the dictionary:</p>
+<ul>
+<li><a href="purelib.html#do"><code>do</code></a>, <a href="purelib.html#map"><code>map</code></a>, <a href="purelib.html#catmap"><code>catmap</code></a>, <a href="purelib.html#listmap"><code>listmap</code></a>, <a href="purelib.html#rowmap"><code>rowmap</code></a>, <a href="purelib.html#rowcatmap"><code>rowcatmap</code></a>, <a href="purelib.html#colmap"><code>colmap</code></a>, <a href="purelib.html#colcatmap"><code>colcatmap</code></a></li>
+<li><a href="purelib.html#all"><code>all</code></a>, <a href="purelib.html#any"><code>any</code></a>, <a href="purelib.html#filter"><code>filter</code></a>, <a href="purelib.html#foldl"><code>foldl</code></a>, <a href="purelib.html#foldl1"><code>foldl1</code></a>, <a href="purelib.html#foldr"><code>foldr</code></a>, <a href="purelib.html#foldr1"><code>foldr1</code></a>, <a href="purelib.html#scanl"><code>scanl</code></a>, <a href="purelib.html#scanl1"><code>scanl1</code></a>, <a href="purelib.html#scanr"><code>scanr</code></a>, <a href="purelib.html#scanr1"><code>scanr1</code></a>, <a href="purelib.html#sort"><code>sort</code></a></li>
+</ul>
+<p>Note that this includes the generic comprehension helpers <a href="purelib.html#listmap"><code>listmap</code></a>, <a href="purelib.html#catmap"><code>catmap</code></a> et al, so that dictionaries can be used as generators in list and matrix comprehensions as usual (see below for some <a href="#examples">examples</a>).</p>
+<h3 id="iterators">Iterators</h3>
+<p>These operations give direct access to C++ iterators on dictionaries which let you query the elements and do basic manipulations of the container. The operations are available in the <code>stldict</code> namespace.</p>
+<p>The iterator concept is somewhat alien to Pure and there are some pitfalls (most notably, destructive updates may render iterators invalid), but the operations described here are still useful in some situations, especially if you need to speed up sequential accesses to large containers or modify values stored in a container in a direct way. They are also used internally to compute lazy member lists of containers (<a href="#stream/stldict"><code>stream</code></a> function).</p>
+<p>You should only use these directly if you know what you are doing. In particular, make sure to consult the <a href="http://en.cppreference.com/w/cpp">C++ standard library documentation</a> for further details on C++ iterator usage.</p>
+<p>The following operations are provided to create an iterator for a given dictionary.</p>
+<dl>
+<dt><a name="stldict::begin"></a><code>stldict::begin m</code>, <a name="stldict::end"></a><code>stldict::end m</code></dt>
+<dd>Return iterators pointing to the beginning and the end of the container. (Note that <a href="#stldict::end"><code>stldict::end</code></a> <em>must</em> always be specified in qualified form since <code>end</code> is a keyword in the Pure language.)
+</dd>
+<dt><a name="stldict::find"></a><code>stldict::find m x</code></dt>
+<dd>Locates a key or specific key=&gt;value pair <code>x</code> in the container and returns an iterator pointing to the corresponding member (or <code>stldict::end m</code> if <code>m</code> doesn’t contain <code>x</code>).
+</dd>
+</dl>
+<!-- -->
+<p>Note that these operations return a new iterator object for each invocation. Also, the created iterator object keeps track of the container it belongs to, so that the container isn’t garbage-collected while the iterator is still being used. However, removing a member from the container (using either <a href="#delete/stldict"><code>delete</code></a> or <a href="#stldict::erase"><code>stldict::erase</code></a>) invalidates all iterators pointing to that member; the result of trying to access such an invalidated iterator is undefined (most likely your program will crash).</p>
+<p>Similar caveats also apply to the <a href="#stream/stldict"><code>stream</code></a> function which, as already mentioned, uses iterators internally to implement lazy list traversal of the members of a dictionary. Thus, if you delete a member of a dictionary while traversing it using <a href="#stream/stldict"><code>stream</code></a>, you better make sure that this member is not the next stream element remaining to be visited; otherwise bad things will happen.</p>
+<p>The following operations on iterators let you query and modify the contents of the underlying container:</p>
+<dl>
+<dt><a name="stldict::dict"></a><code>stldict::dict i</code></dt>
+<dd>Return the dictionary to which <code>i</code> belongs.
+</dd>
+<dt><a name="stldict::endp"></a><code>stldict::endp i</code></dt>
+<dd>Check whether the iterator <code>i</code> points to the end of the container (i.e., past the last element).
+</dd>
+<dt><a name="stldict::next"></a><code>stldict::next i</code></dt>
+<dd>Advance the iterator to the next element. Note that for convenience, in contrast to the corresponding C++ operation this operation is non-destructive. Thus it actually creates a <em>new</em> iterator object, leaving the original iterator <code>i</code> unmodified. The operation fails if <code>i</code> is already at the end of the container.
+</dd>
+<dt><a name="stldict::get"></a><code>stldict::get i</code></dt>
+<dd>Retrieve the key=&gt;val pair stored in the member pointed to by <code>i</code> (or just the key if there is no associated value). The operation fails if <code>i</code> is at the end of the container.
+</dd>
+<dt><a name="stldict::put"></a><code>stldict::put i y</code></dt>
+<dd>Change the value associated with the member pointed to by <code>i</code> to <code>y</code>, and return the new value <code>y</code>. The operation fails if <code>i</code> is at the end of the container. Note that <a href="#stldict::put"><code>stldict::put</code></a> only allows you to set the associated value, <em>not</em> the key of the member.
+</dd>
+<dt><a name="stldict::erase"></a><code>stldict::erase i</code></dt>
+<dd>Remove the member pointed to by <code>i</code> (this invalidates <code>i</code> and all other iterators pointing to this member). The operation fails if <code>i</code> is at the end of the container.
+</dd>
+<dt><a name="==/stldict_iterator"></a><code>i == j</code>, <a name="~=/stldict_iterator"></a><code>i ~= j</code></dt>
+<dd>Semantic equality of iterators. Two iterators are considered equal (<code>i == j</code>) if <code>i</code> and <code>j</code> point to the same element in the same container, and unequal (<code>i ~= j</code>) if they don’t. (In contrast, note that iterators are in fact just pointers to a corresponding C++ data structure, and thus <em>syntactical</em> equality (<code>i === j</code>) holds only if two iterators are the same object.)
+</dd>
+</dl>
+<!-- -->
+<h3 id="low-level-operations">Low-Level Operations</h3>
+<p>The <a href="#module-hashdict">hashdict</a> module also provides a few specialized low-level operations dealing with the layouts of buckets and the hash policy of the <a href="#hashdict/type"><code>hashdict</code></a> and <a href="#hashmdict/type"><code>hashmdict</code></a> containers, such as <code>bucket_count</code>, <code>load_factor</code>, <code>rehash</code> etc. These operations, which are all kept in their own separate <code>hashdict</code> namespace, are useful to obtain performance-related information and modify the setup of the underlying hash table. Please check the <code>hashdict.pure</code> module and the <a href="http://en.cppreference.com/w/cpp">C++ standard library documentation</a> for further details.</p>
+<h3 id="pretty-printing">Pretty-Printing</h3>
+<p>By default, dictionaries are pretty-printed in the format <code>somedict xs</code>, where <code>somedict</code> is the actual construction function such as <code>hashdict</code>, <code>orddict</code>, etc., and <code>xs</code> is the member list of the dictionary. This is usually convenient, as the printed expression will evaluate to an equal container when reentered as Pure code. However, it is also possible to define your own custom pretty-printing with the following function.</p>
+<dl>
+<dt><a name="hashdict_symbol"></a><code>hashdict_symbol f</code>, <a name="hashmdict_symbol"></a><code>hashmdict_symbol f</code>, <a name="orddict_symbol"></a><code>orddict_symbol f</code>, <a name="ordmdict_symbol"></a><code>ordmdict_symbol f</code></dt>
+<dd>Makes the pretty-printer use the format <code>f xs</code> (where <code>xs</code> is the member list) for printing the corresponding type of dictionary.
+</dd>
+</dl>
+<!-- -->
+<p>Note that <code>f</code> may also be an operator symbol (nonfix and unary symbols work best). In the case of an outfix symbol the list brackets around the members are removed; this makes it possible to render the container in a format similar to Pure’s list syntax. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stldict;
+&gt; <span class="kw">outfix</span> {$ $};
+&gt; orddict_symbol ({$ $});
+()
+&gt; orddict (<span class="dv">1</span>..<span class="dv">5</span>);
+{$<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>$}</code></pre></div>
+<p>See <code>orddict_examp.pure</code> included in the distribution for a complete example which also discusses how to make such a custom print representation reparsable.</p>
+<h2 id="examples">Examples</h2>
+<p>Some basic examples showing <a href="#hashdict/type"><code>hashdict</code></a> in action:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stldict;
+&gt; <span class="kw">let</span> m = hashdict [foo=&gt;<span class="dv">99</span>, bar=&gt;bar 4711L, baz=&gt;<span class="dv">1</span>..<span class="dv">5</span>]; m;
+hashdict [foo=&gt;<span class="dv">99</span>,bar=&gt;bar 4711L,baz=&gt;[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>]]
+&gt; m!bar;
+bar 4711L
+&gt; keys m;
+[foo,bar,baz]
+&gt; vals m;
+[<span class="dv">99</span>,bar 4711L,[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>]]
+&gt; list m;
+[foo=&gt;<span class="dv">99</span>,bar=&gt;bar 4711L,baz=&gt;[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>]]
+&gt; member m foo, member m bar;
+<span class="dv">1</span>,<span class="dv">1</span></code></pre></div>
+<p>Hashed multidicts (<a href="#hashmdict/type"><code>hashmdict</code></a>):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m = hashmdict [foo=&gt;<span class="dv">99</span>,baz=&gt;<span class="dv">1</span>..<span class="dv">5</span>,baz=&gt;bar 4711L]; m;
+hashmdict [foo=&gt;<span class="dv">99</span>,baz=&gt;[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>],baz=&gt;bar 4711L]
+&gt; m!baz;
+[[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>],bar 4711L]
+&gt; m!foo;
+[<span class="dv">99</span>]</code></pre></div>
+<p>The following example illustrates how to employ ordered dictionaries (<a href="#orddict/type"><code>orddict</code></a>) as a set data structure:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m1 = orddict [<span class="dv">5</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">11</span>,<span class="dv">3</span>];
+&gt; <span class="kw">let</span> m2 = orddict (<span class="dv">3</span>..<span class="dv">6</span>);
+&gt; m1;m2;
+orddict [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">11</span>]
+orddict [<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]
+&gt; m1+m2;
+orddict [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">11</span>]
+&gt; m1-m2;
+orddict [<span class="dv">1</span>,<span class="dv">11</span>]
+&gt; m1*m2;
+orddict [<span class="dv">3</span>,<span class="dv">5</span>]
+&gt; m1*m2 &lt;= m1, m1*m2 &lt;= m2;
+<span class="dv">1</span>,<span class="dv">1</span>
+&gt; m1 &lt; m1+m2, m2 &lt; m1+m2;
+<span class="dv">1</span>,<span class="dv">1</span></code></pre></div>
+<p>Of course, the same works with ordered multidicts (<a href="#ordmdict/type"><code>ordmdict</code></a>):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m1 = ordmdict [<span class="dv">5</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">11</span>,<span class="dv">3</span>];
+&gt; <span class="kw">let</span> m2 = ordmdict (<span class="dv">3</span>..<span class="dv">6</span>);
+&gt; m1;m2;
+ordmdict [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">11</span>]
+ordmdict [<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]
+&gt; m1+m2;
+ordmdict [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">11</span>]
+&gt; m1-m2;
+ordmdict [<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">11</span>]
+&gt; m1*m2;
+ordmdict [<span class="dv">3</span>,<span class="dv">5</span>]
+&gt; m1*m2 &lt;= m1, m1*m2 &lt;= m2;
+<span class="dv">1</span>,<span class="dv">1</span>
+&gt; m1 &lt; m1+m2, m2 &lt; m1+m2;
+<span class="dv">1</span>,<span class="dv">1</span></code></pre></div>
+<p>In fact, the binary operations (comparisons as well as the set operations <code>+</code>, <code>-</code> and <code>*</code>) work with any combination of dictionary operands:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m1 = hashdict (<span class="dv">1</span>..<span class="dv">5</span>);
+&gt; <span class="kw">let</span> m2 = ordmdict (<span class="dv">3</span>..<span class="dv">7</span>);
+&gt; m1+m2;
+hashmdict [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]</code></pre></div>
+<p>Note that the operands are always promoted to the more general operand type, where hashed beats ordered and multi-valued beats single-valued dictionaries. If this is not what you want, you can also specify the desired conversions explicitly:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; m1+orddict m2;
+hashdict [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
+&gt; orddict m1+m2;
+ordmdict [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]</code></pre></div>
+<p>Also note that the “set” operations not only work with proper sets, but also with general dictionaries:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; hashdict [i=&gt;i+<span class="dv">1</span>|i=<span class="dv">1</span>..<span class="dv">4</span>]+hashdict [i=&gt;i-<span class="dv">1</span>|i=<span class="dv">3</span>..<span class="dv">5</span>];
+hashdict [<span class="dv">1</span>=&gt;<span class="dv">2</span>,<span class="dv">2</span>=&gt;<span class="dv">3</span>,<span class="dv">3</span>=&gt;<span class="dv">2</span>,<span class="dv">4</span>=&gt;<span class="dv">3</span>,<span class="dv">5</span>=&gt;<span class="dv">4</span>]</code></pre></div>
+<p>All dictionary containers can be used as generators in list and matrix comprehensions:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m = hashmdict [foo=&gt;<span class="dv">99</span>,baz=&gt;<span class="dv">1</span>..<span class="dv">5</span>,baz=&gt;bar 4711L];
+&gt; [x y | x=&gt;y = m];
+[foo <span class="dv">99</span>,baz [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>],baz (bar 4711L)]
+&gt; {{x;y} | x=&gt;y = m};
+{foo,baz,baz;<span class="dv">99</span>,[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>],bar 4711L}</code></pre></div>
+<p>Note that in the current implementation this always computes the full member list of the dictionary as an intermediate value, which will need considerable extra memory in the case of large dictionaries. As a remedy, you can also use the <a href="#stream/stldict"><code>stream</code></a> function to convert the dictionary to a lazy list instead. This will often be slower, but in the case of big dictionaries the tradeoff between memory usage and execution speed might be worth considering. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> m = hashdict [foo i =&gt; i | i = <span class="dv">1</span>..<span class="dv">10000</span>];
+&gt; stream m;
+(foo <span class="dv">1512</span>=&gt;<span class="dv">1512</span>):#&lt;thunk <span class="dv">0x7fa1718350a8</span>&gt;
+&gt; stats -m
+&gt; #list m;
+<span class="dv">10000</span>
+<span class="dv">0.</span>01s, <span class="dv">40001</span> cells
+&gt; #stream m;
+<span class="dv">10000</span>
+<span class="dv">0.</span>1s, <span class="dv">16</span> cells
+&gt; #[y | x=&gt;y = m; gcd y <span class="dv">767</span>~=<span class="dv">1</span>];
+<span class="dv">925</span>
+<span class="dv">0.</span>05s, <span class="dv">61853</span> cells
+&gt; #[y | x=&gt;y = stream m; gcd y <span class="dv">767</span>~=<span class="dv">1</span>];
+<span class="dv">925</span>
+<span class="dv">0.</span>15s, <span class="dv">10979</span> cells</code></pre></div>
+</body>
+</html>

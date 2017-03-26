@@ -1,0 +1,319 @@
+<a name="doc-pure-faust"></a>
+
+pure-faust
+==========
+
+<a name="module-faust"></a>
+
+Version 0.12, March 06, 2017
+
+Albert Graef &lt;<aggraef@gmail.com>&gt;
+
+This module lets you load and run Faust-generated signal processing modules in
+[Pure](http://purelang.bitbucket.org/). [Faust](http://faust.grame.fr/) (an
+acronym for Functional AUdio STreams) is a functional programming language for
+real-time sound processing and synthesis developed at
+[Grame](http://www.grame.fr/) and distributed as GPL'ed software.
+
+------------------------------------------------------------------------------
+
+> **Note:**
+>
+> As of Pure 0.45, there's also built-in support for Faust interoperability in
+> the Pure core, including the ability to inline Faust code in Pure programs;
+> see [Interfacing to Faust](#interfacing-to-faust) in the Pure manual. The
+> built-in Faust interface requires
+> [Faust2](https://bitbucket.org/purelang/pure-lang/wiki/Faust2) which is
+> still under development and available as a separate package in the Faust git
+> repository. Both interfaces provide pretty much the same basic capabilities
+> and should work equally well for most applications. In fact, as of version
+> 0.5 pure-faust comes with a compatibility module which provides the
+> pure-faust API on top of the built-in Faust interface, see the description
+> of the [faust2](#module-faust2) module below for details.
+
+------------------------------------------------------------------------------
+
+Copying
+-------
+
+Unless explicitly stated otherwise, this software is Copyright (c) 2009-2012
+by Albert Graef. Please also see the source for the copyright and license
+notes pertaining to individual source files.
+
+pure-faust is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+pure-faust is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program. If not, see &lt;<http://www.gnu.org/licenses/>&gt;.
+
+Installation
+------------
+
+Get the latest source from
+<https://bitbucket.org/purelang/pure-lang/downloads/pure-faust-0.12.tar.gz>.
+
+Binary packages can be found at <http://purelang.bitbucket.org/>. To install
+from source, run the usual `make && sudo make install`. This requires Pure, of
+course (the present version will work with Pure 0.52 and later). The Makefile
+tries to guess the installation prefix under which Pure is installed. If it
+guesses wrong, you can tell it the right prefix with `make prefix=/some/path`.
+Or you can specify the exact path of the `lib/pure` directory with
+`make libdir=/some/path`; by default the Makefile assumes
+`$(prefix)/lib/pure`. The Makefile also tries to guess the host system type
+and set up some platform-specific things accordingly. If this doesn't work for
+your system then you'll have to edit the Makefile accordingly.
+
+The Faust compiler is not required to compile this module, but of course
+you'll need it to build the examples in the `examples` subdirectory and to
+compile your own Faust sources. You'll need Faust 0.9.46 or later.
+
+To compile Faust programs for use with this module, you'll also need the
+`pure.cpp` architecture file. This should be included in recent Faust
+releases. If your Faust version doesn't have it yet, you can find a suitable
+version of this file in the `examples` folder. Simply copy the file to your
+Faust library directory (usually something like `/usr/local/lib/faust`,
+`/usr/local/share/faust` with the latest Faust versions) or the directory
+holding the Faust sources to be compiled, and you should be set.
+
+Usage
+-----
+
+Once Faust and this module have been installed as described above, you should
+be able to compile a Faust dsp to a shared module loadable by pure-faust as
+follows:
+
+    $ faust -a pure.cpp -o mydsp.cpp mydsp.dsp
+    $ g++ -shared -o mydsp.so mydsp.cpp
+
+Note that, by default, Faust generates code which does all internal
+computations with single precision. You can add the `-double` flag to the
+Faust command in order to use double precision instead. (In either case, all
+data will be represented as doubles on the Pure side.)
+
+Also note that the above compile command is for a Linux or BSD system using
+`gcc`. Add `-fPIC` for 64 bit compilation. For Windows compilation, the output
+filename should be `mydsp.dll` instead of `mydsp.so`; on Mac OSX, it should be
+`mydsp.dylib`. There's a Makefile in the `examples` folder which automates
+this process.
+
+Once the module has been compiled, you can fire up the Pure interpreter and
+load the dsp as follows:
+
+    > using faust;
+    > let dsp = faust_init "mydsp" 48000;
+    > dsp;
+    #<pointer 0xf09220>
+
+The `faust_init` function loads the `"mydsp.so"` module (the `.so` suffix is
+supplied automatically) and returns a pointer to the Faust dsp object which
+can then be used in subsequent operations.
+
+------------------------------------------------------------------------------
+
+> **Note:** `faust_init` only loads the dsp module if it hasn't been loaded
+> before. However, as of pure-faust 0.8, `faust_init` also checks the
+> modification time of the module and reloads it if the module was recompiled
+> since it was last loaded. (This is for compatibility with Pure's built-in
+> Faust interface which behaves in the same way.) If this happens, *all*
+> existing dsp instances created with the old version of the module become
+> invalid immediately (i.e., all subsequent operations on them will fail,
+> except `faust_exit`) and must be recreated.
+
+------------------------------------------------------------------------------
+
+The second parameter of `faust_init`, 48000 in this example, denotes the
+sample rate in Hz. This can be an arbitrary integer value which is available
+to the hosted dsp (it's up to the dsp whether it actually uses this value in
+some way). The sample rate can also be changed on the fly with the
+`faust_reinit` function:
+
+    > faust_reinit dsp 44100;
+
+It is also possible to create copies of an existing dsp with the `faust_clone`
+function, which is quite handy if multiple copies of the same dsp are needed
+(a case which commonly arises when implementing polyphonic synthesizers):
+
+    > let dsp2 = faust_clone dsp;
+
+When you're done with a dsp, you can invoke the `faust_exit` function to
+unload it (this also happens automatically when a dsp object is
+garbage-collected):
+
+    > faust_exit dsp2;
+
+Note that after invoking this operation the dsp pointer becomes invalid and
+must not be used any more.
+
+In the following, we use the following little Faust program as a running
+example:
+
+    declare descr "amplifier";
+    declare author "Albert Graef";
+    declare version "1.0";
+
+    gain = nentry("gain", 1.0, 0, 10, 0.01);
+    process = *(gain);
+
+The `faust_info` function can be used to determine the number of input/output
+channels as well as the "UI" (a data structure describing the available
+control variables) of the loaded dsp:
+
+    > let n,m,ui = faust_info dsp;
+
+Global metadata of the dsp is available as a list of `key=>val` string pairs
+with the `faust_meta` function. For instance:
+
+    > faust_meta dsp;
+    ["descr"=>"amplifier","author"=>"Albert Graef","version"=>"1.0"]
+
+To actually run the dsp, you'll need two buffers capable of holding the
+required number of audio samples for input and output. For convenience, the
+`faust_compute` routine lets you specify these as Pure double matrices.
+`faust_compute` is invoked as follows:
+
+    > faust_compute dsp in out;
+
+Here, `in` and `out` must be double matrices which have at least `n` or `m`
+rows, respectively (corresponding to the number of input and output channels
+of the Faust dsp). The row size of these matrices determines the number of
+samples which will be processed (if one of the matrices has a larger row size
+than the other, the extra elements are ignored). The `out` matrix will be
+modified in-place and also returned as the result of the call.
+
+Some DSPs (e.g., synthesizers) only take control input without processing any
+audio input; others (e.g., pitch detectors) might produce just control output
+without any audio output. In such cases you can just specify an empty `in` or
+`out` matrix, respectively. For instance:
+
+    > faust_compute dsp {} out;
+
+Most DSPs take additional control input. The control variables are listed in
+the "UI" component of the `faust_info` return value. For instance, suppose
+that there's a `gain` parameter listed there, it might look as follows:
+
+    > controls ui!0;
+    hslider #<pointer 0x12780a4> [] ("gain",1.0,0.0,10.0,0.1)
+
+The constructor itself denotes the type of control, which matches the name of
+the Faust builtin used to create the control (see the Faust documentation for
+more details on this). The *third* parameter is a tuple which indicates the
+arguments the control was created with in the Faust program. The *first*
+parameter is a C `double*` which points to the current value of the control
+variable. You can inspect and change this value with the `get_double` and
+`put_double` routines available in the Pure prelude. (Note that, for
+compatibility with the internal Faust interface which supports both single and
+double precision controls, you can also use the `get_control` and
+`put_control` functions instead.) Changes of control variables only take
+effect between different invocations of `faust_compute`. Example:
+
+    > let gain = control_ref (controls ui!0);
+    > get_double gain;
+    1.0
+    > put_double gain 2.0;
+    ()
+    > faust_compute dsp in out;
+
+Output controls such as `hbargraph` and `vbargraph` are handled in a similar
+fashion, only that the Faust dsp updates these values for each call to
+`faust_compute` and Pure scripts can then read the values with `get_double` or
+`get_control`.
+
+The *second* parameter of a control description is a list holding the Faust
+metadata of the control. This list will be empty if the control does not have
+any metadata. Otherwise you will find some of `key=>val` string pairs in this
+list. It is completely up to the application how to interpret the metadata,
+which may consist, e.g., of GUI layout hints or various kinds of controller
+definitions. For instance, a MIDI controller assignment might look as follows
+in the Faust source:
+
+    gain = nentry("gain[midi:ctrl 7]", 1.0, 0, 10, 0.01);
+
+In Pure this information will then be available as:
+
+    > control_meta (controls ui!0);
+    ["midi"=>"ctrl 7"]
+
+Let's finally have a closer look at the contents of the UI data structure. You
+will find that it is actually a tree, similar to the directory tree of a
+hierarchical file system, which reflects the layout of the controls in the
+Faust program. For instance:
+
+    > ui;
+    vgroup [] ("mydsp",[nentry #<pointer 0x12780a4> [] ("gain",1.0,0.0,10.0,0.01)])
+
+The leaves of the tree are the actual controls, while its interior nodes are
+so-called "control groups", starting from a root node which represents the
+entire dsp. There are different kinds of control groups such as `vgroup` and
+`hgroup`; please check the Faust documentation for details. Control groups
+have a name and metadata just like individual controls, but there is no
+`control_ref` component and the data stored at the node is the list of
+controls and subgroups contained in the control group. The `controls` function
+returns a flat representation of the controls in the UI tree as a list,
+omitting the group nodes of the tree:
+
+    > controls ui;
+    [hslider #<pointer 0x12780a4> [] ("gain",1.0,0.0,10.0,0.1)]
+
+We've already employed this function above to extract the `gain` control of
+our example dsp. There's a variation of this function which yields the full
+"pathnames" of controls in the UI tree:
+
+    > pcontrols ui;
+    [hslider #<pointer 0x12780a4> [] ("mydsp/gain",1.0,0.0,10.0,0.1)]
+
+This is sometimes necessary to distinguish controls with identical names in
+different control groups. There are two additional convenience functions which
+work with this flat representation of the UI data structure:
+
+    > let ctrls = ans;
+    > control_map ctrls;
+    {"mydsp/gain"=>#<pointer 0x12780a4>}
+    > control_metamap ctrls;
+    {"mydsp/gain"=>[]}
+
+The results are Pure records which provide convenient access to the pointers
+and metadata of the controls by their name.
+
+Please note that, as of Pure 0.45, the UI access functions described above are
+actually provided by the [faustui](#module-faustui) standard library module
+which gets included by the [faust](#module-faust) module.
+
+Further examples can be found in the examples subdirectory.
+
+Faust2 Compatibility
+--------------------
+
+<a name="module-faust2"></a>
+
+As of version 0.5, pure-faust includes a Faust2 compatibility module which
+lets you use the pure-faust API on top of Pure's new Faust bitcode interface,
+using the same operations as described under [Usage](#usage) above. This
+module is invoked with the following import clause:
+
+    using faust2;
+
+To instantiate a Faust dsp using the [faust2](#module-faust2) interface,
+you'll have to compile the Faust program to LLVM bitcode format. The examples
+directory includes a `pure.c` Faust architecture file to help with this.
+Please see the [Interfacing to Faust](#interfacing-to-faust) section in the
+Pure manual for details.
+
+Note that only one of the [faust](#module-faust) and [faust2](#module-faust2)
+modules may be imported into a program; trying to use both modules in the same
+program will *not* work. Also note that the [faust2](#module-faust2) module
+requires [Faust2](https://bitbucket.org/purelang/pure-lang/wiki/Faust2) and a
+fairly recent Pure version to work, whereas the [faust](#module-faust) module
+works with both Faust2 and the mainline Faust version and doesn't rely on the
+Faust bitcode loader (only the `pure.cpp` architecture is needed).
+
+Acknowledgements
+----------------
+
+Many thanks to Yann Orlarey at Grame, the principal author of Faust!

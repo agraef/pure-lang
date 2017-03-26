@@ -1,0 +1,347 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-csv"></a></p>
+<h1 id="pure-csv---comma-separated-value-interface-for-the-pure-programming-language">Pure-CSV - Comma Separated Value Interface for the Pure Programming Language</h1>
+<p>Version 1.6, March 06, 2017</p>
+<p>Eddie Rucker &lt;<a href="mailto:erucker@bmc.edu">erucker@bmc.edu</a>&gt;</p>
+<p>The CSV library provides an interface for reading and writing comma separated value files. The module is very loosely based on Python’s CSV module (<a href="http://docs.python.org/lib/module-csv.html" class="uri">http://docs.python.org/lib/module-csv.html</a>).</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-csv-1.6.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-csv-1.6.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the module and <code>make install</code> (as root) to install it in the Pure library directory. This requires GNU make. The <code>make install</code> step is only necessary for system-wide installation.</p>
+<p>The <code>make</code> utility tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix, and <code>make PIC=-fPIC</code> or some similar flag might be needed for compilation on 64 bit systems. Please see the Makefile for details.</p>
+<h2 id="usage">Usage</h2>
+<p>Data records are represented as vectors or lists of any Pure values. Values are converted as necessary and written as a group of strings, integers, or doubles separated by a delimiter. Three predefined dialects are provided; <code>DEFAULT</code> (record terminator= <code>\n</code> ), <code>RFC4180</code> (record terminator= <code>\r\n</code> ), and <code>Excel</code>. Procedures are provided to create other CSV dialects. See (<a href="http://www.ietf.org/rfc/rfc4180.txt" class="uri">http://www.ietf.org/rfc/rfc4180.txt</a>) for more details about the RFC4180 standard.</p>
+<h3 id="handling-errors">Handling Errors</h3>
+<p><a name="error"></a></p>
+<dl>
+<dt><code>error msg</code></dt>
+<dd><p>is an error handling term. Operations resulting in parse errors, memory errors, or read/write errors produce a special <code>csv::error msg</code> term, where <code>msg</code> is a string describing the particular error. Your application should either check for these or have <code>csv::error</code> defined to directly handle errors in some way (e.g., provide a default value, or raise an exception).</p>
+</dd>
+</dl>
+<h3 id="creating-dialects">Creating Dialects</h3>
+<p><a name="dialect"></a></p>
+<dl>
+<dt><code>dialect record</code></dt>
+<dd><p>creates a dialect from a record of dialect option pairs. The dialect object is freed automatically when exiting the pure script. The list of possible options and option values are presented below.</p>
+<ul>
+<li><code>delimiter</code> - Character used to separate fields.
+<ul>
+<li>Value - any string.</li>
+<li>Default - <code>&quot;,&quot;</code>.</li>
+</ul></li>
+<li><code>escape</code> - Embedded escape character used to embed a delimiter, escape, or terminator into unquoted fields. If the escape character is not null, then the quote character is ignored.
+<ul>
+<li>Value - any string.</li>
+<li>Default - <code>&quot;&quot;</code>.</li>
+<li>Reading - The escape character is dropped and the next char is inserted into the field.</li>
+<li>Writing - The escape character is written into the output stream before the delimiter, escape, or return character.</li>
+</ul></li>
+<li><code>quote</code> - Quotes are used to embed delimiters, quotes, or terminators into a field.
+<ul>
+<li>Value - any string.</li>
+<li>Default - <code>&quot;\&quot;&quot;</code>.</li>
+<li>Notes - Embedded quotes are doubled. The <code>escape</code> option must be the null string.</li>
+</ul></li>
+<li><code>terminator</code> - Record termination string.
+<ul>
+<li>Value - any string.</li>
+<li>Reading - Either a user specified string or if not specivied the file is sniffed for a <code>\r</code>, <code>\r\n</code>, or <code>\n</code>.</li>
+<li>Writing - Either a user specified string, <code>\r\n</code> for Windows platforms, or <code>\n</code> for everything else.</li>
+</ul></li>
+<li><code>quote_flag</code> - Sets the quoting style of strings and/or numbers.
+<ul>
+<li>Value - One of {<code>ALL</code>, <code>STRINGS</code>, <code>MINIMAL</code>}.</li>
+<li>Default - <code>ALL</code>.</li>
+<li>Reading -
+<ol style="list-style-type: decimal">
+<li><code>ALL</code> - Every field is read as a string.</li>
+<li><code>STRING</code>, <code>MINIMAL</code> - Fields within quotes and fields that cannot be converted to integers or doubles are read as strings.</li>
+</ol></li>
+<li>Writing -
+<ol style="list-style-type: decimal">
+<li><code>ALL</code> - Every field is written within quotes.</li>
+<li><code>STRING</code> - Only fields of type <code>string</code> are quoted.</li>
+<li><code>MINIMAL</code> - Only fields containing embedded quotes, terminators, or delimiters are written within quotes.</li>
+</ol></li>
+</ul></li>
+<li><code>space_around_quoted_field</code> - Determines how white space between quotes and delimiters should be treated.
+<ul>
+<li>Value - One of {<code>NO</code>, <code>LEFT</code>, <code>RIGHT</code>, <code>BOTH</code>}.</li>
+<li>Default - <code>NO</code>.</li>
+<li>Reading -
+<ol style="list-style-type: decimal">
+<li><code>NO</code> - Follows RFC4180 rules.</li>
+<li><code>LEFT</code> - Allows space before a quoted field.</li>
+<li><code>RIGHT</code> - Allows space between a quoted field and a delimiter.</li>
+<li><code>BOTH</code> - Allows space before and after a quoted field.</li>
+</ol></li>
+<li>Writing - fields are never written with space before a quoted field or between a quoted field and a delimiter.</li>
+<li>Notes this option does not affect space within quotes or fields written using the <code>escape</code> string option.</li>
+</ul></li>
+<li><code>trim_space</code> - trim white space before or after field contents.
+<ul>
+<li>Value - One of {<code>NO</code>, <code>LEFT</code>, <code>RIGHT</code>, <code>BOTH</code>}.</li>
+<li>Default - <code>NO</code>.</li>
+<li>Reading -
+<ol style="list-style-type: decimal">
+<li><code>NO</code> - Reading follows RFC4180 rules.</li>
+<li><code>LEFT</code>, <code>RIGHT</code>, or <code>BOTH</code> - The field is trimmed accordingly. Use <em>caution</em> because trimming may allow automatic conversion of numbers if the <code>quote_flag</code> is set to <code>MINIMAL</code>.</li>
+</ol></li>
+<li>Writing -
+<ol style="list-style-type: decimal">
+<li><code>NO</code> - Reading follows RFC4180 rules</li>
+<li><code>LEFT</code>, <code>RIGHT</code>, or <code>BOTH</code> - Trimming space is probably a bad idea since leading or trailing space may be significant for other applications.</li>
+</ol></li>
+</ul></li>
+</ul>
+<p>The following example illustrates the construction of a dialect for reading tab delimited files without quoted strings.</p>
+</dd>
+</dl>
+<p><a name="example_dialect"></a></p>
+<p>Example</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {delimiter=&gt;<span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, quote_flag=&gt;STRING};
+&gt; </code></pre></div>
+<h3 id="opening-csv-files">Opening CSV Files</h3>
+<p><a name="open"></a></p>
+<dl>
+<dt><code>open name::string</code></dt>
+<dd><p>opens a CSV file for reading using the default dialect. If the file does not exist, the <code>error msg</code> rule is invoked.</p>
+</dd>
+<dt><code>open (name::string, rw_flag::string)</code></dt>
+<dd><p>opens a CSV file for reading, writing, or appending using the default dialect. Valid <code>rw_flag</code> values are <code>&quot;r&quot;</code> for reading, <code>&quot;w&quot;</code> for writing, and <code>&quot;a&quot;</code> for appending. If the file does not exist when opened for reading, the <code>error msg</code> rule is invoked. When a file is opened for writing and the file exists, the old file is overwritten. If the file does not exist, a new empty file is created. When a file is opened for appending and the file exists, new records are appended to the end of the file, otherwise a new empty file is created.</p>
+</dd>
+<dt><code>open (name::string, rw_flag::string, d::matrix)</code></dt>
+<dd><p>exactly as above except reading/writing is done according to a user defined dialect <code>d</code>.</p>
+</dd>
+<dt><code>open (name::string, rw_flag::string, d::matrix, opts@(_:_))</code></dt>
+<dd><p>exactly as above except allows for list output or header options when reading.</p>
+<ol style="list-style-type: decimal">
+<li>If <code>opts</code> contains <code>LIST</code>, the output of <code>getr</code>, <code>fgetr</code>, and <code>fgetr_lazy</code> is a list instead of a vector.</li>
+<li>If <code>opts</code> contains <code>HEADER</code>, the first line of the file is automatically read and parsed as a record where entries are <code>key=&gt;position</code> pairs where <code>key</code> is a string and <code>position</code> is an integer denoting the location of a field within the record. The header record may be accessed by <code>header</code>.</li>
+</ol>
+</dd>
+</dl>
+<p><a name="examples_open"></a></p>
+<p>Examples</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {delimiter=&gt;<span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;junk.csv&quot;</span>, <span class="st">&quot;w&quot;</span>, d);
+&gt; putr f {<span class="st">&quot;hello&quot;</span>,<span class="dv">123</span>,<span class="st">&quot;&quot;</span>,<span class="dv">3</span>+:<span class="dv">4</span>,world};
+()
+&gt; close f;
+()
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;junk.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d);
+&gt; getr f;
+{<span class="st">&quot;hello&quot;</span>,<span class="st">&quot;123&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;3+:4&quot;</span>,<span class="st">&quot;world&quot;</span>}
+&gt;</code></pre></div>
+<p>Suppose our file “test.csv” is as presented below.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">ir$ more test.csv
+NAME,TEST1,TEST2
+<span class="st">&quot;HOPE, BOB&quot;</span>,<span class="dv">90</span>,<span class="dv">95</span>
+<span class="st">&quot;JONES, SALLY&quot;</span>,<span class="dv">88</span>,<span class="dv">72</span>
+<span class="st">&quot;RED, FEEFEE&quot;</span>,<span class="dv">45</span>,<span class="dv">52</span></code></pre></div>
+<p>Notice how the <code>LIST</code> option affects the return of <code>getr</code> and how the <code>HEADER</code> option may be used to index records.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {quote_flag=&gt;MINIMAL};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d, [LIST,HEADER]);
+&gt; <span class="kw">let</span> r = getr f;
+&gt; r!<span class="dv">0</span>;
+<span class="st">&quot;HOPE, BOB&quot;</span>
+&gt; <span class="kw">let</span> k = header f;
+&gt; k;
+{<span class="st">&quot;NAME&quot;</span>=&gt;<span class="dv">0</span>,<span class="st">&quot;TEST1&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;TEST2&quot;</span>=&gt;<span class="dv">2</span>}
+&gt; r!(k!<span class="st">&quot;NAME&quot;</span>);
+<span class="st">&quot;HOPE, BOB&quot;</span>
+&gt; r!!(k!![<span class="st">&quot;NAME&quot;</span>,<span class="st">&quot;TEST1&quot;</span>]);
+[<span class="st">&quot;HOPE, BOB&quot;</span>,<span class="dv">90</span>]
+&gt;</code></pre></div>
+<h3 id="file-reading-functions">File Reading Functions</h3>
+<p><a name="header"></a></p>
+<dl>
+<dt><code>header csv_file::pointer</code></dt>
+<dd><p>returns the record of <code>key=&gt;position</code> pairs when opened by <code>csv::open</code> using the header option. If the file was opened without the <code>HEADER</code> option, <code>{}</code> is returned.</p>
+</dd>
+</dl>
+<p><a name="getr"></a></p>
+<dl>
+<dt><code>getr csv_file::pointer</code></dt>
+<dd><p>reads from a <code>csv_file</code> opened by <code>csv::open</code> and returns a record represented as a row matrix. Reading from a file opened for writing or appending invokes the <code>error msg</code> rule.</p>
+</dd>
+</dl>
+<p><a name="fgetr"></a></p>
+<dl>
+<dt><code>fgetr csv_file::pointer</code></dt>
+<dd><p>reads a whole file and returns a list of records. This procedure should only be used on data files that are small enough to fit in the computer’s primary memory. Reading from a file opened for writing or appending invokes the <code>error msg</code> rule.</p>
+</dd>
+<dt><code>fgetr_lazy csv_file::pointer</code></dt>
+<dd><p>Lazy version of <code>fgetr</code>.</p>
+</dd>
+</dl>
+<h3 id="file-writing-functions">File Writing Functions</h3>
+<p>When modifying CSV files that will be imported into Microsoft Excel, fields with significant leading 0s should be written using a <code>&quot;=&quot;&quot;0...&quot;&quot;&quot;</code> formatting scheme. This same technique will work for preserving leading space too. Again, this quirk should only be necessary for files to be imported into MS Excel.</p>
+<p><a name="putr"></a></p>
+<dl>
+<dt><code>putr csv_file::pointer rec::matrix</code></dt>
+<dd><p>writes a record in row matrix format to <code>csv_file</code>. Writing to a file opened for reading invokes the <code>error msg</code> rule.</p>
+</dd>
+</dl>
+<p><a name="fputr"></a></p>
+<dl>
+<dt><code>fputr csv_file::pointer l@(_:_)</code></dt>
+<dd><p>writes a list of records where each record is a row matrix to <code>csv_file</code>. Writing to a file opened for reading invokes the <code>error msg</code> rule.</p>
+</dd>
+</dl>
+<p><a name="examples"></a></p>
+<h3 id="examples">Examples</h3>
+<p>The first example shows how to write and read a default CSV file.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;testing.csv&quot;</span>, <span class="st">&quot;w&quot;</span>);
+&gt; fputr f [{<span class="st">&quot;bob&quot;</span>,<span class="dv">3.9</span>,<span class="st">&quot;&quot;</span>,-<span class="dv">2</span>},{<span class="st">&quot;fred&quot;</span>,-<span class="dv">11.8</span>,<span class="st">&quot;&quot;</span>,<span class="dv">0</span>},{<span class="st">&quot;mary&quot;</span>,<span class="dv">2.3</span>,<span class="st">&quot;$&quot;</span>,<span class="dv">11</span>}];
+()
+&gt; close f;
+()
+&gt; <span class="kw">let</span> f = open <span class="st">&quot;testing.csv&quot;</span>;
+&gt; fgetr f;
+[{<span class="st">&quot;bob&quot;</span>,<span class="st">&quot;3.9&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;-2&quot;</span>},{<span class="st">&quot;fred&quot;</span>,<span class="st">&quot;-11.8&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;0&quot;</span>},{<span class="st">&quot;mary&quot;</span>,<span class="st">&quot;2.3&quot;</span>,<span class="st">&quot;$&quot;</span>,<span class="st">&quot;11&quot;</span>}]
+&gt; close f;
+&gt;</code></pre></div>
+<p>The second example illustrates how to write and read a CSV file using automatic conversions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {quote_flag=&gt;MINIMAL};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;w&quot;</span>, d);
+&gt; putr f {<span class="st">&quot;I&quot;</span>,<span class="st">&quot;&quot;</span>,-<span class="dv">4</span>,<span class="dv">1.2</span>,<span class="dv">2</span>%<span class="dv">4</span>,like};
+()
+&gt; putr f {<span class="st">&quot;playing&quot;</span>,<span class="st">&quot;the&quot;</span>,<span class="dv">0</span>,-<span class="dv">0.2</span>,<span class="dv">1</span>+:<span class="dv">4</span>,drums};
+()
+&gt; close f;
+()
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d);
+&gt; fgetr f;
+[{<span class="st">&quot;I&quot;</span>,<span class="st">&quot;&quot;</span>,-<span class="dv">4</span>,<span class="dv">1.2</span>,<span class="st">&quot;2%4&quot;</span>,<span class="st">&quot;like&quot;</span>},{<span class="st">&quot;playing&quot;</span>,<span class="st">&quot;the&quot;</span>,<span class="dv">0</span>,-<span class="dv">0.2</span>,<span class="st">&quot;1+:4&quot;</span>,<span class="st">&quot;drums&quot;</span>}]
+&gt; close f;
+()
+&gt;</code></pre></div>
+<p>Records containing quotes, delimiters, and line breaks are also properly handled.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {quote_flag=&gt;STRING};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;w&quot;</span>, d);
+&gt; fputr f [{<span class="st">&quot;this</span><span class="ch">\n</span><span class="st">is</span><span class="ch">\n</span><span class="st">&quot;</span>,<span class="dv">1</span>},{<span class="st">&quot;a </span><span class="ch">\&quot;</span><span class="st">test</span><span class="ch">\&quot;</span><span class="st">&quot;</span>,<span class="dv">2</span>}];
+()
+&gt; close f;
+()
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d);
+&gt; fgetr f;
+[{<span class="st">&quot;this</span><span class="ch">\n</span><span class="st">is</span><span class="ch">\n</span><span class="st">&quot;</span>,<span class="dv">1</span>},{<span class="st">&quot;a </span><span class="ch">\&quot;</span><span class="st">test</span><span class="ch">\&quot;</span><span class="st">&quot;</span>,<span class="dv">2</span>}]
+&gt; close f;
+()
+&gt;</code></pre></div>
+<p>Consider the following hand written CSV file. According to RFC4180, this is not a valid CSV file. However, by using the <code>space_around_quoted_field</code>, the file can still be read.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">erucker:$ more test.csv
+  <span class="st">&quot;this&quot;</span>,   <span class="st">&quot;is&quot;</span>,  <span class="st">&quot;not&quot;</span>, <span class="st">&quot;valid&quot;</span>
+
+&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> f = open <span class="st">&quot;test.csv&quot;</span>;
+&gt; getr f;
+csv::error <span class="st">&quot;parse error at line 1&quot;</span>
+&gt; <span class="kw">let</span> d = dialect {space_around_quoted_field=&gt;BOTH};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d);
+&gt; getr f;
+{<span class="st">&quot;this&quot;</span>,<span class="st">&quot;is&quot;</span>,<span class="st">&quot;not&quot;</span>,<span class="st">&quot;valid&quot;</span>}
+&gt;</code></pre></div>
+<p>The <code>trim_space</code> flag should be used with caution. A field with space in front of a number should be interpreted as a string, but consider the following file.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">erucker:$ more test.csv
+<span class="st">&quot;  this   &quot;</span>, <span class="dv">45</span> ,<span class="dv">23</span>,  hello</code></pre></div>
+<p>Now observe the differences for the two dialects below.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {trim_space=&gt;BOTH};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>,<span class="st">&quot;r&quot;</span>,d);
+&gt; getr f;
+{<span class="st">&quot;this&quot;</span>,<span class="st">&quot;45&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;hello&quot;</span>}
+&gt; <span class="kw">let</span> d = dialect {trim_space=&gt;BOTH, quote_flag=&gt;MINIMAL};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d);
+&gt; getr f;
+{<span class="st">&quot;this&quot;</span>,<span class="dv">45</span>,<span class="dv">23</span>,<span class="st">&quot;hello&quot;</span>}
+&gt;</code></pre></div>
+<p>The <code>trim_space</code> flag also affects writing.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {trim_space=&gt;BOTH};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;w&quot;</span>, d);
+&gt; putr f {<span class="st">&quot;   this   &quot;</span>,<span class="st">&quot;   45 &quot;</span>};
+()
+&gt; close f;
+()
+&gt; quit
+
+erucker:$ more test.csv
+<span class="st">&quot;this&quot;</span>,<span class="st">&quot;45&quot;</span></code></pre></div>
+<p>For the last example a tab delimiter is used, automatic conversions is on, and records are represented as lists. Files are automatically closed when the script is finished.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> csv;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> csv;
+&gt; <span class="kw">let</span> d = dialect {quote_flag=&gt;MINIMAL, delimiter=&gt;<span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>};
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;w&quot;</span>, d, [LIST]);
+&gt; fputr f [[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,-<span class="dv">4.5</span>,<span class="st">&quot;&quot;</span>],[<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="dv">2.3</span>,<span class="st">&quot;-&quot;</span>]];
+()
+&gt; close f;
+()
+&gt; <span class="kw">let</span> f = open (<span class="st">&quot;test.csv&quot;</span>, <span class="st">&quot;r&quot;</span>, d, [LIST]);
+&gt; fgetr f;                             
+[[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,-<span class="dv">4.5</span>,<span class="st">&quot;&quot;</span>],[<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="dv">2.3</span>,<span class="st">&quot;-&quot;</span>]]
+&gt; quit</code></pre></div>
+</body>
+</html>

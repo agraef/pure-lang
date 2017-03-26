@@ -1,0 +1,1032 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-stlmap"></a></p>
+<h1 id="pure-stlmap">pure-stlmap</h1>
+<p><a name="module-stlmap"></a></p>
+<p><a name="module-stlmmap"></a></p>
+<p><a name="module-stlhmap"></a></p>
+<p>Version 0.4, March 06, 2017</p>
+<div style="white-space: pre-line;">Peter Summerland &lt;<a href="mailto:p.summerland@gmail.com">p.summerland@gmail.com</a>&gt;</div>
+<p>pure-stlmap is a <a href="http://purelang.bitbucket.org">Pure</a> interface to six associative containers provided by the <a href="http://en.cppreference.com/w/cpp">C++ Standard Library</a>: map, set, multimap, multiset, unordered_map and unordered_set.</p>
+<h2 id="copying">Copying</h2>
+<div style="white-space: pre-line;">Copyright (c) 2012 by Peter Summerland &lt;<a href="mailto:p.summerland@gmail.com">p.summerland@gmail.com</a>&gt;.</div>
+<p>All rights reserved.</p>
+<p>pure-stlmap is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>
+<p>pure-stlmap is distributed under a BSD-style license, see the COPYING file for details.</p>
+<h2 id="introduction">Introduction</h2>
+<p>This is pure-stlmap-0.1, the first release of pure-stlmap. It is possible that some of the functions might be changed slightly or even removed. Comments and questions would be especially appreciated at this early stage.</p>
+<h3 id="supported-containers">Supported Containers</h3>
+<p>The Standard C++ Containers Library, often refered to as the standard template library (“STL”), provides templates for generic containers and generic algorithms. pure-stlmap provides six mutable containers, “stlmap”, “stlset”, “stlmmap”, “stlmset”, “stlhmap” and “stlhset”, that are thin wrappers around the corresponding associative containers provided by the STL, map, set, multimap, multiset, unordered_map and unordered_set, specialized to hold pure-expressions. pure-stlmap does not provide wrappers for unordered_multimap and unordered_multiset.</p>
+<h3 id="interface">Interface</h3>
+<p>pure-stlmap provides a “key-based” interface that can be used to work with the supported STL containers in a way that should feel natural to Pure programmers. For example, the (!) function can be used to access values associated with keys and functions like <a href="#map/stlmap"><code>map</code></a>, <a href="#foldl/stlmap"><code>foldl</code></a>, <a href="#filter/stlmap"><code>filter</code></a> and <a href="#do/stlmap"><code>do</code></a> can be used to operate on all or part of a container’s elements without using an explict tail recursive loop. In addition, for the ordered containers, stlmap, stlmmap, stlset and stlmset, pure-stlmap provides an “interator-based” interface that corresponds to the C++ interface, mostly on a one-to-one basis.</p>
+<p>The interface for the unordered or “hash table” containers, stlhmap and stlhset, is limited compared to that provided for the ordered containers. In particular iterators, operations on subsequences (ranges) and set operations are not supported.</p>
+<p>In some cases, the STL’s associative containers have different semantics than the the associative containers provided by the Pure standard library. Where there is a conflict, pure-stlmap follows the STL.</p>
+<p>Many of the functions provided by pure-stlmap, such as the constructors, equivalence and lexicographical comparison operations, insert and erase operations, and the set operations are just thin wrappers around the the corresponding C++ functions. Users can consult the C++ Library documentation to understand the performance characteristics and corner case behavior of any pure-stlmap function that has a corresponding function in the STL.</p>
+<p>The C++ library is sometimes more complicated than the Pure Standard Library. For example many of the applicable C++ functions, including set operations and tests for equality, assume that the containers are lexicographically ordered. The reward for playing by the rules (which occurs automatically for stlmap and stlset) is O(n) time complexity for comparison and set operations.</p>
+<h2 id="installation">Installation</h2>
+<p>pure-stlmap-0.4 is included in the “umbrella” addon, <a href="pure-stllib.html">pure-stllib</a> which is available at <a href="https://bitbucket.org/purelang/pure-lang/downloads" class="uri">https://bitbucket.org/purelang/pure-lang/downloads</a>. After you have downloaded and installed <a href="pure-stllib.html">pure-stllib</a>, you will be able to use pure-stlmap (and <a href="pure-stlvec.html">pure-stlvec</a>, as well).</p>
+<h2 id="examples">Examples</h2>
+<p>The pure-stlmap/uts subdirectory contains Pure scripts that are used to test pure-stlmap. These scripts contain simple tests, each of which consists of a single line of code followed by a comment that contains the expected output. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">let</span> sm1 = stlmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+<span class="co">//- ()</span>
+
+sm1!stl::smbeg, sm1!<span class="st">&quot;a&quot;</span>, sm1!<span class="st">&quot;d&quot;</span>, sm1!<span class="st">&quot;e&quot;</span>
+<span class="co">//- 1,1,4,5</span>
+
+<span class="fu">catch</span> id $ sm1!<span class="st">&quot;0&quot;</span>;
+<span class="co">//- out_of_bounds</span></code></pre></div>
+<p>You might consider pasting parts of these scripts into a temporary file that you can play with if you are curious about how something works.</p>
+<p>Two short example programs, anagrams.pure and poly.pure, can be found in the pure-stlmap/examples subdirectory.</p>
+<h2 id="quick-start">Quick Start</h2>
+<p>This section introduces the basic functions you need to get up and running with pure-stlmap. For a quick look at the other functions provided by pure-stlmap, you can refer to pure-stllib-cheatsheet.pdf, which can be found in the pure-stllib/doc directory.</p>
+<h3 id="example-containers">Example Containers</h3>
+<p>The code snippets that appear in the examples that follow assume that six containers have been created by entering the following at the prompt.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$&gt; pure -q
+&gt; <span class="kw">using</span> stlmap, stlhmap, stlmmap;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> stl;
+
+&gt; <span class="co">// Make some maps and sets with default characteristics</span>
+&gt; <span class="kw">let</span> sm  = stlmap  [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+&gt; <span class="kw">let</span> shm = stlhmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+&gt; <span class="kw">let</span> smm = stlmmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+&gt; <span class="kw">let</span> ss  = stlset  [<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>];
+&gt; <span class="kw">let</span> shs = stlhset [<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>];
+&gt; <span class="kw">let</span> sms = stlmset [<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>];</code></pre></div>
+<p>The <code>using</code> statement imports the three modules provided by pure-stlmap: <a href="#module-stlmap">stlmap</a> provides the interface for the stlmap and stlset containers, <a href="#module-stlmmap">stlmmap</a> provides the interface the stlmmap and stlmset containers, and <a href="#module-stlhmap">stlhmap</a> provides the interface to the stlhmap and stlhset containers. The <code>let</code> statements set up an instance of each of the containers provided by pure-stlmap, loaded with some sample elements.</p>
+<p>To save typing you can run readme-data.pure, a file that contains the corresponding source code. It can be found in in the pure-stlmap/examples directory.</p>
+<h3 id="constructors">Constructors</h3>
+<p>You can construct empty pure-stlmap containers using the <a href="#emptystlmap/stlmap"><code>emptystlmap</code></a>, <a href="#emptystlset/stlmap"><code>emptystlset</code></a>, <a href="#emptystlmmap/stlmap"><code>emptystlmmap</code></a>, <a href="#emptystlmset/stlmap"><code>emptystlmset</code></a>, <a href="#emptystlhmap/stlmap"><code>emptystlhmap</code></a> and <a href="#emptystlhset/stlmap"><code>emptystlhset</code></a> functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm1 = emptystlmap;   <span class="co">// uses (&lt;) to order keys</span></code></pre></div>
+<p>You can construct a pure-stlmap container and fill it with elements all in one go using the <a href="#stlmap/stlmap"><code>stlmap</code></a>, <a href="#stlset/stlmap"><code>stlset</code></a>, <a href="#stlmmap/stlmap"><code>stlmmap</code></a>, <a href="#stlmset/stlmap"><code>stlmset</code></a>, <a href="#stlhmap/stlmap"><code>stlhmap</code></a> and <a href="#stlhset/stlmap"><code>stlhset</code></a> functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> shm1 = stlhmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]; 
+
+&gt; members shm1;
+[<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>]
+
+&gt; smh1!<span class="st">&quot;b&quot;</span>;
+<span class="dv">2</span></code></pre></div>
+<p>As opposed to the hashed containers (stlhmap and stlhset), the ordered containers (stlmap, stlset, stlmmap and stlmset) keep their elements ordered by key.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm1 = stlmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]</code></pre></div>
+<h3 id="ranges">Ranges</h3>
+<p>For the ordered containers (stlmap, stlset, stlmmap and stlmset) you can work with subsequences, called “ranges”, of the containers’ elements. A range is specified by a tuple that consists of a container and two keys. If (sm, first_key, last_key) designates a range, the elements of the range are all of elements of the container sm whose keys are equivalent to or greater than first_key and less than last_key. If first_key and last_key are left out of the tuple, the range consists of all of sm’s elements.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;               <span class="co">// no range keys - the whole container</span>
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; members (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);     <span class="co">// a range from &quot;b&quot; up but not including &quot;e&quot;</span>
+[<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; members (sm,<span class="st">&quot;c1&quot;</span>,<span class="st">&quot;z&quot;</span>);    <span class="co">// keys do not have to be stored</span>
+[<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; members shm;              <span class="co">// works on a unordered set (with no range keys)</span>
+[<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>,<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>]</code></pre></div>
+<p>Two special keys, <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a> and <a href="#stl::smend/stlmap"><code>stl::smend</code></a> are reserved for use in ranges to designate the first element in a container and the imaginary “past-end” element.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members (sm,smbeg,<span class="st">&quot;d&quot;</span>);
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]
+
+&gt; members (sm,<span class="st">&quot;b&quot;</span>,smend);
+[<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>Perhaps it should go without saying, but you cannot use either of these symbols as the keys of elements stored in a pure-stlmap container.</p>
+<h3 id="inserting-and-replacing-elements">Inserting and Replacing Elements</h3>
+<p>You can insert elements and, for the maps (stlmap, stlmmap and stlhmap), replace the values associated with keys that are already stored in the map, using the <a href="#insert/stlmap"><code>insert</code></a>, <a href="#replace/stlmap"><code>replace</code></a> and <a href="#insert_or_replace/stlmap"><code>insert_or_replace</code></a> functions. For the maps, the elements to inserted are specified as (key=&gt;value) hash-pairs.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm1 = emptystlmap;
+
+&gt; insert sm1 (<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>);              <span class="co">// returns number of elements inserted</span>
+<span class="dv">1</span>
+&gt; members sm1;
+[<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; replace sm1 <span class="st">&quot;e&quot;</span> <span class="dv">15</span>;               <span class="co">// returns value</span>
+<span class="dv">15</span>
+&gt; members sm1;
+[<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">15</span>]
+
+&gt; <span class="fu">catch</span> id $ replace sm1 <span class="st">&quot;x&quot;</span> <span class="dv">10</span>;    <span class="co">// replace never inserts new elements</span>
+out_of_bounds
+
+&gt; insert sm1 (<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">25</span>);             <span class="co">// insert never changes existing elements</span>
+<span class="dv">0</span>
+&gt; members sm1;
+[<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">15</span>]
+
+&gt; insert_or_replace sm1 (<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">25</span>);  <span class="co">// 1 value changed </span>
+<span class="dv">1</span>                                   
+&gt; members sm1;
+[<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">25</span>]
+&gt;</code></pre></div>
+<p>The <a href="#insert/stlmap"><code>insert</code></a> and <a href="#insert_or_replace/stlmap"><code>insert_or_replace</code></a> functions are overloaded to insert or replace elements specified in a list, vector, stlvec or another pure-stlmap container (of the same type). E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm2 = emptystlmap;
+
+&gt; insert sm2 [<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>];       <span class="co">// insert from a list</span>
+<span class="dv">2</span>
+
+&gt; insert sm2 (sm,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;e&quot;</span>);          <span class="co">// insert from a range</span>
+<span class="dv">2</span>
+
+&gt; members sm2;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; insert_or_replace sm2 {<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">11</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">15</span>};
+<span class="dv">2</span>
+
+&gt; members sm2;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">11</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">15</span>]</code></pre></div>
+<h3 id="access">Access</h3>
+<p>If you want to see if a key is stored in a container use the <a href="#member/stlmap"><code>member</code></a> function. (A key, k, is considered to be “stored” in a container if there is an element in the container that is equivalent to k.)</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; member sm <span class="st">&quot;x&quot;</span>;  <span class="co">// (&quot;x&quot;=&gt;val) is not an element of sm for any val</span>
+<span class="dv">0</span>
+
+&gt; member sm <span class="st">&quot;a&quot;</span>;  <span class="co">// (&quot;a&quot;=&gt;1) is an element with key equivalent to &quot;a&quot;</span>
+<span class="dv">1</span></code></pre></div>
+<p>The value (or values for a multi-key container) associated with a key can be accessed using the (!) function.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; sm!<span class="st">&quot;a&quot;</span>;   <span class="co">// return the value associated with &quot;a&quot;</span>
+<span class="dv">1</span>
+
+&gt; shm!<span class="st">&quot;b&quot;</span>;  <span class="co">// try it with a hashed map</span>
+<span class="dv">2</span>
+
+&gt; smm!<span class="st">&quot;c&quot;</span>;  <span class="co">// multimap returns a the list of values associated with &quot;c&quot;</span>
+[<span class="dv">31</span>,<span class="dv">32</span>]
+
+&gt; ss!<span class="st">&quot;a&quot;</span>;   <span class="co">// with sets, return the key</span>
+<span class="st">&quot;a&quot;</span>
+
+&gt; sms!<span class="st">&quot;c&quot;</span>;  <span class="co">// with multisets, return a list of keys</span>
+[<span class="st">&quot;c&quot;</span>,<span class="st">&quot;c&quot;</span>]</code></pre></div>
+<p>If the key is not stored in the container, (!) throws an <a href="purelib.html#out_of_bounds"><code>out_of_bounds</code></a> exception.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="fu">catch</span> id $ sm!<span class="st">&quot;x&quot;</span>; <span class="co">// &quot;x&quot; is not stored as a key in sm</span>
+out_of_bounds</code></pre></div>
+<p>Please note that all access is strictly by keys. For example you cannot use the <a href="#member/stlmap"><code>member</code></a> function to determine if (“a”=&gt;1) is an element stored in sm; you can only ask if the key “a” is stored in sm.</p>
+<h3 id="erasing-elements">Erasing Elements</h3>
+<p>For any pure-stlmap container, you can use the <a href="#erase/stlmap"><code>erase</code></a> function to remove all the elements associated with a given key in the container, all of the elements in the container or, unless the container is a stlhmap or stlhset, all of the elements in a range defined on the container.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> shm1 = stlhmap shm;       <span class="co">// make some copies of maps</span>
+&gt; <span class="kw">let</span> smm1 = stlmmap smm;
+&gt; <span class="kw">let</span> sm1 = stlmap sm;
+
+&gt; members smm1;                 <span class="co">// smm1 has multiple values for &quot;c&quot;</span>
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; erase (shm1,<span class="st">&quot;c&quot;</span>);             <span class="co">// erase &quot;c&quot; keyed elements from a stlmmap</span>
+<span class="dv">1</span>
+&gt; members shm1;                 <span class="co">// all the &quot;c&quot; keyed elements are gone</span>
+[<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>,<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>]
+
+&gt; erase shm1;                   <span class="co">// erase all elements</span>
+<span class="dv">4</span>
+&gt; empty shm1;
+<span class="dv">1</span>
+
+&gt; erase (sm1,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;d&quot;</span>);         <span class="co">// erase a subsequence       </span>
+<span class="dv">2</span>
+&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; erase (sm1,<span class="st">&quot;x&quot;</span>);             <span class="co">// attempt to erase something not there</span>
+<span class="dv">0</span>
+
+&gt; erase (smm1,<span class="st">&quot;c&quot;</span>);            <span class="co">// erase all elements with key &quot;c&quot;</span>
+<span class="dv">2</span>
+&gt; members smm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<h3 id="conversions">Conversions</h3>
+<p>The elements of an associated container be copied into a list, vector or stlvec using the <a href="#members/stlmap"><code>members</code></a>, <a href="#stl::vector/stlmap"><code>stl::vector</code></a> and <a href="#stlvec/stlmap"><code>stlvec</code></a> functions. For ordered containers (stlmap, stlset, stlmmap and stlmset) the list, vector or stlvec can be built from a range.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members ss;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>]
+
+&gt; members (ss,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;d&quot;</span>); <span class="co">// list subsequence from &quot;b&quot; up to but not &quot;d&quot; </span>
+[<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>]
+
+&gt; members (smm,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;e&quot;</span>);
+[<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; members (shm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;d&quot;</span>); <span class="co">// fails - ranges not supported for stlhmaps</span>
+stl::members (#&lt;<span class="dt">pointer</span> <span class="dv">0x83b4908</span>&gt;,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;d&quot;</span>)
+
+&gt; members shm;          <span class="co">// ok - all elements are copied</span>
+[<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>,<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]
+
+&gt; vector (sm,smbeg,<span class="st">&quot;d&quot;</span>);
+{<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>}
+
+&gt; <span class="kw">using</span> stlvec;
+&gt; members $ stlvec sm; 
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>You can convert the contents of an ordered container (stlmap, stlset, stlmmap or stlmset) or a range defined on one to a stream using the <a href="#stream/stlmap"><code>stream</code></a> function.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> ss1 = stlhset (<span class="dv">0</span>..<span class="dv">100000</span>);
+
+&gt; stats -m
+
+&gt; <span class="kw">let</span> xx = drop <span class="dv">99998</span> $ scanl (+) <span class="dv">0</span> (stream ss);
+<span class="dv">0.</span>3s, <span class="dv">18</span> cells
+
+&gt; list xx;
+[<span class="dv">704782707</span>,<span class="dv">704882705</span>,<span class="dv">704982704</span>,<span class="dv">705082704</span>]
+0s, <span class="dv">17</span> cells</code></pre></div>
+<h3 id="functional-programming">Functional Programming</h3>
+<p>Most of the Pure list operations, including <a href="#map/stlmap"><code>map</code></a>, <a href="#do/stlmap"><code>do</code></a>, <a href="#filter/stlmap"><code>filter</code></a>, <a href="#catmap/stlmap"><code>catmap</code></a>, <a href="#foldl/stlmap"><code>foldl</code></a> and <a href="#foldl1/stlmap"><code>foldl1</code></a> can be applied to any of pure-stlmap’s associative containers. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; map (\x-&gt;x-<span class="dv">32</span>) shs;
+[<span class="st">&quot;D&quot;</span>,<span class="st">&quot;E&quot;</span>,<span class="st">&quot;A&quot;</span>,<span class="st">&quot;B&quot;</span>,<span class="st">&quot;C&quot;</span>]
+
+&gt; <span class="kw">using</span> system;
+
+&gt; do (puts . str) (sm,smbeg,<span class="st">&quot;c&quot;</span>);
+<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>
+<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>
+()</code></pre></div>
+<p>List comprehensions also work.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; [k-<span class="dv">32</span>=&gt;v+<span class="dv">100</span> | (k=&gt;v) = smm; k&gt;<span class="st">&quot;a&quot;</span> &amp;&amp; k&lt;<span class="st">&quot;e&quot;</span>];
+[<span class="st">&quot;B&quot;</span>=&gt;<span class="dv">102</span>,<span class="st">&quot;C&quot;</span>=&gt;<span class="dv">131</span>,<span class="st">&quot;C&quot;</span>=&gt;<span class="dv">132</span>,<span class="st">&quot;D&quot;</span>=&gt;<span class="dv">104</span>]
+
+&gt; {k-<span class="dv">32</span>=&gt;v+<span class="dv">100</span> | (k=&gt;v) = (smm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>)};
+{<span class="st">&quot;B&quot;</span>=&gt;<span class="dv">102</span>,<span class="st">&quot;C&quot;</span>=&gt;<span class="dv">131</span>,<span class="st">&quot;C&quot;</span>=&gt;<span class="dv">132</span>,<span class="st">&quot;D&quot;</span>=&gt;<span class="dv">104</span>}</code></pre></div>
+<p>It is highly recommended that you use the functional programming operations, as opposed to recursive loops, whenever possible.</p>
+<h2 id="concepts">Concepts</h2>
+<p>This section describes pure-stlmap’s containers, iterators, ranges, elements, keys, values and how these objects are related to each other. It also describes a group of functions associated with containers that help define the container’s behavior. E.g., each ordered container (stlmap, stlset, stlmmap or stlmset) stores a function that it used to order its keys and to determine if two keys are equivalent.</p>
+<h3 id="containers-and-elements">Containers and Elements</h3>
+<p>The six associative containers supported by pure-stlmap can be grouped together in terms of certain defining attributes.</p>
+<p>The three “maps” provided by pure-stlmap, stlmap, stlmmap and stlhmap, associate values with keys. If a value v is associated with a key, k, in an map, m, then we say that (k=&gt;v) is an element of m, k is a key stored in m and v is a value stored in m.</p>
+<p>The three “sets” provided by pure-stlmap, stlset, stlmset and stlhset, hold single elements, as opposed to key value pairs. If an element e is contained a set, s, we say that e is simultaneously an element, key and value stored s. In other words, we sometimes speak of a set as if it were a map where each element, key and value are the same object.</p>
+<p>The “ordered” containers, stlmap, stlset, stlmmap and stlmset, each have a “key-less-than” function that they use keep their elements in a sequence that is ordered by keys. The default key-less-than function is <a href="#(%3C)/stlmap"><code>(&lt;)</code></a>, but this can be changed when the container is created. The elements stored in a stlmap or stlset have unique keys, i.e., two elements stored in the container will never have equivalent keys. For these purposes, two keys are “equivalent” if neither key is key-less-than the other. In contrast, stlmmap and stlmset do not have unique keys. I.e., it is possible for different elements stored in a stlmmap or stlmset can have equivalent keys.</p>
+<p>The “hashed” containers, sthmap and stlhset do not keep their elements in a sequence. Instead they store their elments in a hash table using a “key-hash” function and a “key-equal” function. Currently the key-hash function is always <a href="purelib.html#hash"><code>hash</code></a> and the key-equal function is always (===), both of which are defined in the Prelude. The elements stored in a hashed container have unique keys. I.e., two elements stored in the container will never by “key-equal”. At times we say that two keys stored in a hashed container are “equivalent” if they are key-equal.</p>
+<p>The “ordered maps”, stlmap and stlmmap, each have a “value-less-than” function and a “value-equal” function that is used for lexicographical comparisons. The default functions are <a href="#(%3C)"><code>(&lt;)</code></a> and (==) respectively, but these can customized when the container is created.</p>
+<p>As is the case for the underlying C++ functions, set operations (i.e., union, intersection, etc.) and container equivalence for the ordered containers are based on lexicographical comparisons. For these purposes one element, e1, is less than another, e2, if (a) e1’s key is less-than e2’s key and, (b) if the ordered container is a stlmap or stlmap, e1’s value is value-less-than e2’s value. Finally, for purposes of determining if two ordered containers are equal, e1 and e2 are considered to be equal if (a) their keys are equivalent and (b), in the case of stlmap or stlmmap, their values are value-equal.</p>
+<p>Set operations are not provided for the hashed containers, stlhmap and stlhset.</p>
+<h3 id="ranges-1">Ranges</h3>
+<p>For the ordered containers (stlmap, stlset, stlmmap and stlmset), you can work with a subsequence or “range” of a container’s elements. Given an ordered container, oc, and keys f and l, the range (oc,f,l) consists of all of the elements in oc starting with the first element that is not less than f up to but not including the first element that is greater or equal to l. Note that f and l do not have to be stored in oc.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);
+[<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; members (sm,<span class="st">&quot;c1&quot;</span>,smend);
+[<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>When a range is passed to a function provided by pure-stlmap, the keys can be dropped, in which case the range consists of all of the container’s elements.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>Please note that support for ranges is not provided for the unordered containers (stlhmap and stlhset). Most pure-stlmap functions that act on ranges can, however, operate on stlhmaps or stlhsets as well, except that, for stlhmaps and stlhsets, they always operate on all of the container’s elements. Accordingly, whenever the documentation of a function refers to a range, and the container in question is a a stlhmap or stlhset, the range simply refers to the container itself.</p>
+<h3 id="iterators">Iterators</h3>
+<p>The native STL interface is based on “iterators” that point to elements in containers. pure-stlmap provides support for iterators defined on its ordered containers (stlmap, stlmmap, stlset and stlmset) but not for its unordered containers (stlhmap and stlhset).</p>
+<p>Iterators are most useful when dealing with stlmmaps where elements with different values can have equivalent keys. In most cases, it is recommended that you avoid using iterators. The functions that operate on or return iterators are discussed separately at the end of this document.</p>
+<h3 id="selecting-elements-using-keys">Selecting Elements Using Keys</h3>
+<p>Throughout pure-stlmap, unless you resort to using iterators, you can only specify elements and ranges of elements using keys. For example you cannot use the <a href="#member/stlmap"><code>member</code></a> function to see if a specific key, value pair is an element of a stlmap.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; member sm <span class="st">&quot;a&quot;</span>;
+<span class="dv">1</span>
+
+&gt; <span class="fu">catch</span> id $ member sm (a=&gt;<span class="dv">1</span>);
+bad_argument</code></pre></div>
+<p>In the last line of code, <a href="#member/stlmap"><code>member</code></a> treats (a=&gt;1) as a key. Because (a=&gt;1) cannot be compared to a string using <a href="#(%3C)/stlmap"><code>(&lt;)</code></a>, the ersatz key is treated as a bad argument.</p>
+<p>This “key access only” approach can be an issue for stlmmaps and because multiple elements can have equivalent keys. I.e., given a stlmmap, smm, that containes multiple element with keys equivalent to, say, k, which element should (!) return? pure-stlmap dodges this issue by returning all on them. Thus, for stlmmap and stlmset (!) and <a href="#replace/stlmap"><code>replace</code></a> work with lists of elements associated with a given key rather than, say, the first elment with the given key.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>];
+
+&gt; smm!<span class="st">&quot;c&quot;</span>;
+<span class="st">&quot;c&quot;</span>=&gt;[<span class="dv">31</span>,<span class="dv">32</span>]
+
+&gt; replace smm <span class="st">&quot;c&quot;</span> [<span class="dv">31</span>,<span class="dv">32</span>,<span class="dv">33</span>]; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">33</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; replace smm <span class="st">&quot;c&quot;</span> []; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>If selecting and replacing lists of elements with the same key is not convenient, you can always use iterators to track down and modify any specific element.</p>
+<h3 id="c-implementation">C++ Implementation</h3>
+<p>For those that want to refer to the <a href="http://en.cppreference.com/w/cpp">C++ standard library documentation</a>, stlmap is (essentially) map&lt;px*,px*&gt;, stlmmap is multimap&lt;px*,px*&gt; and stlhmap is unordered_map&lt;px*,px*&gt;, where px is defined by “typedef pure_expr px”. I.e., in C++ Containers library speak, key_type is px*, mapped_type is px* and value_type is pair&lt;px*,px*&gt;. This might be a bit confusing because pure-stlmap’s (key=&gt;value) “elements” correspond to C++ value_types, a pair&lt;key_type,mapped_type&gt;, and pure-stlmap’s values correspond to mapped_types. The C++ objects for stlset, stlmset and stlhset are the same as stlmap, stmmap and stlhmap except that pure-stlmap ensures that the second member of the C++ value_type pair is always NULL.</p>
+<h2 id="modules">Modules</h2>
+<p>pure-stlmap provides three separate modules <a href="#module-stlmap">stlmap</a>, <a href="#module-stlmmap">stlmmap</a> and <a href="#module-stlhmap">stlhmap</a>.</p>
+<p>Importing any one of these modules defines the stl namespace as well as two important symbols, <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a> and <a href="#stl::smend/stlmap"><code>stl::smend</code></a>.</p>
+<dl>
+<dt><a name="stl::smbeg/stlmap"></a><code>stl::smbeg</code>, <a name="stl::smend/stlmap"></a><code>stl::smend</code></dt>
+<dd>These symbols are used to designate the key of the first element in an ordered container (stlmap, stlset, stlmmap or stlmset) and the key of an imaginary element that would come immediately after the last element of in the constainer. They are used to define ranges over the ordered containers.
+</dd>
+</dl>
+<!-- -->
+<p>E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; members (sm,<span class="st">&quot;c&quot;</span>,smend);
+[<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<h3 id="the-stlhmap-module">The stlhmap Module</h3>
+<p>If all you want is fast insertion and lookup, you don’t care about the order of the elements stored in the container, and you do not want to use set operations like <a href="#stl::map_intersection/stlmap"><code>stl::map_intersection</code></a>, then <a href="#module-stlhmap">stlhmap</a> is probably your best choice. The supported containers, stlhmap and stlhset are simpler to use and faster than the other containers provided by pure-stlmap.</p>
+<p>The <a href="#module-stlhmap">stlhmap</a> module defines stlhmaps and stlhsets and provides functions for dealing with them. You can import it by adding the following <code>using</code> statement to your code.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlhmap;</code></pre></div>
+<p>The <a href="#module-stlhmap">stlhmap</a> module defines types two types:</p>
+<dl>
+<dt><a name="stlhmap/type"></a><em>type</em> <code>stlhmap</code>, <a name="stlhset/type"></a><code>stlhset</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p>Please note that a stlhset is just a stlhmap where the values associated with keys cannot be accessed or modified. I.e., a stlhset is a specialized kind of stlhmap.</p>
+<h3 id="the-stlmap-module">The stlmap Module</h3>
+<p>The <a href="#module-stlmap">stlmap</a> module provides you with stlmaps and stlsets and the functions that operate on them. Consider using these containers if you want their elements to be orderd by key, want to use ranges or if you are using any set operations (<a href="#stl::map_union/stlmap"><code>stl::map_union</code></a>, <a href="#stl::map_intersection/stlmap"><code>stl::map_intersection</code></a>, etc).</p>
+<p>You can import the stlmap module by adding the following using statement to your code.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlmap;</code></pre></div>
+<p>Importing the stlmap module introduces types to describe stlmap and stlset, their iterators and ranges defined on them.</p>
+<dl>
+<dt><a name="stlmap/type"></a><em>type</em> <code>stlmap</code>, <a name="stlset/type"></a><code>stlset</code>, <a name="stlmap_iter/type"></a><code>stlmap_iter</code>, <a name="stlmap_rng/type"></a><code>stlmap_rng</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p>Please note that a stlset is just a stlmap where the values associated with keys cannot be accessed or modified. I.e., a stlset is a specialized kind of stlmap. Accordingly, it is not necessary, for example, to define a separate type for iterators on stlsets as opposed to iterators on stlmaps.</p>
+<h3 id="the-stlmmap-module">The stlmmap Module</h3>
+<p>If you need a multi-keyed container, the <a href="#module-stlmmap">stlmmap</a> module, which provides support for stlmaps and stlmsets, is your only choice. Set operations and ranges are supported, but the semantics are more complicated than is the case for stlmap and stlset. Because the keys stored in multi-keyed containers are not unique you might have to resort to using iterators when working with them.</p>
+<p>You can import the <a href="#module-stlmmap">stlmmap</a> module by adding the following using statement to your code.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlmmap;</code></pre></div>
+<p>Importing the stlmmap module introduces types to describe stlmmap and stlmset, along with their iterators and ranges defined on them.</p>
+<dl>
+<dt><a name="stlmmap/type"></a><em>type</em> <code>stlmmap</code>, <a name="stlmset/type"></a><code>stlmset</code>, <a name="stlmmap_iter/type"></a><code>stlmmap_iter</code>, <a name="stlmmap_rng/type"></a><code>stlmmap_rng</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p>Please note that a stlmset is just a stlmmap where the values associated with keys cannot be accessed or modified. I.e., a stlmset is a specialized kind of stlmmap. Accordingly, it is not necessary, for example, to define a separate type for iterators on stlmsets as opposed to iterators on stlmmaps.</p>
+<h2 id="container-operations">Container Operations</h2>
+<p>Each of the six associative containers supported by pure-stlmap has its own set of unique characteristics. Because of this the description of functions that operate on more than one type of container can get a little complicated. When reading this section it might be helpful to consult pure-stllib-cheatsheet.pdf which can be found in the pure-stlib/doc directory.</p>
+<h3 id="container-construction">Container Construction</h3>
+<p>New empty ordered containers (stlmap, stlset, stlmmap and stlmset) can be constructed using optional parameters that allow you to specify customized key-less-than functions, default values, value-less-than and value-equal functions.</p>
+<dl>
+<dt><a name="mkstlmap/stlmap"></a><code>mkstlmap (klt,dflt,vlt,veq)</code>, <a name="mkstlmmap/stlmap"></a><code>mkstlmmap (klt,dflt,vlt,veq)</code></dt>
+<dd>Create a new stlmap or stlmmap where <code>klt</code> is the map’s key-less-than function. dflt is the maps default value (used by replace_with and find_with_default). vlt is the map’s value-compare function and veq is its value-equal function. Only <code>klt</code> is required, and the default values for dflt, vlt, veq are [], (&lt;) and (==) respectively.
+</dd>
+<dt><a name="mkstlset/stlmap"></a><code>mkstlset klt</code>, <a name="mkstlmset/stlmap"></a><code>mkstlmset klt</code></dt>
+<dd>Create a new stlset or stlmset where <code>klt</code> is the set’s key-less-than function.
+</dd>
+</dl>
+<!-- -->
+<p>The internal lookup functions for the ordered containers (stlmap, stlset, stlmmap and stlmset) are optimized to avoid callbacks if the container’s key-less-than function is is <a href="#(%3E)/stlmap"><code>(&gt;)</code></a> or <a href="#(%3C)/stlmap"><code>(&lt;)</code></a> and the keys being compared are a pair of strings, ints, bigints or doubles.</p>
+<p>You can create an empty associative container using default values for using <a href="#emptystlmap/stlmap"><code>emptystlmap</code></a> and friends.</p>
+<dl>
+<dt><a name="emptystlmap/stlmap"></a><code>emptystlmap</code>, <a name="emptystlmmap/stlmap"></a><code>emptystlmmap</code>, <a name="emptystlset/stlmap"></a><code>emptystlset</code>, <a name="emptystlmset/stlmap"></a><code>emptystlmset</code></dt>
+<dd>Create a new ordered map or set using default values. I.e., emptystlmap is the same as mkstlmap <a href="#(%3C)"><code>(&lt;)</code></a>, and so on.
+</dd>
+<dt><a name="emptystlhmap/stlmap"></a><code>emptystlhmap</code>, <a name="emptystlhset/stlmap"></a><code>emptystlhset</code></dt>
+<dd>Create a new stlhmap or stlhset with default values. The hash-function is hash and the value-equal function is (===).
+</dd>
+</dl>
+<!-- -->
+<p>Convenience functions are also provided to construct an empty container and insert elements into it in one go. The source of the elements can be a list, vector, a stlvec, or a range defined on another container of the same type as the new container.</p>
+<dl>
+<dt><a name="stlmap/stlmap"></a><code>stlmap src</code>, <a name="stlmmap/stlmap"></a><code>stlmmap src</code>, <a name="stlset/stlmap"></a><code>stlset src</code>, <a name="stlmset/stlmap"></a><code>stlmset src</code>, <a name="stlhmap/stlmap"></a><code>stlhmap src</code></dt>
+<dd>
+</dd>
+<dt><a name="stlhset/stlmap"></a><code>stlhset src</code></dt>
+<dd>Create an associative constructor using default values and insert elements from copied from <code>src</code>. <code>src</code> can be a list, vector or stlvec of elements or a range defined over a container of the same type as the new container. If the new container is a stlmap, stlmmap or stlhmap, the elements of src must be (key=&gt;val) pairs. If the new container is a stlset, stlmset or stlhset they can be any pure expression that can be used as a key (i.e., anything except for <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a> or <a href="#stl::smend/stlmap"><code>stl::smend</code></a>).
+</dd>
+</dl>
+<!-- -->
+<h3 id="information">Information</h3>
+<p>This group of functions allows you make inquiries regarding the number of elments in a container, the number of instances of a given key held by a container, the upper and lower bounds of a range and other information. In addition this group includes a function that can be used to change the number of slots used by a stlhmap or stlhset.</p>
+<dl>
+<dt><a name="#/stlmap"></a><code># acon</code></dt>
+<dd>Return the number of elements in <code>acon</code>.
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="stl::empty/stlmap"></a><code>stl::empty acon</code></dt>
+<dd>Return true if <code>acon</code> is empty, else false.
+</dd>
+<dt><a name="stl::distance/stlmap"></a><code>stl::distance rng</code></dt>
+<dd>Returns the number of elements contained in <code>rng</code> where rng is a range defined on an ordered container (stlmap, stlmmap, stlset, stlmset).
+</dd>
+<dt><a name="stl::count/stlmap"></a><code>stl::count acon k</code></dt>
+<dd>Returns the number of elements in an associative container, acon, that have a key that is equivalent to <code>k</code>.
+</dd>
+<dt><a name="stl::bounds/stlmap"></a><code>stl::bounds rng</code></dt>
+<dd>Return a pair of keys, first and last, such that first &lt;= k &lt; last for each k, where k is the key of an element in <code>rng</code>. If there is no such last, the second member of the returned pair will be <a href="#stl::smend/stlmap"><code>stl::smend</code></a>. If first is the key of the first element of <code>rng's</code> container, the first member of the returned pair will <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a>.
+</dd>
+</dl>
+<!-- -->
+<p>Here are two examples using the <a href="#stl::bounds/stlmap"><code>stl::bounds</code></a> function. Notice that bounds returns <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a> instead of “a” in the first example.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; bounds sm;
+stl::smbeg,stl::smend
+
+&gt; bounds (sm,<span class="st">&quot;a1&quot;</span>,<span class="st">&quot;e&quot;</span>);
+<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span></code></pre></div>
+<dl>
+<dt><a name="stl::container_info/stlmap"></a><code>stl::container_info acon</code></dt>
+<dd>If <code>acon</code> is a stlmap or stlmmap, returns (0, klt, dflt, vlt, veq) where klt is <code>acon</code>’s key-less-than function, dflt is its default value, vlt is its value-less-than function and veq is its value_equal function. If <code>acon</code> is a stlset or stlmset, returns (1,klt,_,_,_) where klt is <code>acon</code>’s key-less-than function. If <code>acon</code> is a stlhmap or stlhset, returns (is_set, bucket_count, load_factor, max_load_factor).
+</dd>
+<dt><a name="stl::bucket_size/stlmap"></a><code>stl::bucket_size hacon n</code></dt>
+<dd>Returns the number of elements in <code>hacon</code>’s nth (zero-based) bucket where <code>hacon</code> is a stlhmap or stlhset.
+</dd>
+<dt><a name="stl::hmap_reserve/stlmap"></a><code>stl::hmap_reserve hacon mlf size</code></dt>
+<dd>Sets <code>hacon</code>’s max_load_factor to <code>mlf</code>, sets the number of <code>hacon 's buckets to</code>size<code>/</code>mlf` and rehashes <code>hacon</code> where <code>hacon</code> is a stlhmap or stlhset.
+</dd>
+</dl>
+<!-- -->
+<h3 id="modification">Modification</h3>
+<p>You can insert new items or, for the maps (stlmap, stlmmap and stlhmap), replace values associated with keys using the <a href="#insert/stlmap"><code>insert</code></a>, <a href="#replace/stlmap"><code>replace</code></a> or <a href="#insert_or_replace/stlmap"><code>insert_or_replace</code></a> functions.</p>
+<p>Please note that when working with the ordered containers (stlmap, stlset, stlmmap and stlmset) the keys of elements passed to these functions must be compatible with the container’s key-less-than function and keys that are already inserted. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members ss;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>]
+
+&gt; <span class="fu">catch</span> id $ insert ss <span class="dv">1</span>;   <span class="co">// e.g., 1&lt;&quot;a&quot; is not defined</span>
+bad_argument</code></pre></div>
+<p>Currently there is no similar restriction for stlhmaps and stlhsets because (a) they do not have a key-less-than function and (b) the function they do use for testing equality, the key-equal function is always (===), a function that can compare any two objects.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members shs;
+[<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>]
+
+&gt; insert shs <span class="dv">1</span>;
+<span class="dv">1</span>
+&gt; members shs;
+[<span class="st">&quot;c&quot;</span>,<span class="dv">1</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>]</code></pre></div>
+<p>Elements can be inserted into a pure-stlmap container individually or en masse from a list, vector, stlvec or another container of the same type. If there is a key in the container that is equivalent to the key of the element being inserted, the element will not be inserted (unless the container is a stlmmap or stlmset, both of which can hold multiple elements with equivalent keys).</p>
+<dl>
+<dt><a name="insert/stlmap"></a><code>insert acon src</code></dt>
+<dd>Attempts to copy elements from <code>src</code> a valid “insert source” into <code>acon</code> which can be any pure-stlmap container. A valid insert source is (a) a single element, (b) a list, vector, stlvec of elements or (c), a range over an associative container of the same type as <code>acon</code>. If <code>acon</code> is an associative map (stlmap, stlmmap or stlhmap), the <code>src</code> itself, or all the elements of <code>src</code>, must be key value pairs of the form (k=&gt;v). In contrast, if <code>acon</code> is a stlset, stlmset or stlhset, <code>src</code> or all of its elements can be any pure object (except <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a> or <a href="#stl::smend/stlmap"><code>stl::smend</code></a>). If <code>acon</code> is a stlmap, stlset, stlhmap or stlhset, the element will not be inserted if its key is already stored in the target container. Returns the number of elements inserted, if any.
+</dd>
+</dl>
+<!-- -->
+<p>If you are dealing with a stlmap or stlhmap and want to override the values of elements have keys that equivalent to the keys of the items you wan to insert you can use the <a href="#insert_or_replace/stlmap"><code>insert_or_replace</code></a> function.</p>
+<dl>
+<dt><a name="insert_or_replace/stlmap"></a><code>insert_or_replace acon src</code></dt>
+<dd>The same as <a href="#insert/stlmap"><code>insert</code></a> except that (a) <code>acon</code> must be a stlmap or a stlhmap and (b) if an element (key=&gt;newval) is about to be inserted and the container already contains an element (key=&gt;oldval) the element in the container will be changed to (key=&gt;newval). Returns the number of elements inserted or updated.
+</dd>
+<dt><a name="replace/stlmap"></a><code>replace map key x</code></dt>
+<dd><code>map</code> must be a stlmap, stlmmap or stlhmap. If <code>key</code> is not stored in <code>map</code> this function throws <a href="purelib.html#out_of_bounds"><code>out_of_bounds</code></a>. If <code>map</code> is a stlmap or stlhmap and (oldkey=&gt;oldval) is an element of <code>map</code>, where oldkey is equivalent to <code>key</code>, change the element to (oldkey=&gt;<code>x</code>). If <code>map</code> is a stlmmap and <code>key</code> is stored in <code>map</code>, change the values of elements with key eqivalent to <code>key</code>, one by one, to the elements of <code>x</code>. Add or delete elements as necessary so that, when the smoke clears, the values of <code>map</code>!<code>key</code> are copies of the elements of <code>x</code>. In all cases, if <code>key</code> is stored in <code>map</code> returns <code>x</code>.
+</dd>
+</dl>
+<!-- -->
+<p>Here are some examples using <a href="#replace/stlmap"><code>replace</code></a>.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; replace sm1 <span class="st">&quot;e&quot;</span> <span class="dv">50</span>;
+<span class="dv">50</span>
+
+&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">50</span>]
+
+&gt; members smm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; replace smm1 <span class="st">&quot;c&quot;</span> [<span class="dv">31</span>,<span class="dv">33</span>,<span class="dv">35</span>,<span class="dv">36</span>] $$ smm1!<span class="st">&quot;c&quot;</span>;
+[<span class="dv">31</span>,<span class="dv">33</span>,<span class="dv">35</span>,<span class="dv">36</span>]
+
+&gt; replace smm1 <span class="st">&quot;c&quot;</span> [] $$ smm1!<span class="st">&quot;c&quot;</span>;
+[]
+
+&gt; members smm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<dl>
+<dt><a name="replace_with/stlmap"></a><code>replace_with fun map (k=&gt;v)</code></dt>
+<dd><code>map</code> must be a stlmap. The effect of this function is as follows: (a) if ~ <a href="#member/stlmap"><code>member</code></a> <code>map</code> <code>k</code> then <a href="#insert/stlmap"><code>insert</code></a> <code>map</code> (<code>k</code>=&gt;dflt) else (), where dflt is <code>map</code>’s dflt value, (b) <a href="#replace/stlmap"><code>replace</code></a> <code>map</code> <code>k</code> nv when nv = <code>fun</code> <code>v</code> (<code>map</code>!<code>k</code>) end. Returns <code>map</code>.
+</dd>
+</dl>
+<!-- -->
+<p>Here is an example using <a href="#replace_with/stlmap"><code>replace_with</code></a> in which a stlmmap is converted to a stlmap.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm1 = emptystlmap;
+
+&gt; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; do (replace_with (:) sm1) smm;
+()
+
+&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;[<span class="dv">1</span>],<span class="st">&quot;b&quot;</span>=&gt;[<span class="dv">2</span>],<span class="st">&quot;c&quot;</span>=&gt;[<span class="dv">32</span>,<span class="dv">31</span>],<span class="st">&quot;d&quot;</span>=&gt;[<span class="dv">4</span>],<span class="st">&quot;e&quot;</span>=&gt;[<span class="dv">5</span>]]</code></pre></div>
+<p>Here is another example in which items are counted.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm1 = mkstlmap ( (&lt;), <span class="dv">0</span> );
+
+&gt; members sms;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>]
+
+&gt; do (\x-&gt;replace_with (+) sm1 (x=&gt;<span class="dv">1</span>)) sms;
+()
+
+&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">1</span>]</code></pre></div>
+<p>You can remove all the elements in a container, remove all the elements equivalent to a given key or a remove a range of elements using the <a href="#erase/stlmap"><code>erase</code></a> function.</p>
+<dl>
+<dt><a name="erase/stlmap"></a><code>erase acon</code>, <a name="erase/stlmap"></a><code>erase (acon,k)</code>, <a name="erase/stlmap"></a><code>erase (acon,k1,k2)</code></dt>
+<dd>The first form erases all elements in <code>acon</code> which can be any container provided by pure-stlmap. The second erases all elements in <code>acon</code> with key equivalent to <code>k</code>. The third erases the elements in the range (<code>acon</code>,<code>k1</code>,<code>k2</code>). The third form only applys to the ordered containers (stlmap, stlmmap, stlset and stlmset), not stlhmap or stlhset (because ranges are not defined for stlhmaps or stlhsets). Returns the number of elements removed from the container.
+</dd>
+</dl>
+<!-- -->
+<p>Here are some examples using <a href="#erase/stlmap"><code>erase</code></a>.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; erase (sm,<span class="st">&quot;z&quot;</span>);
+<span class="dv">0</span>
+
+&gt; erase (smm,<span class="st">&quot;c&quot;</span>);
+<span class="dv">2</span>
+
+&gt; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; erase (smm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);
+<span class="dv">2</span>
+
+&gt; members smm;;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<dl>
+<dt><a name="stl::swap/stlmap"></a><code>stl::swap acon1 acon2</code></dt>
+<dd>Swaps the elements of the two containers, <code>acon1</code> and <code>acon2</code> where <code>acon1</code> and <code>acon2</code> are the same type of container (E.g., both are stlmaps or both are stlmsets).
+</dd>
+</dl>
+<!-- -->
+<h3 id="accessing-elements">Accessing Elements</h3>
+<p>You can test if a key is stored in a container and access the value associated with a key using the familiar <a href="#member/stlmap"><code>member</code></a> and (!) functions.</p>
+<dl>
+<dt><a name="member/stlmap"></a><code>member acon k</code></dt>
+<dd>Returns true if <code>acon</code>, any container provided by pure-stlmap, contains an element that has a key that is equivalent to <code>k</code>.
+</dd>
+<dt><a name="!/stlmap"></a><code>acon ! k</code></dt>
+<dd>If <code>acon</code> is not a stlmmap then (a) if <code>acon</code> has an element with key equivalent to <code>k</code> return its value, otherwise (b) throw an <a href="purelib.html#out_of_bounds"><code>out_of_bounds</code></a> exception. If <code>acon</code> is a stlmmap then (a) if acon has as least one element with key equivalent to <code>k</code> return a list of values of all the elements with key equivalent to <code>k</code>, otherwise (b) return an null list.
+</dd>
+</dl>
+<!-- -->
+<p>E.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; sm!<span class="st">&quot;c&quot;</span>;
+<span class="dv">3</span>
+
+&gt; <span class="fu">catch</span> id $ sm!<span class="st">&quot;f&quot;</span>;    <span class="co">// &quot;f&quot; is not stored in sm</span>
+out_of_bounds
+
+&gt; <span class="fu">catch</span> id $ sm!<span class="dv">100</span>;    <span class="co">// 100 cannot be compared to strings using (&lt;)</span>
+bad_argument
+
+&gt; smm!<span class="st">&quot;c&quot;</span>;              <span class="co">// for stlmmap, return list of values</span>
+[<span class="dv">31</span>,<span class="dv">32</span>]
+
+&gt; smm!<span class="st">&quot;f&quot;</span>;              <span class="co">// stlmmap returns null list if key is not stored</span>
+[]</code></pre></div>
+<p>You can access a sequence of elements in an ordered container (stlmap, stlset, stlmmap or stlmset) without resorting to iterators using the next_key and prev_key functions.</p>
+<dl>
+<dt><a name="stl::next_key/stlmap"></a><code>stl::next_key acon k</code>, <a name="stl::prev_key/stlmap"></a><code>stl::prev_key acon k</code></dt>
+<dd><code>acon</code> must be a stlmap, stlset, stlmmap or stlmmap. Also if <code>k</code> is not <a href="#stl::smbeg/stlmap"><code>stl::smbeg</code></a>, <a href="#stl::smend/stlmap"><code>stl::smend</code></a> or an element of acon an <a href="#stl::out_of_bounds"><code>out_of_bounds</code></a> exception will be throw. <a href="#stl::next_key/stlmap"><code>next_key</code></a> returns the key of the first element in acon that has a key that is greater than <code>k</code>. If no such element exists or if <code>k</code> is <a href="#stl::smend/stlmap"><code>stl::smend</code></a>, returns <a href="#stl::smend/stlmap"><code>stl::smend</code></a>. <a href="#stl::prev_key/stlmap"><code>prev_key</code></a> returns the last element in acon that has a key that is less that <code>k</code>, or, if no such element exists, throws an <a href="#stl::out_of_bounds"><code>out_of_bounds</code></a> exception.
+</dd>
+</dl>
+<!-- -->
+<p>For various reasons, it is very common to see a call to (!) or <a href="#replace/stlmap"><code>replace</code></a> preceded by a call to <a href="#member/stlmap"><code>member</code></a> with the same container and key. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; bump_wc sm w = <span class="kw">if</span> member sm w <span class="kw">then</span> replace sm w (sm!w + <span class="dv">1</span>)
+                 <span class="kw">else</span> insert sm (w=&gt;<span class="dv">1</span>);</code></pre></div>
+<p>In general, this function would require two lookups to add a new word and three lookups to bump the count for an existing word. For the ordered containers, lookups have O(log N) complexity which can be relatively slow for large containers.</p>
+<p>To speed things up, each stlmap or stlset maintains a small cache of (key, C++ iterator) pairs for recently accessed keys. During lookup, the cache is checked for a matching key, and if the key is found, the element pointed to by the C++ iterator is used immediately. Thus, when applied to a stlmap or stlset bump_wc will use only one O(log N) search, rather than two or three. For these purposes, a key matches a key in the cache only if it is the same Pure object (i.e., the test is C++ pointer equality, not Pure’s (===) or (==) functions). For example, the following will result in two O(log N) lookups.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">if</span> member sm <span class="st">&quot;a&quot;</span> <span class="kw">then</span> sm!<span class="st">&quot;a&quot;</span> <span class="kw">else</span> insert sm (<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">10</span>);</code></pre></div>
+<p>Here each “a” is a distinct Pure object. The two “a”s satisfy (==) and even (===) but they are not the same internally and the caching mechanism will not help.</p>
+<p>Almost any pure-stlmap function that accepts a stlmap or stlset as an argument will check the container’s cache before doing an O(log N) lookup. Currently the cache is limited to hold only the most recently used key.</p>
+<p>Here are some examples produced by compiling pure-stlmap with a trace function that shows caching in action.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> a_key = <span class="st">&quot;a&quot;</span>;
+
+&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; member sm a_key;           <span class="co">// a_key is not yet in the cache</span>
+<span class="dv">1</span>
+
+&gt; sm!a_key;                  <span class="co">// a_key is found in the cache</span>
+found iterator for: <span class="st">&quot;a&quot;</span>
+<span class="dv">1</span>
+
+&gt; replace sm a_key <span class="dv">10</span>;
+found iterator for: <span class="st">&quot;a&quot;</span>
+<span class="dv">10</span>
+
+&gt; sm!<span class="st">&quot;a&quot;</span>;                    <span class="co">// &quot;a&quot; is a new key, not same C++ pointer as k or a_key</span>
+<span class="dv">1</span>
+
+&gt; <span class="kw">let</span> k = next_key sm a_key; <span class="co">// now k is in the cache, in front of a_key</span>
+found iterator for: <span class="st">&quot;a&quot;</span>
+
+&gt; <span class="kw">let</span> k1 = next_key sm k;    <span class="co">// now k1 is at the head of the queue</span>
+found iterator for: <span class="st">&quot;b&quot;</span>
+
+&gt; replace sm k1 <span class="dv">30</span>;
+found iterator for: <span class="st">&quot;c&quot;</span>
+<span class="dv">30</span>
+
+&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">10</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">30</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>These examples show that caching can be effective wnen visiting elements of a stlmap or stlset in order using <a href="#next_key/stlmap"><code>next_key</code></a> or <a href="#prev_key/stlmap"><code>prev_key</code></a>.</p>
+<h3 id="conversions-1">Conversions</h3>
+<p>The contents of a pure-stlmap container can be copied to a list, vector, stlvec. For stlmaps, stlsets, stlmmaps and stlmsets, these operations act on ranges as well as on the entire container.</p>
+<dl>
+<dt><a name="members/stlmap"></a><code>members rng</code></dt>
+<dd>Returns a list of the elments in the range, <code>rng</code>.
+</dd>
+<dt><a name="keys/stlmap"></a><code>keys rng</code>, <a name="vals/stlmap"></a><code>vals rng</code></dt>
+<dd>Return the keys and vals of the range’s elements.
+</dd>
+</dl>
+<!-- -->
+<p>Here are some examples using the <a href="#members/stlmap"><code>members</code></a>, <a href="#keys/stlmap"><code>keys</code></a> and <a href="#vals/stlmap"><code>vals</code></a> functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members shm;   <span class="co">// must do all of shm elements because shm is a stlhmap</span>
+[<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>,<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]
+
+&gt; keys (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>); <span class="co">// can ask for a range - sm is an ordered container</span>
+[<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>]
+
+&gt; vals (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);
+[<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>]</code></pre></div>
+<dl>
+<dt><a name="stl::vector/stlmap"></a><code>stl::vector rng</code></dt>
+<dd>Return a vector containing the elments of in the range, rng.
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="stlvec/stlmap"></a><code>stlvec rng</code></dt>
+<dd>returns a stlvec containing the elments of in the range, rng.
+</dd>
+</dl>
+<!-- -->
+<p>You can also convert an ordered container (stlmap, stlset, stlmmap or stlmset) into a stream of elements.</p>
+<dl>
+<dt><a name="stream/stlmap"></a><code>stream rng</code></dt>
+<dd>Returns a stream consisting of the range’s elements.
+</dd>
+</dl>
+<!-- -->
+<p>Here is an example using the stream function on a stlmmap.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; take <span class="dv">3</span> $ stream smm;
+(<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>):#&lt;thunk <span class="dv">0xb70f438c</span>&gt;
+
+&gt; list ans;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>]</code></pre></div>
+<h3 id="functional-programming-1">Functional Programming</h3>
+<p>pure-stlmap provides the most commonly used functional programming operations, implemented to act on ranges as if they were lists.</p>
+<dl>
+<dt><a name="do/stlmap"></a><code>do fun rng</code>, <a name="map/stlmap"></a><code>map fun rng</code>, <a name="filter/stlmap"></a><code>filter pred rng</code>, <a name="foldl/stlmap"></a><code>foldl fun x rng</code>, <a name="foldl1/stlmap"></a><code>foldl1 fun rng</code></dt>
+<dd>
+</dd>
+<dt><a name="foldr/stlmap"></a><code>foldr fun x rng</code>, <a name="foldr1/stlmap"></a><code>foldr1 fun rng</code></dt>
+<dd>These functions are the same as the corresponding functions provided in the Prelude for lists. <code>rng</code> is a rng defined on a stlmap, stlset, stlmmap or stlmset or <code>rng</code> is simply a stlhmap or stlhset. <a href="#foldr/stlmap"><code>foldr</code></a> and <a href="#foldr1/stlmap"><code>foldr1</code></a> are not defined for stlhmaps or stlhsets.
+</dd>
+</dl>
+<!-- -->
+<p>Here are some examples.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; map (\(k=&gt;v)-&gt;k+str v) (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);
+[<span class="st">&quot;b2&quot;</span>,<span class="st">&quot;c3&quot;</span>,<span class="st">&quot;d4&quot;</span>]
+
+&gt; foldr1 (\(k=&gt;v) (ks=&gt;sum)-&gt; (k+ks=&gt;v+sum)) (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);
+<span class="st">&quot;bcd&quot;</span>=&gt;<span class="dv">9</span>
+
+&gt; filter (\(k=&gt;v)-&gt;v mod <span class="dv">2</span>) sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<dl>
+<dt><a name="listmap/stlmap"></a><code>listmap fun rng</code>, <a name="catmap/stlmap"></a><code>catmap fun rng</code>, <a name="rowmap/stlmap"></a><code>rowmap fun rng</code>, <a name="rowcatmap/stlmap"></a><code>rowcatmap fun rng</code>, <a name="colmap/stlmap"></a><code>colmap fun rng</code></dt>
+<dd>
+</dd>
+<dt><a name="colcatmap/stlmap"></a><code>colcatmap fun rng</code></dt>
+<dd>These functions are the same as the corresponding functions provided in the Prelude for lists. <code>rng</code> is a rng defined on a stlmap, stlset, stlmmap or stlmset or simply a stlhmap or stlhset.
+</dd>
+</dl>
+<!-- -->
+<p>These functions are provided primarily to enable the use of list and matrix comprehensions over pure-stlmap’s containers. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; [ k + str v | (k=&gt;v) = (sm,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>)];
+[<span class="st">&quot;b2&quot;</span>,<span class="st">&quot;c3&quot;</span>,<span class="st">&quot;d4&quot;</span>]
+
+&gt; [ k=&gt;v | (k=&gt;v) = sm; v mod <span class="dv">2</span>];
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; { {k;v} |  (k=&gt;v) = sm; v mod <span class="dv">2</span>};
+{<span class="st">&quot;a&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;e&quot;</span>;<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>}</code></pre></div>
+<p>The functional programming operations work directly on the underlying data structure.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> ints = <span class="dv">0</span>..<span class="dv">10000</span>;
+
+stats -m
+&gt; filter (==<span class="dv">99</span>) ints;
+[<span class="dv">99</span>]
+0s, <span class="dv">6</span> cells</code></pre></div>
+<h3 id="comparison">Comparison</h3>
+<p>Two associative containers of the same type are considered to be equal if they contain the same number of elements and if each pair of their corresponding elements are equal. Two elements are equal if their keys are equivalent and, if the container is a stlmap, stlmap or stlhmap, the values associated with equal keys are equal (using the container’s value-equal function).</p>
+<dl>
+<dt><a name="stl::map_equal/stlmap"></a><code>stl::map_equal rng1 rng2</code></dt>
+<dd><!-- -->
+</dd>
+<dt><a name="==/stlmap"></a><code>rng1 == rng2</code>, <a name="~=/stlmap"></a><code>rng1 ~= rng2</code></dt>
+<dd>Test <code>rng1</code> and <code>rng2</code> for equality or nonequality where <code>rng1</code> and <code>rng2</code> are ranges defined over containers of the same type.
+</dd>
+</dl>
+<!-- -->
+<p>You need to be careful when using these operators. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members ss;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>]
+
+&gt; <span class="kw">let</span> xx = stlset ss;
+
+&gt; xx == ss;
+<span class="dv">1</span>
+
+&gt; (xx,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;c&quot;</span>) == (ss,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;c&quot;</span>);  <span class="co">// oops!</span>
+<span class="dv">0</span></code></pre></div>
+<p>The second comparison was intended to compare identical ranges and return true. It failed to do so because (==) is defined in the Prelude to compare tuples element by element, long before it is defined in the stlmap module to compare ranges. The tuple operation take precedence and determines that the tuples are not equal because <code>xx</code> and <code>ss</code> are different (pointers) for purposes of this comparison. To avoid this issue when using ranges, you can use the <a href="#stl::map_equal/stlmap"><code>stl::map_equal</code></a> function.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; map_equal (xx,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;c&quot;</span>) (ss,<span class="st">&quot;a&quot;</span>,<span class="st">&quot;c&quot;</span>);
+<span class="dv">1</span></code></pre></div>
+<p>The other comparison operators <a href="#(%3C)/stlmap"><code>(&lt;)</code></a>, <a href="#(%3C=)/stlmap"><code>(&lt;=)</code></a>, <a href="#(%3E)/stlmap"><code>(&gt;)</code></a> and <a href="#(%3E=)/stlmap"><code>(&gt;=)</code></a> are provided only for the ordered containers (stlmap, stlset, stlmmap and stlmset). These operators reflect lexicographical comparisons of keys and, then if the keys are equal, lexicographical comparisons of values. I.e., this is not set inclusion - order matters. Accordingly, these comparison operators are not defined for a stlhmap or stlhset.</p>
+<dl>
+<dt><a name="</stlmap"></a><code>rng1 &lt; rng2</code></dt>
+<dd>Traverse the ranges comparing pairs of elements e1 and e2. If e1 is less than e2, stop and return true; if e2 is less than e1 then stop and return false. If rng1 is exhausted but rng2 is not, return true, else return false. The two ranges must be defined on ordered associative containers of the same type.
+</dd>
+<dt><a name="&gt;/stlmap"></a><code>rng1 &gt; rng2</code>, <a name="<=/stlmap"></a><code>rng1 &lt;= rng2</code>, <a name="&gt;=/stlmap"></a><code>rng1 &gt;= rng2</code></dt>
+<dd>The these three operators are the same as <code>rng2</code> &lt; <code>rng1</code>, ~(<code>rng1</code>&gt;<code>rng2`) and ~(</code>rng1<code>&lt;</code>rng2``) respectively.
+</dd>
+</dl>
+<!-- -->
+<p>You also have to be careful when using equivalence and comparison operators with stlmmaps because elements with the same key and different values are not necessarily ordered by values.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> smm2 = stlmmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>];
+
+&gt; members smm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; members smm2;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]
+
+&gt; smm == smm2; <span class="co">// probably not what you want</span>
+<span class="dv">0</span> </code></pre></div>
+<p>These operations do not make much sense for a stlmmap unless elements with equivalent keys are stored by value, in the order enforced by the stlmmap’s value-comp function. In this regard it is worth noting that, depending on your implementation, the <a href="#insert/stlmap"><code>insert</code></a> function may or may not preserve the order of insertion of elements with equivalent keys (C++11 does preserve the order).</p>
+<h3 id="set-algorithms">Set Algorithms</h3>
+<p>pure-stlmap provides wrappers for the STL set algorithms that apply to ranges defined on the four ordered associative containers (stlmap, stlset, stlmmap and stlmset). These algorithms are very efficient, with linear time complexity, but they do require that the elements of the two ranges be ordered. Accordingly, the set algorithms are not applicable to stlhmap or stlhset. Also, when dealing with stlmmaps, care must be taken to ensure that items with the equivalent keys are ordered by their values.</p>
+<dl>
+<dt><a name="stl::map_merge/stlmap"></a><code>stl::map_merge rng1 rng2</code></dt>
+<dd>Constructs a new ordered container from <code>rng1</code> and then insert the elments of <code>rng2</code> into the new container and return it. <code>rng1</code> and <code>rng2</code> must be defined on the same type of ordered container.
+</dd>
+<dt><a name="stl::map_union/stlmap"></a><code>stl::map_union rng1 rng2</code>, <a name="stl::map_difference/stlmap"></a><code>stl::map_difference rng1 rng2</code>, <a name="stl::map_intersection/stlmap"></a><code>stl::map_intersection rng1 rng2</code>, <a name="stl::map_symmetric_difference/stlmap"></a><code>stl::map_symmetric_difference rng1 rng2</code></dt>
+<dd>
+</dd>
+<dt><a name="stl::map_includes/stlmap"></a><code>stl::map_includes rng1 rng2</code></dt>
+<dd>Returns a new ordered associative container of the same type as the ordered containers underlying <code>rng1</code> and <code>rng2</code>. If the ranges are defined over a stlmap or stlmmap elements of <code>rng1</code> have priority over the elments of <code>rng2</code>. Uses <code>rng1</code>’s key-less-than, value-less-than and value-equal functions.
+</dd>
+</dl>
+<!-- -->
+<p>pure-stlmap’s set functions do not necessarily produce the same results as their Pure standard library counterparts. In particular, when applied to multi-keyed contaners, <a href="#stl::map_union/stlmap"><code>stl::map_union</code></a> Produces the multiset union of its arguments while (+) in the Pure standard library produces the multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use <a href="#stl::map_merge/stlmap"><code>stl::map_merge</code></a>. Also, in pure-stlmap, as in the STL, the left hand map or set has priority of elements while in the Pure standard library the right hand set has priority of elements. This can make a difference when applying set operations to a pair of stlmaps or stlmmaps. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> smm1 = stlmmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>];
+&gt; <span class="kw">let</span> smm2 = stlmmap [<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">33</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+
+&gt; members $ map_merge smm1 smm2; <span class="co">// three &quot;c&quot;=&gt;32</span>
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">33</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; members $ map_union smm1 smm2;  <span class="co">// two &quot;c&quot;=&gt;32</span>
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">33</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; <span class="kw">let</span> sm1 = stlmap [<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>];
+&gt; <span class="kw">let</span> sm2 = stlmap [<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+
+&gt; members $ map_union sm1 sm2; <span class="co">// &quot;c&quot;=&gt;31 from sm1, not &quot;c&quot;=&gt;32 from sm2</span>
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; members $ map_intersection sm1 sm2; <span class="co">// &quot;c&quot;=&gt;31 from sm1</span>
+[<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>]</code></pre></div>
+<h3 id="direct-c-calls">Direct C Calls</h3>
+<p>It is common to encounter code that (a) tests if a key is stored in a container using <a href="#member/stlmap"><code>member</code></a> and (b) in the case of maps, retreives the value or values associated with the key using (!) and/or (c) changes the value or values using <a href="#replace/stlmap"><code>replace</code></a>. Depending on what modules have been loaded, these functions may be heavily overloaded which can cause a small delay when the functions are called. To avoid this, pure-stlmap exposes the corresponding C functions so that they can be called directly. The C functions have the same name as the overloaded functions except for a prefix. E.g.,</p>
+<dl>
+<dt><a name="stl::sm_member/stlmap"></a><code>stl::sm_member sm key</code>, <a name="stl::sm_get/stlmap"></a><code>stl::sm_get sm key</code>, <a name="stl::sm_put/stlmap"></a><code>stl::sm_put sm key val</code></dt>
+<dd>The first two functions are the direct C call equivalents of (<a href="#member/stlmap"><code>::member</code></a> <code>sm</code> <code>key</code>) and (<code>sm!key</code>). The third is like (<a href="#replace/stlmap"><code>::replace</code></a> <code>sm</code> <code>key</code> <code>val</code>) except that it will insert (key=&gt;val) if key is not already stored in <code>sm</code>. Here, <code>sm</code> is a stlmap or a stlset (except that sm_put is not defined for stlsets).
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="stl::shm_member/stlmap"></a><code>stl::shm_member shm key</code>, <a name="stl::shm_get/stlmap"></a><code>stl::shm_get shm key</code>, <a name="stl::shm_put/stlmap"></a><code>stl::shm_put shm key val</code></dt>
+<dd>The first two functions are the direct C call equivalents of (<a href="#member/stlmap"><code>::member</code></a> <code>shm</code> <code>key</code>) and (<code>shm!key</code>). The third is like (<a href="#replace/stlmap"><code>::replace</code></a> <code>shm</code> <code>key</code> <code>val</code>) except that it will insert (key=&gt;val) if key is not already stored in <code>shm</code>. Here, <code>shm</code> is a stlhmap or a stlhset (except that shm_put is not defined for stlhsets).
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="stl::smm_member/stlmap"></a><code>stl::smm_member smm key</code>, <a name="stl::smm_get/stlmap"></a><code>stl::smm_get smm key</code>, <a name="stl::smm_put/stlmap"></a><code>stl::smm_put smm key vals</code></dt>
+<dd>The first two functions are the direct C call equivalents of (<a href="#member/stlmap"><code>::member</code></a> <code>smm</code> <code>key</code>) and (<code>smm!key</code>). The third is like (<a href="#replace/stlmap"><code>::replace</code></a> <code>smm</code> <code>key</code> <code>val</code>) except that it will insert (key=&gt;val1, key=&gt;val2, …) if key is not already stored in <code>smm</code>. Here, <code>smm</code> is a stlmmap or a stlmset (except that smm_put is not defined for stlmsets).
+</dd>
+</dl>
+<!-- -->
+<h2 id="iterators-1">Iterators</h2>
+<p>This section provides a quick overview of pure-stlmap’s “iterator-based” interface.</p>
+<h3 id="concepts-1">Concepts</h3>
+<p>Given a valid iterator you can access, modify or erase the element it points to.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sm1 = stlmap sm; members sm1;  
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>];
+
+&gt; <span class="kw">let</span> i = find sm1 <span class="st">&quot;b&quot;</span>;   <span class="co">// use find to get an iterator - like C++</span>
+
+&gt; get_elm i; 
+<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>
+
+&gt; get_val i; 
+<span class="dv">2</span>
+
+&gt; put_val i <span class="dv">20</span>;
+<span class="dv">20</span>
+
+&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">20</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>Please note that you can never modify an element’s key, only its value. If you want to change both key and value, you have to erase the element and insert a new element.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; erase (sm1,i) $$ insert sm1 (<span class="st">&quot;b1&quot;</span>=&gt;<span class="dv">21</span>);
+<span class="dv">1</span>
+
+&gt; members sm1;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b1&quot;</span>=&gt;<span class="dv">21</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]</code></pre></div>
+<p>Given two iterators, i and j, pointing into a ordered container oc, the range (i,j), denotes oc’s elements starting with “oc[i]”, the element pointed to by i, up to but not including oc[j]. In pure-stlmap, this range is denoted by the tuple (i,j).</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members sm;
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; <span class="kw">let</span> i = stl::find sm1 <span class="st">&quot;b&quot;</span>; <span class="co">// get the iterator</span>
+
+&gt; <span class="kw">let</span> j = stl::find sm1 <span class="st">&quot;e&quot;</span>;
+
+&gt; members (i,j);             <span class="co">// get the elements in the range</span>
+[<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]</code></pre></div>
+<p>Perhaps it is worth mentioning that functions that act on ranges do not care if the range is specified by a pair of iterators or by keys.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; members ss;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>]
+
+&gt; map (+<span class="dv">21</span>) (ss,<span class="st">&quot;c&quot;</span>,smend);
+[<span class="st">&quot;x&quot;</span>,<span class="st">&quot;y&quot;</span>,<span class="st">&quot;z&quot;</span>]
+
+&gt; <span class="kw">let</span> i = find ss <span class="st">&quot;c&quot;</span>;
+&gt; <span class="kw">let</span> j = pastend ss;
+&gt; map (+<span class="dv">21</span>) (i,j);
+[<span class="st">&quot;x&quot;</span>,<span class="st">&quot;y&quot;</span>,<span class="st">&quot;z&quot;</span>]</code></pre></div>
+<h3 id="exceptions">Exceptions</h3>
+<p>In pure-stlmap functions that accept iterators throw a <a href="#stl::bad_argument"><code>bad_argument</code></a> exception if called with an invalid iterator. An iterator remains valid until the element it was pointing to has been erased. These functions also attempt to throw bad argument exceptions for invalid usage that would otherwise result in undefined behavior. An example of an invalid use would be a range specified by iterators from different containers. Here are some examples of iterator errors.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> i,j = find sm <span class="st">&quot;a&quot;</span>, find sm <span class="st">&quot;d&quot;</span>;
+
+&gt; get_elm i, get_elm j;
+<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>
+
+&gt; members (i,j);
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>]
+
+&gt; <span class="fu">catch</span> id $ members (j,i); <span class="co">// j and i transposed, C++ would segfault</span>
+bad_argument
+
+&gt; erase (sm,<span class="st">&quot;b&quot;</span>);  <span class="co">// erase &quot;b&quot;=&gt;2, leaving i and j valid</span>
+<span class="dv">1</span>
+
+&gt; get_elm i; <span class="co">// still valid</span>
+<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>
+
+&gt; erase (sm,<span class="st">&quot;a&quot;</span>);  <span class="co">// erase &quot;a&quot;=&gt;1 - invalidating i</span>
+<span class="dv">1</span>
+
+&gt; <span class="fu">catch</span> id $ get_elm i; <span class="co">// bad iterator exception</span>
+bad_argument</code></pre></div>
+<h3 id="functions">Functions</h3>
+<p>In this section “acon” always denotes one of the containers that supports interators (stlmap, stlset, stlmmap and stlmset).</p>
+<dl>
+<dt><a name="stl::iterator/stlmap"></a><code>stl::iterator i</code></dt>
+<dd>Returns a new iterator that points to the same element as <code>i</code>.
+</dd>
+<dt><a name="stl::begin/stlmap"></a><code>stl::begin acon</code>, <a name="stl::pastend/stlmap"></a><code>stl::pastend acon</code></dt>
+<dd>Returns <code>acon</code>’s begin or past-end iterator.
+</dd>
+<dt><a name="stl::find/stlmap"></a><code>stl::find acon k</code></dt>
+<dd>Creates a new iterator that points to an element in <code>acon</code> with key equivalent to <code>k</code> (if any) or <code>acon</code>’s past-end iterator if no such element exists.
+</dd>
+<dt><a name="stl::find_with_default/stlmap"></a><code>stl::find_with_default map k</code></dt>
+<dd>Returns an iterator pointing to the element in <code>map</code>, a stlmap, with key equivalent to <code>k</code>. If no such element existed before the call, one is created and inserted using <code>k</code> and <code>map</code>’s default value. This function is pure-stlmap’s version of C++’s [] operator for associative containers.
+</dd>
+<dt><a name="stl::insert_elm/stlmap"></a><code>stl::insert_elm acon elm</code></dt>
+<dd>Attempts to insert <code>elm</code> into <code>acon</code>. (If <code>acon</code> is a stlmap or stlmmap, then elm must be a key value pair, (k=&gt;v)). If acon is a stlmap or stlset (i.e., with unique keys) <a href="#stl::insert_elm/stlmap"><code>insert_elm</code></a> returns a pair, the first of which is an iterator pointing to the element with key k that was just inserted (or the pre-existing element that blocked the insertion). The second element in the pair is a boolean value that is true if a new element was inserted. In contrast, if <code>acon</code> is a multi-keyed container (stlmmap or stlmset) the insert will always be successful and <a href="#stl::insert_elm/stlmap"><code>insert_elm</code></a> returns an iterator pointing to the element with key k that was just inserted, instead of an (iterator, boolean) tuple.
+</dd>
+<dt><a name="stl::insert_elm/stlmap"></a><code>stl::insert_elm acon (elm,i)</code></dt>
+<dd>This is the same as the previous function except that (a) <code>i</code> is passed in as a hint to where the new element should be inserted and (b) a single iterator is returned rather than a iterator,boolean pair. If the new element is inserted just after <code>i</code>, the insertion can have constant time complexity.
+</dd>
+<dt><a name="stl::l_bound/stlmap"></a><code>stl::l_bound acon k</code></dt>
+<dd>Return a new iterator that points to the first element in <code>acon</code>, a stlmap, stlset, stlmmap or stlmset, that is not less than <code>k</code>, or <code>acon</code>’s past-end iterator if none exists.
+</dd>
+<dt><a name="stl::u_bound/stlmap"></a><code>stl::u_bound acon k</code></dt>
+<dd>Return a new iterator that points to the first element in <code>acon</code>, a stlmap, stlset, stlmmap or stlmset, that is greater than <code>k</code>, or <code>acon</code>’s past-end iterator if none exists.
+</dd>
+<dt><a name="stl::lu_bounds/stlmap"></a><code>stl::lu_bounds acon k</code></dt>
+<dd>Return the pair l_bound <code>acon</code> <code>k</code>, u_bound <code>acon</code> <code>k</code>.
+</dd>
+</dl>
+<!-- -->
+<p>E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> ok, smx, f, l = stl::range_info (sm1,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;e&quot;</span>);
+
+&gt; ok, smx === sm1, stl::members (f,l);
+<span class="dv">1</span>,<span class="dv">1</span>,[<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">3</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>]</code></pre></div>
+<dl>
+<dt><a name="stl::inc/stlmap"></a><code>stl::inc i</code>, <a name="stl::dec/stlmap"></a><code>stl::dec i</code>, <a name="stl::move/stlmap"></a><code>stl::move i n::int</code></dt>
+<dd>Move the iterator <code>i</code> forward one, back one or forward <code>n</code> elements respectively, where n can be negative. The iterator is mutated by these operations, provided the move is successful. An attempt to move to a position before the first element’s position causes an <a href="#stl::out_of_bounds"><code>out_of_bounds</code></a> exception. Moves past the last element return the past-end iterator for the container that <code>i</code> is defined on.
+</dd>
+<dt><a name="stl::get_elm/stlmap"></a><code>stl::get_elm i</code>, <a name="stl::get_key/stlmap"></a><code>stl::get_key i</code>, <a name="stl::get_val/stlmap"></a><code>stl::get_val i</code></dt>
+<dd>Return the element pointed to by the iterator <code>i</code>, or the element’s key or value. For maps the element is returned as a key=&gt;value hash rocket pair. For sets, get_elem, get_key and get_val all return the element (which is the same as its key).
+</dd>
+<dt><a name="stl::put_val"></a><code>stl::put_val i newvalue</code></dt>
+<dd>Change the value of the element pointed to by the iterator <code>i</code> to <code>newvalue</code>. The element’s key cannot be changed. The iterator must point into a stlmap or stlmmap.
+</dd>
+<dt><a name="stl::beginp/stlmap"></a><code>stl::beginp i</code>, <a name="stl::pastendp/stlmap"></a><code>stl::pastendp i</code></dt>
+<dd>Returns true if the iterator <code>i</code> is the begin iterator or pastend iterator of the container it is defined on.
+</dd>
+<dt><a name="stl::get_info/stlmap"></a><code>stl::get_info i</code></dt>
+<dd>Returns a tuple (is_valid,acon,key,val) where is_valid is true if the iterator <code>i</code> is valid or false if not, acon is the container that i is defined on, and key, val are the key and value of the element <code>i</code> points to, if any. If <code>i</code> is the past-end iterator, key and val are set to <a href="#stl::smend/stlmap"><code>stl::smend</code></a> and <code>[]</code>, respectively.
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="==/stlmap"></a><code>i == j</code></dt>
+<dd>Returns true if the iterators <code>i</code> and <code>j</code> point to the same element.
+</dd>
+<dt><a name="erase/stlmap"></a><code>erase (acon,i)</code>, <a name="erase/stlmap"></a><code>erase (acon,i,j)</code></dt>
+<dd>Erases the element pointed to by <code>i</code> or the elements in the range (<code>i</code>, <code>j</code>). Both <code>i</code> and <code>j</code> must be iterators defined on <code>acon</code> (or a <a href="#bad_argument"><code>bad_argument</code></a> exception will be thrown).
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-1">Examples</h3>
+<p>Here are some examples using iterators.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> b,e = begin smm, pastend smm;
+
+&gt; members (b,e);
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; <span class="kw">let</span> i,j = lu_bounds smm <span class="st">&quot;c&quot;</span>;
+
+&gt; members (b,i);
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>]
+
+&gt; members (i,j);
+[<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>]
+
+&gt; members (j,e);
+[<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>]
+
+&gt; get_elm i;
+<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>
+
+&gt; get_elm (inc i);
+<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">32</span>
+
+&gt; put_val i <span class="dv">132</span>;
+<span class="dv">132</span>
+
+&gt; map (\(k=&gt;_)-&gt;k=&gt;ord k) (b,i);
+[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">97</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">98</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">99</span>]
+
+&gt; <span class="kw">let</span> is_set, smm1, k, v = get_info i; is_set, members smm1, k, v;
+<span class="dv">1</span>,[<span class="st">&quot;a&quot;</span>=&gt;<span class="dv">1</span>,<span class="st">&quot;b&quot;</span>=&gt;<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">31</span>,<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">132</span>,<span class="st">&quot;d&quot;</span>=&gt;<span class="dv">4</span>,<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>],<span class="st">&quot;c&quot;</span>,<span class="dv">132</span>
+
+&gt; get_elm (dec j);
+<span class="st">&quot;c&quot;</span>=&gt;<span class="dv">132</span>
+
+&gt; inc j $$ inc j $$ get_elm j;
+<span class="st">&quot;e&quot;</span>=&gt;<span class="dv">5</span>
+
+&gt; inc j $$ endp j;
+<span class="dv">1</span></code></pre></div>
+<h2 id="backward-compatibilty">Backward Compatibilty</h2>
+<p>This section documents changes in pure-stlmap.</p>
+<h3 id="pure-stlmap-0.2">pure-stlmap-0.2</h3>
+<p>Optimized common predicates, such as (&lt;) and (&gt;)</p>
+<h3 id="pure-stlmap-0.3">pure-stlmap-0.3</h3>
+<p>Fixed (&gt;) comparisons on plain old data.</p>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-install"></a></p>
+<h1 id="installing-pure-and-llvm">Installing Pure (and LLVM)</h1>
+<p>Version 0.66, March 06, 2017</p>
+<div style="white-space: pre-line;">Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;
+Eddie Rucker &lt;<a href="mailto:erucker@bmc.edu">erucker@bmc.edu</a>&gt;</div>
+<p>These instructions explain how to compile and install LLVM (which is the compiler backend required by Pure) and the Pure interpreter itself. The instructions are somewhat biased towards Linux and other Unix-like systems; the <a href="#system-notes">System Notes</a> section at the end of this file details the tweaks necessary to make Pure compile and run on various other platforms. More information about installing LLVM and the required LLVM source packages can be found at <a href="http://llvm.org" class="uri">http://llvm.org</a>.</p>
+<p>Pure is known to work on Linux, FreeBSD, NetBSD, Mac OS X and MS Windows, and should compile (with the usual amount of tweaking) on all recent UNIX/POSIX-based platforms. Pure should compile out of the box with reasonably recent versions of either gcc or clang. You’ll also need a Bourne-compatible shell and GNU make, which are also readily available on most platforms. For Windows compilation we support the Mingw version of gcc along with the MSYS environment.</p>
+<p>A binary package in msi format is provided for Windows users in the download area at <a href="http://purelang.bitbucket.org" class="uri">http://purelang.bitbucket.org</a>. Information about ports and packages for other (UNIX-like) systems is provided at the same location.</p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p>Here is the executive summary for the impatient. This assumes that you’re using LLVM 3.4 and Pure 0.66, please substitute your actual version numbers in the commands given below as needed.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> If you’re reading this documentation online, then the Pure version described here most likely is still under development, in which case you can either grab the latest available release, or install from the development sources instead (see <a href="#installing-from-development-sources">Installing From Development Sources</a> below).</p>
+</blockquote>
+<hr />
+<p>Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl, libgmp and libmpfr (including header files for development), wget (for downloading and installing the online documentation), GNU emacs (if you want to use Emacs Pure mode). These should all be available as binary packages on most systems.</p>
+<p>You’ll also need LLVM and, of course, Pure. The LLVM 3.4 and Pure 0.66 tarballs are available here:</p>
+<div style="white-space: pre-line;"><a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-0.66.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-0.66.tar.gz</a>
+<a href="http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz" class="uri">http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz</a>
+<a href="http://llvm.org/releases/3.4/clang-3.4.src.tar.gz" class="uri">http://llvm.org/releases/3.4/clang-3.4.src.tar.gz</a>
+<a href="http://llvm.org/releases/3.4/dragonegg-3.4.src.tar.gz" class="uri">http://llvm.org/releases/3.4/dragonegg-3.4.src.tar.gz</a></div>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> The present Pure version requires an LLVM version that still supports the “old” (pre-MCJIT) just-in-time compiler back-end (JIT). This means that the latest <em>supported</em> LLVM release is <strong>3.5.2</strong>, which was released in April 2015. Earlier versions in the 3.x series should still work fine as well, if you can make them compile on your system. The following instructions assume that you use the very stable LLVM 3.4 release, otherwise you’ll have to adjust the commands in the instructions accordingly.</p>
+</blockquote>
+<hr />
+<p>Installing LLVM and clang (the latter is optional but recommended):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ tar xfvz llvm-<span class="dv">3.4</span>.src.tar.gz
+$ tar xfvz clang-<span class="dv">3.4</span>.src.tar.gz &amp;&amp; mv clang-<span class="dv">3.4</span> llvm-<span class="dv">3.4</span>/tools/clang
+$ cd llvm-<span class="dv">3.4</span>
+$ ./configure --enable-shared --enable-optimized --enable-targets=host-only
+$ make &amp;&amp; sudo make install</code></pre></div>
+<p>Be patient, this takes a while…</p>
+<p>You may want to leave out <code>--enable-shared</code> to install LLVM as static libraries only, and <code>--enable-targets=host-only</code> if you want to enable cross compilation for all supported targets in LLVM. (With some older LLVM versions you may also have to add <code>--disable-assertions --disable-expensive-checks</code> to disable stuff that makes LLVM very slow and/or breaks it on some systems.) Also, if you’re still running gcc 4.5 or 4.6, you may want to install the LLVM “DragonEgg” plugin for gcc, which provides LLVM bitcode compilation for languages other than C/C++. Please check the <a href="#dragonegg">dragonegg</a> section below for details.</p>
+<p>Installing Pure:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ tar xfvz pure-<span class="dv">0.66</span>.tar.gz
+$ cd pure-<span class="dv">0.66</span>
+$ ./configure --enable-release
+$ make &amp;&amp; sudo make install</code></pre></div>
+<p>Depending on your system you may have to run a utility to announce the shared LLVM and Pure libraries to the dynamic loader. E.g., on Linux:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ sudo /sbin/ldconfig</code></pre></div>
+<p>It is also recommended that you run the following to make sure that the Pure interpreter works correctly on your platform (see step 5 below for details):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ make check</code></pre></div>
+<p>The following is optional, but if you want to read the online documentation in the interpreter or in <a href="#emacs-pure-mode">Emacs Pure mode</a>, you’ll have to download and install the documentation files:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ sudo make install-docs</code></pre></div>
+<p>This needs the <code>wget</code> program. You can also download and install the pure-docs tarball manually in the usual way, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ tar xfvz pure-docs-<span class="dv">0.66</span>.tar.gz
+$ cd pure-docs-<span class="dv">0.66</span>
+$ sudo make install</code></pre></div>
+<p>That’s it, Pure should be ready to go now:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ pure</code></pre></div>
+<p>Uninstalling:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ cd pure-<span class="dv">0.66</span>
+$ sudo make uninstall
+$ cd ../llvm-<span class="dv">3.4</span>
+$ sudo make uninstall</code></pre></div>
+<p>Please see below for much more detailed installation instructions.</p>
+<h2 id="basic-installation">Basic Installation</h2>
+<p>The basic installation process is as follows. Note that steps 1-3 are only required once. Steps 2-3 can be avoided if binary LLVM packages are available for your system (but see the caveats about broken LLVM packages on some systems below). Additional instructions for compiling Pure from the latest repository sources can be found in the <a href="#installing-from-development-sources">Installing From Development Sources</a> section below. Moreover, you can refer to the <a href="#other-build-and-installation-options">Other Build And Installation Options</a> section below for details about various options available when building and installing Pure.</p>
+<p><strong>Step 1.</strong> Make sure you have all the necessary dependencies installed (<code>-dev</code> denotes corresponding development packages):</p>
+<ul>
+<li>GNU make, GNU C/C++ and the corresponding libraries;</li>
+<li>the GNU multiprecision library (<code>libgmp</code>, <code>-dev</code>) or some compatible replacement (see comments below);</li>
+<li>the GNU multiprecision floating point library (<code>libmpfr</code>, <code>-dev</code>);</li>
+<li>the PCRE library (<code>libpcre</code>, <code>-dev</code>), if you want Perl-compatible regex support (see below);</li>
+<li>GNU readline (<code>libreadline</code>, <code>-dev</code>) or some compatible replacement (only needed if you want command line editing support in the interpreter; see comments below).</li>
+<li>GNU Emacs (if you want to use the Emacs Pure mode).</li>
+<li>GNU TeXmacs (if you want to use the TeXmacs Pure plugin).</li>
+</ul>
+<p>In addition, the following will be required to compile the development version (see the <a href="#installing-from-development-sources">Installing From Development Sources</a> section below):</p>
+<ul>
+<li>autoconf and automake;</li>
+<li>flex and bison;</li>
+<li>git (needed to fetch the development sources).</li>
+</ul>
+<p>The following may be required to build some LLVM versions:</p>
+<ul>
+<li>GNU ltdl library (<code>libltdl</code>, <code>-dev</code>).</li>
+</ul>
+<p>All dependencies are available as free software. Here are some links if you need or want to install the dependencies from source:</p>
+<ul>
+<li>Autoconf: <a href="http://www.gnu.org/software/autoconf" class="uri">http://www.gnu.org/software/autoconf</a></li>
+<li>Automake: <a href="http://www.gnu.org/software/automake" class="uri">http://www.gnu.org/software/automake</a></li>
+<li>GNU C/C++: <a href="http://gcc.gnu.org" class="uri">http://gcc.gnu.org</a></li>
+<li>GNU make: <a href="http://www.gnu.org/software/make" class="uri">http://www.gnu.org/software/make</a></li>
+<li>Flex: <a href="http://flex.sourceforge.net" class="uri">http://flex.sourceforge.net</a></li>
+<li>Bison: <a href="http://www.gnu.org/software/bison" class="uri">http://www.gnu.org/software/bison</a></li>
+<li>GNU Emacs: <a href="http://www.gnu.org/software/emacs" class="uri">http://www.gnu.org/software/emacs</a></li>
+<li>GNU TeXmacs: <a href="http://savannah.gnu.org/projects/texmacs" class="uri">http://savannah.gnu.org/projects/texmacs</a></li>
+<li>GNU ltdl (part of the libtool software): <a href="http://www.gnu.org/software/libtool" class="uri">http://www.gnu.org/software/libtool</a></li>
+</ul>
+<p>Git can be obtained from <a href="https://git-scm.com/" class="uri">https://git-scm.com/</a>. A number of graphical frontends can be found there as well. Windows users may also want to check TortoiseGit, see <a href="https://tortoisegit.org/" class="uri">https://tortoisegit.org/</a>.</p>
+<p>The GNU multiprecision library or some compatible replacement is required for Pure’s bigint support. Instead of GMP it’s also possible to use MPIR. You can find these here:</p>
+<ul>
+<li>GMP: <a href="http://www.gnu.org/software/gmp" class="uri">http://www.gnu.org/software/gmp</a></li>
+<li>MPIR: <a href="http://www.mpir.org" class="uri">http://www.mpir.org</a></li>
+</ul>
+<p>If you have both GMP and MPIR installed, you can specify <code>--with-mpir</code> when configuring Pure to indicate that Pure should be linked against MPIR. Note that using this option might cause issues with some Pure modules which explicitly link against GMP. If you run into any such problems then you should build MPIR with the <code>--enable-gmpcompat</code> configure option so that it becomes a drop-in replacement for GMP (in this case the <code>--with-mpir</code> option isn’t needed when configuring Pure).</p>
+<p>In addition, Pure 0.48 and later also require the GNU multiprecision floating point library:</p>
+<ul>
+<li>MPFR: <a href="http://www.mpfr.org" class="uri">http://www.mpfr.org</a></li>
+</ul>
+<p>(Pure doesn’t really have built-in support for MPFR numbers, this is provided through a separate pure-mpfr addon module instead, please check the Pure website for details. However, there is now some support for printing both GMP and MPFR numbers in the <code>printf</code> and <code>scanf</code> functions of the <a href="purelib.html#module-system">system</a> module, for which the MPFR library is needed.)</p>
+<p>To make interactive command line editing work in the interpreter, you’ll also need GNU readline or some compatible replacement such as BSD editline/libedit:</p>
+<ul>
+<li>GNU readline: <a href="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html" class="uri">http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html</a></li>
+<li>BSD editline/libedit: <a href="http://www.thrysoee.dk/editline" class="uri">http://www.thrysoee.dk/editline</a></li>
+</ul>
+<p>We recommend GNU readline because it’s easier to use and has full UTF-8 support, but in some situations BSD editline/libedit may be preferable for license reasons or because it’s what the operating system provides. Pure’s configuration script automatically detects the presence of both packages and also lets you disable readline and/or editline support using the <code>--without-readline</code> and <code>--without-editline</code> options.</p>
+<p>Pure normally uses the system’s POSIX regex functions for its regular expression support (<a href="purelib.html#module-regex">regex</a> module). Instead, you can also build it with support for Perl-style regular expressions. This is done by linking in the POSIX compatibility layer of the PCRE library:</p>
+<ul>
+<li>PCRE: <a href="http://www.pcre.org/" class="uri">http://www.pcre.org/</a></li>
+</ul>
+<p>Please note that the PCRE support is still experimental and currently disabled by default. Configuring with <code>--with-pcre</code> enables it. Also note that at present this is only available as a compile-time switch; to change the regex library used by the Pure runtime you need to recompile the interpreter.</p>
+<p><strong>Step 2.</strong> Get and unpack the LLVM sources.</p>
+<p>You can find these at <a href="http://llvm.org/releases/download.html" class="uri">http://llvm.org/releases/download.html</a>.</p>
+<p>You only need the LLVM tarball which contains the LLVM library as well as most of the LLVM toolchain. LLVM 3.5.2 is the latest <em>supported</em> release at the time of this writing. LLVM versions 2.5 thru 3.5 have all been tested and are known to work with Pure. We really recommend using LLVM 3.0 or later, however, because LLVM has improved considerably in recent releases. (Support for older versions may be dropped in the future.)</p>
+<p>At this point we also recommend getting an LLVM-capable C/C++ compiler. This is completely optional, but you’ll need it to take advantage of the new bitcode loader in Pure 0.44 and later. The easiest way to go is to take the clang tarball which corresponds to your LLVM version, unpack its contents into the LLVM tools directory and rename the <code>clang-x.y</code> directory to just <code>clang</code>. The clang compiler will then be built and installed along with LLVM. On older systems, you can also use llvm-gcc or dragonegg instead, please see <a href="#installing-an-llvm-capable-cc-compiler">Installing an LLVM-capable C/C++ Compiler</a> below for further details.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> Some (older) Linux and BSD distributions provide LLVM packages and ports which are compiled with wrong configure options and are thus broken. If the Pure interpreter segfaults on startup or fails its test suite (<code>make check</code>) then you should check whether there’s a newer LLVM package available for your system, or compile LLVM yourself.</p>
+</blockquote>
+<hr />
+<p><strong>Step 3.</strong> Configure, build and install LLVM as follows (assuming LLVM 3.4):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ cd llvm-<span class="dv">3.4</span>
+$ ./configure --enable-shared --enable-optimized --enable-targets=host-only
+$ make
+$ sudo make install</code></pre></div>
+<p>LLVM 2.7 and earlier may also require the flags <code>--disable-assertions</code> <code>--disable-expensive-checks</code> to disable some features which make LLVM slow and/or buggy on some systems. With LLVM 2.8 and later these options aren’t needed any more.</p>
+<p>Note that the <code>--enable-shared</code> option builds and installs LLVM as a shared library, which is often preferable if you’re running different LLVM-based tools and compilers on your system. This requires LLVM 2.7 or later and may be broken on some systems. You can always leave out that option, in which case LLVM will be linked statically into the Pure runtime library. (You can also force Pure to be linked statically against LLVM even if you have the shared LLVM library installed, by configuring Pure with the <code>--with-static-llvm</code> flag. This may be useful if you plan to deploy the Pure runtime library on systems which don’t have LLVM installed.)</p>
+<p>Also note that the configure flags are for an optimized (non-debug) build and disable all compilation targets but the one for your system. You might wish to play with the configure options, but note that some options (especially <code>--enable-expensive-checks</code>) can make LLVM very slow and may even break the Pure interpreter on some systems.</p>
+<p><strong>Step 4.</strong> Get and unpack the Pure sources.</p>
+<p>These can be downloaded from <a href="http://purelang.bitbucket.org" class="uri">http://purelang.bitbucket.org</a>. The latest source tarballs can always be found in the “Downloads” section.</p>
+<p><strong>Step 5.</strong> Configure, build and install Pure as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ cd pure-<span class="dv">0.66</span>
+$ ./configure --enable-release
+$ make
+$ sudo make install</code></pre></div>
+<p>The <code>--enable-release</code> option configures Pure for a release build. This is recommended for maximum performance. If you leave away this option then you’ll get a default build which includes debugging information and extra runtime checks useful for the Pure maintainers, but also runs considerably slower.</p>
+<p>To find out about other build options, you can invoke configure as <code>./configure --help</code>.</p>
+<p>The <code>sudo make install</code> command installs the pure program, the runtime.h header file, the runtime library libpure.so, a Pure pkg-config file (pure.pc) and the library scripts in the appropriate subdirectories of /usr/local; the installation prefix can be changed with the <code>--prefix</code> configure option, see <a href="#other-build-and-installation-options">Other Build And Installation Options</a> for details. (The runtime.h header file is not needed for normal operation, but can be used to write C/C++ extensions modules or embed Pure in your C/C++ applications.)</p>
+<p>In addition, if the presence of GNU Emacs was detected at configure time, then by default pure-mode.el and pure-mode.elc will be installed in the Emacs site-lisp directory. make tries to guess the proper location of the site-lisp directory, but if it guesses wrong or if you want to install in some custom location then you can also set the <code>elispdir</code> make variable accordingly. If you prefer, you can also disable the automatic installation of the elisp files by running configure with <code>./configure --without-elisp</code>. (In that case, it’s still possible to install the elisp files manually with <code>make install-el install-elc</code>.)</p>
+<p>Similarly, if you have <a href="http://savannah.gnu.org/projects/texmacs/">GNU TeXmacs</a> on your system and configure can locate it, the corresponding Pure plugin will be installed into the TeXmacs plugins directory. make tries to guess the proper location of the TeXmacs plugins directory, but if it guesses wrong or if you want to install in some custom location then you can also set the <code>tmdir</code> make variable accordingly. If you prefer, you can also disable the automatic installation of the TeXmacs plugin by running configure with <code>./configure --without-texmacs</code>. (In that case, it’s still possible to install the plugin manually with <code>make install-tm</code>.)</p>
+<p>On some systems you have to tell the dynamic linker to update its cache so that it finds the Pure runtime library. E.g., on Linux this is done as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ sudo /sbin/ldconfig</code></pre></div>
+<p>After the build is complete, you can (and should) also run a few tests to check that Pure is working correctly on your computer:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ make check</code></pre></div>
+<p>(This can be done before actually installing Pure, but make sure that you first run <code>ldconfig</code> or similar if you installed LLVM as a shared library, otherwise <code>make check</code> may fail simply because the LLVM library isn’t found.)</p>
+<p>If all is well, all tests should pass. If not, the test directory will contain some <code>*.diff</code> files containing further information about the failed tests. In that case please zip up the entire test directory and mail it to the author, post it on the Pure mailing list, or enter a bug report at <a href="https://bitbucket.org/purelang/pure-lang/issues" class="uri">https://bitbucket.org/purelang/pure-lang/issues</a>. Also please include precise information about your platform (operating system and cpu architecture) and the Pure and LLVM versions and/or source revision numbers you’re running.</p>
+<p>Note that <code>make check</code> executes the run-tests script which is generated at configure time. If necessary, you can also run individual tests by running run-tests directly (e.g., <code>./run-tests test/test020.pure test/test047.pure</code>) or rerun only the tests that failed on the previous invocation (<code>./run-tests -f</code> or, equivalently, <code>make recheck</code>).</p>
+<p>Also note that MSYS 1.0.11 or later (or at least the diffutils package from that version) is required to make <code>make check</code> work on Windows. Also, under MS Windows this step is expected to fail on some math tests in test020.pure; this is nothing to worry about, it just indicates that some math routines in Microsoft’s C library aren’t fully POSIX-compatible. The same applies to some BSD systems.</p>
+<p>If Pure appears to be broken on your system (<code>make check</code> reports a lot of failures), it’s often because of a miscompiled LLVM. Please review the instructions under step 3, and check the <a href="#system-notes">System Notes</a> section to see whether your platform is known to have issues and which workarounds may be needed. If all that doesn’t help then you might be running into LLVM bugs and limitations on not-so-well supported platforms; in that case please also report the results of <code>make check</code> as described above, so that we can try to figure out what is going on and whether there’s a fix or workaround for the problem.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> If you have one of the LLVM C/C++ compilers installed (see <a href="#installing-an-llvm-capable-cc-compiler">Installing an LLVM-capable C/C++ Compiler</a>), you can use those to compile Pure by passing the appropriate compiler names on the configure line:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release CC=clang CXX=clang++</code></pre></div>
+<p>Or, when using llvm-gcc:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release CC=llvm-gcc CXX=llvm-g++</code></pre></div>
+<p>llvm-gcc 4.2 and clang 2.8 or later should build Pure cleanly and pass all checks.</p>
+</blockquote>
+<hr />
+<p><strong>Step 6.</strong> Download and install the online documentation as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ sudo make install-docs</code></pre></div>
+<p>This isn’t necessary to run the interpreter, but highly recommended, as it gives you a complete set of manuals in html format which covers the Pure language and interpreter, the standard library, and all addon modules available from the Pure website. You can read these manuals with the <code>help</code> command in the interpreter. You also need to have a html browser installed to make this work. By default, the interpreter assumes w3m (a text-based browser), you can change this by setting the <code>BROWSER</code> or the <code>PURE_HELP</code> variable accordingly.</p>
+<p>The <code>install-docs</code> target requires a working Internet connection and the wget command. Instead, you can also download the pure-docs-0.66.tar.gz tarball manually and then install the documentation from the downloaded tarball in the usual way:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ tar xfvz pure-docs-<span class="dv">0.66</span>.tar.gz
+$ cd pure-docs-<span class="dv">0.66</span>
+$ sudo make install</code></pre></div>
+<p>As a bonus, downloading the package manually also gives you the documentation in pdf format (900+ pages), so that you can print it if you like. In addition, as of version 0.56 the tarball also contains the documentation in TeXmacs format so that you can read it inside TeXmacs (see <a href="#texmacs-plugin">TeXmacs Plugin</a> below). After unpacking the tarball and installing the html documentation, you can install the TeXmacs-formatted documentation as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ sudo make install-tm</code></pre></div>
+<p><strong>Step 7.</strong> The Pure interpreter should be ready to go now.</p>
+<p>Run Pure interactively as:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ pure
+
+ __ \  |   |  __| _ \    Pure <span class="dv">0.66</span> (x86_64-unknown-linux-gnu)
+ |   | |   | |    __/    Copyright (c) <span class="dv">2008</span>-<span class="dv">2017</span> by Albert Graef
+ .__/ \__,_|_|  \___|    (Type &#39;help&#39; for help, &#39;help copying&#39;
+_|                       for license information.)
+
+Loaded prelude from /usr/lib/pure/prelude.pure.</code></pre></div>
+<p>Check that it works:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="dv">6</span>*<span class="dv">7</span>;
+<span class="dv">42</span></code></pre></div>
+<p>Read the online documentation:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; help</code></pre></div>
+<p>Exit the interpreter (you can also just type the end-of-file character at the beginning of a line, i.e., <code>Ctrl-D</code> on Unix):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; quit</code></pre></div>
+<p>You can also run the interpreter from GNU Emacs and GNU TeXmacs (see below), and for Windows there is a nice GUI application named “PurePad” which makes it easy to edit and run your Pure scripts.</p>
+<h2 id="emacs-pure-mode">Emacs Pure Mode</h2>
+<p>This step is optional, but if you’re friends with Emacs then you should definitely give Pure mode a try. This is an Emacs programming mode which turns Emacs into an advanced IDE to edit and run Pure programs. If Emacs was detected by configure then after running <code>make</code> and <code>sudo make install</code> the required elisp files should already be installed in the Emacs site-lisp directory (unless you specifically disabled this with the <code>--without-elisp</code> configure option).</p>
+<p>Note: make tries to guess the Emacs installation prefix. If it gets this wrong, you can also set the make variable <code>elispdir</code> to point to your site-lisp directory. (In fact, you can specify any directory on Emacs’ loadpath for <code>elispdir</code>.)</p>
+<p>Before you can use Pure mode, you still have to add some stuff to your .emacs file to load the mode at startup. A minimal setup looks like this:</p>
+<div class="sourceCode"><pre class="sourceCode scheme"><code class="sourceCode scheme">(require &#39;pure-mode)
+(setq auto-mode-alist
+      (<span class="kw">cons</span> &#39;(<span class="st">&quot;</span><span class="ch">\\</span><span class="st">.pure</span><span class="ch">\\</span><span class="st">(rc</span><span class="ch">\\</span><span class="st">)?$&quot;</span> . pure-mode) auto-mode-alist))
+(add-hook &#39;pure-mode-hook &#39;turn-on-font-lock)
+(add-hook &#39;pure-eval-mode-hook &#39;turn-on-font-lock)</code></pre></div>
+<p>This loads Pure mode, associates the .pure and .purerc filename extensions with it, and enables syntax highlighting.</p>
+<p>Other useful options are described at the beginning of the pure-mode.el file. In particular, we recommend installing emacs-w3m and enabling it as follows in your .emacs file, so that you can read the online documentation in Emacs:</p>
+<div class="sourceCode"><pre class="sourceCode scheme"><code class="sourceCode scheme">(require &#39;w3m-load)</code></pre></div>
+<p>Also, you can enable code folding by adding this to your .emacs:</p>
+<div class="sourceCode"><pre class="sourceCode scheme"><code class="sourceCode scheme">(require &#39;hideshow)
+(add-hook &#39;pure-mode-hook &#39;hs-minor-mode)</code></pre></div>
+<p>These lines should come before the loading of Pure mode in your .emacs, so that Pure mode can adjust accordingly.</p>
+<p>Once Emacs has been configured to load Pure mode, you can just run it with a Pure file to check that it works, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ emacs examples/hello.pure</code></pre></div>
+<p>The online help about Pure mode can be read with <code>C-h m</code>. The Pure documentation can be accessed in Pure mode with <code>C-c h</code>.</p>
+<h2 id="texmacs-plugin">TeXmacs Plugin</h2>
+<p>Pure 0.56 has full support for running Pure as a session in <a href="http://savannah.gnu.org/projects/texmacs/">GNU TeXmacs</a>. This is triggered by the <a href="#cmdoption-pure--texmacs"><code>--texmacs</code></a> option of the interpreter. If TeXmacs was detected by configure then after running <code>make</code> and <code>sudo make install</code> the required plugin files should already be installed in the system-wide TeXmacs plugins directory and you should be able to find Pure in TeXmacs’ Insert / Session and Document / Scripts menus. TeXmacs help is also included; after installation this should be available with the Help / Plug-ins / Pure menu option. Or you can just go and read the TeXmacs documents (.tm files) in texmacs/plugins/pure/doc included in the distribution.</p>
+<p>Note: make tries to guess the TeXmacs installation prefix. If it gets this wrong, you can also set the make variable <code>tmdir</code> to point to your TeXmacs plugins directory. By default, the plugin files will be installed in the plugins/pure subdirectory of your system-wide TeXmacs directory, usually /usr/local/share/TeXmacs or similar. Removing the plugins/pure directory is sufficient to uninstall the plugin; you can also do this with <code>sudo make uninstall-tm</code>.</p>
+<p>It’s also possible to disable the automatic installation by invoking configure with the <code>--without-texmacs</code> option. To do a manual installation, it should be sufficient to drop the texmacs/plugins/pure directory in the distribution into your personal TeXmacs plugins folder, usually ~/.TeXmacs/plugins. You can also do this with <code>make install-tm tmdir=~/.TeXmacs</code> (in this case, uninstall with <code>make uninstall-tm tmdir=~/.TeXmacs</code>). This has the advantage that it doesn’t require root access and you can easily edit the plugin files under ~/.TeXmacs/plugins/pure/progs afterwards to tailor them to your needs.</p>
+<p>The distributed plugin has support for reading the Pure online help in TeXmacs format. See Step 6 under <a href="#basic-installation">Basic Installation</a> above for instructions on how you can obtain the necessary TeXmacs files and install them in the Pure library directory along with the html documentation. (The TeXmacs-formatted documentation needs a little style file named puredoc.ts which is included in the distribution and will be installed when doing <code>make install</code> or <code>make install-tm</code>. You can also just drop the file into your ~/.TeXmacs/packages folder to make TeXmacs find it.)</p>
+<p>If the distributed plugin doesn’t work for you, as a fallback option you can try the following minimal setup instead. This lacks all the bells and whistles of the distributed plugin, but should be sufficient to run a basic Pure session in TeXmacs, and should hopefully work with any TeXmacs version which has plugin support at all.</p>
+<div class="sourceCode"><pre class="sourceCode scheme"><code class="sourceCode scheme">(plugin-configure pure
+  (:require (url-exists-in-path? <span class="st">&quot;pure&quot;</span>))
+  (:launch <span class="st">&quot;pure -i --texmacs&quot;</span>)
+  (:session <span class="st">&quot;Pure&quot;</span>))</code></pre></div>
+<p>This Scheme file should go into ~/.TeXmacs/plugins/pure/progs/init-pure.scm. Note that <em>both</em> the <code>-i</code> and <code>--texmacs</code> options are required in the launch command to make this work (you might also want to add the <code>-q</code> option to suppress the signon message of the interpreter).</p>
+<h2 id="installing-an-llvm-capable-cc-compiler">Installing an LLVM-capable C/C++ Compiler</h2>
+<p>As already mentioned above, we suggest that you also install a C/C++ compiler with an LLVM backend. clang, llvm-gcc as well as the dragonegg gcc plugin are all fully supported by Pure. (Nowadays, the LLVM project’s main focus is on clang, however; llvm-gcc and dragonegg are not supported on recent systems any more.) Pure can be used without this, but then you’ll miss out on the LLVM bitcode loader and C/C++ inlining facilities in Pure 0.44 and later. (Note that you can always install clang, llvm-gcc and/or dragonegg at a later time to enable these features.)</p>
+<h3 id="clang">clang</h3>
+<p>With LLVM 2.8 and later, we recommend installing clang, the new LLVM-based C/C++ compiler (<a href="http://clang.llvm.org/" class="uri">http://clang.llvm.org/</a>). It’s much easier to build, runs faster and has better diagnostics than gcc. Also, as of Pure 0.55 it is the default for compiling inline C/C++ code, so it’s the easiest way to go if you want to use that feature.</p>
+<p>If you haven’t built clang along with LLVM yet, you can now just drop the contents of the clang tarball into the <code>llvm/tools</code> directory, renaming the resulting <code>clang-x.y</code> directory to just <code>clang</code>. Then build and install clang as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ cd llvm-<span class="dv">3.4</span>/tools/clang
+$ make
+$ sudo make install</code></pre></div>
+<h3 id="llvm-gcc">llvm-gcc</h3>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> LEGACY ALERT: This section applies to LLVM versions up to 2.9. With LLVM 3.0 or later, llvm-gcc is not supported any more and you should use <a href="#clang">clang</a> instead.</p>
+</blockquote>
+<hr />
+<p>If available, llvm-gcc can be installed either as an alternative or in addition to clang. The main advantage of llvm-gcc over clang is that it has additional language frontends (Ada and Fortran).</p>
+<p>Installing llvm-gcc from source actually isn’t all that difficult, if a bit time-consuming. Assuming that you have unpacked both the LLVM and the llvm-gcc sources in the same directory, you can build and install llvm-gcc as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ cd llvm-gcc-<span class="dv">4.2</span>-<span class="dv">2.9</span>.source
+$ mkdir obj
+$ cd obj
+$ ../configure --program-<span class="kw">prefix</span>=llvm- --enable-llvm=$PWD/../../llvm-<span class="dv">2.9</span> --enable-languages=c,c++
+$ make
+$ sudo make install</code></pre></div>
+<p>(You might wish to add <code>fortran</code> to <code>--enable-languages</code> if you also want to build the Fortran compiler, and, likewise, <code>ada</code> for the Ada compiler.)</p>
+<p>Be patient, this takes a while.</p>
+<p>Having installed llvm-gcc, you can add something like the following lines to your shell startup files, so that Pure uses it for inlined C/C++/Fortran code:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">export PURE_CC=llvm-gcc
+export PURE_CXX=llvm-g++
+export PURE_FC=llvm-gfortran</code></pre></div>
+<h3 id="dragonegg">dragonegg</h3>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> LEGACY ALERT: This section applies to LLVM versions up to 3.3 and gcc 4.5 or 4.6. If you’re running a newer LLVM and/or gcc version, you should use <a href="#clang">clang</a> instead.</p>
+</blockquote>
+<hr />
+<p>Instead of llvm-gcc it’s also possible to use “DragonEgg” (<a href="http://dragonegg.llvm.org/" class="uri">http://dragonegg.llvm.org/</a>). This is provided in the form of a gcc plugin which, if you have one of the supported gcc versions, readily plugs into your existing system compiler.</p>
+<p>To install DragonEgg, make sure that you have the mpc and gcc plugin development files installed (packages <code>mpc-dev</code> and <code>gcc-plugin-dev</code> on Ubuntu). Then, after unpacking the dragonegg source tarball or downloading the svn sources, install dragonegg as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ make
+$ sudo cp dragonegg.so `gcc -print-file-name=plugin`</code></pre></div>
+<p>Finally, add something like the following lines to your shell startup files, so that Pure uses gcc+dragonegg for all inlined C/C++/Fortran code:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">export PURE_CC=<span class="st">&quot;gcc -fplugin=dragonegg&quot;</span>
+export PURE_CXX=<span class="st">&quot;g++ -fplugin=dragonegg&quot;</span>
+export PURE_FC=<span class="st">&quot;gfortran -fplugin=dragonegg&quot;</span></code></pre></div>
+<p>(Please also check the README file included in the dragonegg package for further installation and usage instructions. Also, examples/bitcode/Makefile in the Pure distribution demonstrates how to use gcc+dragonegg as an external compiler to generate LLVM bitcode from the command line.)</p>
+<h2 id="installing-from-development-sources">Installing From Development Sources</h2>
+<p>The latest development version of Pure is available in its Git source code repository. You can browse the repository at:</p>
+<p><a href="https://bitbucket.org/purelang/pure-lang" class="uri">https://bitbucket.org/purelang/pure-lang</a></p>
+<p>(You’ll notice that the repository also contains various addon modules. See the pure subdirectory for the latest sources of the Pure interpreter itself.)</p>
+<p>Note that if you’re going with the development sources, you’ll also need fairly recent versions of autoconf, flex and bison (autoconf 2.63, flex 2.5.31 and bison 2.3 or later should be ok).</p>
+<p>To compile from the development sources, replace steps 4 and 5 above with:</p>
+<p><strong>Step 4’.</strong> Fetch the latest sources from the repository:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ git clone https:<span class="co">//bitbucket.org/purelang/pure-lang</span></code></pre></div>
+<p>This clones the repository and puts it into the pure-lang subdirectory in the current directory. This step needs to be done only once; once you’ve cloned the repository, you can update it to the latest revision at any time by running <code>git pull</code>.</p>
+<p><strong>Step 5’.</strong> Configure, build and install Pure.</p>
+<p>This is pretty much the same as with the distribution tarball, except that you need to run <code>autoreconf</code> once to generate the configure script which isn’t included in the source repository.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ cd pure-lang/pure
+$ autoreconf
+$ ./configure --enable-release
+$ make
+$ sudo make install</code></pre></div>
+<p>(Don’t forget to also run <code>make check</code> to make sure that the interpreter is in good working condition.)</p>
+<p><strong>Step 6’.</strong> In addition, you can also build and install a recent snapshot of the documentation from the repository.</p>
+<p>This can be a bit tricky to set up, please check the FAQ wiki page on the Pure website for details.</p>
+<p>Alternatively, a ready-made recent snapshot of the documentation in html and pdf formats is also available in its own repository, which can be cloned as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ git clone https:<span class="co">//bitbucket.org/puredocs/puredocs.bitbucket.org.git</span></code></pre></div>
+<h2 id="other-build-and-installation-options">Other Build and Installation Options</h2>
+<p>The Pure configure script takes a few options which enable you to change the installation path and control a number of other build options. Moreover, there are some environment variables which also affect compilation and installation.</p>
+<p>Use <code>./configure --help</code> to print a summary of the provided options.</p>
+<h3 id="installation-path">Installation Path</h3>
+<p>By default, the pure program, the runtime.h header file, the runtime library, the pure.pc file and the library scripts are installed in /usr/local/bin, /usr/local/include/pure, /usr/local/lib, /usr/local/lib/pkg-config and /usr/local/lib/pure, respectively. This can be changed by specifying the desired installation prefix with the <code>--prefix</code> option, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release --<span class="kw">prefix</span>=/usr</code></pre></div>
+<p>In addition, the <code>DESTDIR</code> variable enables package maintainers to install Pure into a special “staging” directory, so that installed files can be packaged more easily. If set at installation time, <code>DESTDIR</code> will be used as an additional prefix to all installation paths. For instance, the following command will put all installed files into the tmp-root subdirectory of the current directory:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ make install DESTDIR=tmp-root</code></pre></div>
+<p>Note that if you install Pure into a non-standard location, you may have to set <code>LD_LIBRARY_PATH</code> or a similar variable so that the dynamic linker finds the Pure runtime library, libpure.so. Also, when compiling and linking addon modules you might have to set <code>C_INCLUDE_PATH</code> and <code>LIBRARY_PATH</code> (or similar) so that the header and library of the runtime library is found. (This will become unnecessary once all addon modules have been converted to use pkg-config, see below, but this isn’t the case right now.) On some systems this is even necessary with the default prefix, because /usr/local is not always in the default search paths.</p>
+<p>As of Pure 0.47, Pure also installs a pkg-config file which may be queried by module Makefiles to determine how to build a module and link it against the Pure runtime library; see <a href="#pkg-config-support">Pkg-config Support</a> below. This file will usually be installed into <code>$(prefix)/lib/pkg-config</code>. Again, if you use a non-standard installation prefix, you will have to tell pkg-config about the location of the file by adjusting the <code>PKG_CONFIG_PATH</code> environment variable accordingly, see pkg-config(1) for details.</p>
+<h3 id="tool-prefix-and-llvm-version">Tool Prefix and LLVM Version</h3>
+<p>On some systems the LLVM toolchain may be located in special directories not on the <code>PATH</code>, so that different LLVM installations can coexist on the same system. This is often the case, e.g., if LLVM was installed from a binary package.</p>
+<p>To deal with this situation, the configure script distributed with Pure 0.55 and later allows you to specify the directory with the LLVM toolchain using the <code>--with-tool-prefix</code> configure option. E.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --<span class="kw">with</span>-tool-<span class="kw">prefix</span>=/usr/lib/llvm-<span class="dv">3.4</span>/bin</code></pre></div>
+<p>This is also the directory where configure will first look for the <code>llvm-config</code> script, so that the proper LLVM version is selected for compilation.</p>
+<p>You can also specify the desired LLVM version with the <code>--with-llvm-version</code> option. This causes configure to look for the <code>llvm-config-x.y</code> script on the <code>PATH</code>, where <code>x.y</code> is the specified version number. If this option isn’t specified, the default is to look for the <code>llvm-config</code> script on the <code>PATH</code> (this should always work if you installed LLVM from source).</p>
+<p>If none of these yield a usable <code>llvm-config</code> script, configure will try to locate an <code>llvm-config-x.y</code> script by iterating through some recent LLVM releases, preferring the latest version if found. If this fails, too, configure gives up and prints an error message indicating that it couldn’t locate a suitable LLVM installation. This is a fatal error, so if you see this then you’ll either have to install LLVM yourself, or try to locate a suitable LLVM installation and tell configure about it, using the options explained above.</p>
+<h3 id="versioned-installations">Versioned Installations</h3>
+<p>Pure fully supports parallel installations of different versions of the interpreter. To enable this you have to specify <code>--enable-versioned</code> when running configure:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release --enable-versioned</code></pre></div>
+<p>When this option is enabled, bin/pure, include/pure, lib/pure, lib/pkg-config/pure.pc and man/man1/pure.1 are actually symbolic links to the current version (bin/pure-x.y, include/pure-x.y etc., where x.y is the version number). If you install a new version of the interpreter, the old version remains available as pure-x.y.</p>
+<p>Note that versioned and unversioned installations don’t mix very well, it’s either one or the other. If you already have an unversioned install of Pure, you must first remove it before switching to the versioned scheme.</p>
+<p>It <em>is</em> possible, however, to have versioned and unversioned installations under different installation prefixes. For instance, having an unversioned install under /usr and several versioned installations under /usr/local is ok.</p>
+<h3 id="separate-build-directory">Separate Build Directory</h3>
+<p>It is possible to build Pure in a separate directory, in order to keep your source tree tidy and clean, or to build multiple versions of the interpreter with different compilation flags from the same source tree.</p>
+<p>To these ends, just cd to the build directory and run configure and make there, e.g. (this assumes that you start from the source directory):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ mkdir BUILD
+$ cd BUILD
+$ ../configure --enable-release
+$ make</code></pre></div>
+<h3 id="compiler-and-linker-options">Compiler and Linker Options</h3>
+<p>There are a number of environment variables you can set on the configure command line if you need special compiler or linker options:</p>
+<ul>
+<li><code>CPPFLAGS</code>: preprocessor options (<code>-I</code>, <code>-D</code>, etc.)</li>
+<li><code>CXXFLAGS</code>: C++ compilation options (<code>-g</code>, <code>-O</code>, etc.)</li>
+<li><code>CFLAGS</code>: C compilation options (<code>-g</code>, <code>-O</code>, etc.)</li>
+<li><code>LDFLAGS</code>: linker flags (<code>-s</code>, <code>-L</code>, etc.)</li>
+<li><code>LIBS</code>: additional objects and libraries (<code>-lfoo</code>, <code>bar.o</code>, etc.)</li>
+</ul>
+<p>(The <code>CFLAGS</code> variable is only used to build the pure_main.o module which is linked into batch-compiled executables, see “Batch Compilation” in the manual for details.)</p>
+<p>For instance, the following configure command changes the default compilation options to <code>-g</code> and adds /opt/include and /opt/lib to the include and library search paths, respectively:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure CPPFLAGS=-I/opt/include CXXFLAGS=-g LDFLAGS=-L/opt/lib</code></pre></div>
+<p>More details on the build and installation process and other available targets and options can be found in the Makefile.</p>
+<h3 id="predefined-build-types">Predefined Build Types</h3>
+<p>For convenience, configure provides some options to set up <code>CPPFLAGS</code> and <code>CXXFLAGS</code> for various build types. Please note that most of these options assume gcc right now, so if you use another compiler you’ll probably have to set up compilation flags manually by using the variables described in the previous section instead.</p>
+<p>The default build includes debugging information and additional runtime checks which provide diagnostics useful for maintainers if anything is wrong with the interpreter. It is also noticeably slower than the “release” build. If you want to enjoy maximum performance, you should configure Pure for a release build as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release</code></pre></div>
+<p>This disables all runtime checks and debugging information in the interpreter, and uses a higher optimization level (<code>-O3</code>), making the interpreter go substantially faster on most systems.</p>
+<p>To get smaller executables with either the default or the release build, add <code>LDFLAGS=-s</code> to the configure command (gcc only, other compilers may provide a similar flag or a separate command to strip compiled executables and libraries).</p>
+<p>You can also do a “debug” build as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-debug</code></pre></div>
+<p>This is like the default build, but disables all optimizations, so compilation is faster but the compiled interpreter is <em>much</em> slower than even the default build. Hence this build is only recommended for debugging purposes.</p>
+<p>You can combine all build types with the <code>--enable-warnings</code> option to enable compiler warnings (<code>-Wall</code>):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release --enable-warnings</code></pre></div>
+<p>This option is useful to check the interpreter sources for questionable constructs which might actually be bugs. However, for some older gcc versions it spits out lots of bogus warnings, so it is not enabled by default.</p>
+<p>In addition, there is an option to build a “monolithic” interpreter which is linked statically instead of producing a separate runtime library:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release --disable-shared</code></pre></div>
+<p>We strongly discourage from using this option, since it drastically increases the size of the executable and thereby the memory footprint of the interpreter if several interpreter processes are running simultaneously. It also makes it impossible to use batch compilation and addon modules which require the runtime library. We only provide this as a workaround for older LLVM versions which cannot be linked into shared libraries on some systems.</p>
+<p>In general, the build options can be combined freely with the variables described in the previous section, except that <code>--enable-release</code> and <code>--enable-debug</code> will always override the debugging (<code>-g</code>) and optimization (<code>-O</code>) options in <code>CFLAGS</code> and <code>CXXFLAGS</code>. Other options will be preserved. For instance, the following configures for a release build, but sets the warning flags manually and enables C++0x support in gcc:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ ./configure --enable-release CFLAGS=<span class="st">&quot;-Wall&quot;</span> CXXFLAGS=<span class="st">&quot;-std=c++0x -Wall&quot;</span></code></pre></div>
+<p>If you mix build types and manual compilation flags in this way then it’s always a good idea to check the resulting compilation options printed out at the end of the <code>configure</code> run. If <code>configure</code> seems to get things wrong then you’ll have to set up all required flags manually instead.</p>
+<h3 id="running-pure-from-the-source-directory">Running Pure From The Source Directory</h3>
+<p>After your build is done, you should also run <code>make check</code> to verify that your Pure interpreter works correctly. This can be done without installing the software. In fact, there’s no need to install the interpreter at all if you just want to take it for a test drive, you can simply run it from the source directory, if you set up the following environment variables (this assumes that you built Pure in the source directory; when using a separate build directory, you’ll have to change the paths accordingly):</p>
+<dl>
+<dt><code>LD_LIBRARY_PATH=.</code></dt>
+<dd><p>This is required on Linux systems so that libpure.so is found. Other systems may require an analogous setting, or none at all.</p>
+</dd>
+<dt><code>PURELIB=./lib</code></dt>
+<dd><p>This is required on all systems so that the interpreter finds the prelude and other library scripts.</p>
+</dd>
+</dl>
+<p>After that you should be able to run the Pure interpreter from the source directory, by typing <code>./pure</code>.</p>
+<h3 id="other-targets">Other Targets</h3>
+<p>The Makefile supports the usual <code>clean</code> and <code>distclean</code> targets, and <code>realclean</code> will remove all files created by the maintainer, including test logs and C++ source files generated from Flex and Bison grammars. (Only use the latter if you know what you are doing, since it will remove files which require special tools to be regenerated.)</p>
+<p>Maintainers can roll distribution tarballs with <code>make dist</code> and <code>make distcheck</code> (the latter is like <code>make dist</code>, but also does a test build and installation to verify that your tarball contains all needed bits and pieces).</p>
+<p>Last but not least, if you modify configure.ac for some reason then you can regenerate the configure script and config.h.in with <code>make config</code>. This needs autoconf, of course. (The distribution was prepared using autoconf 2.69.)</p>
+<h3 id="pkg-config-support">Pkg-config Support</h3>
+<p>Pure 0.47 and later install a pkg-config file (pure.pc) which lets addon modules query the installed Pure for the information needed to build and install a module. Besides the usual information provided by pkg-config, such as <code>--cflags</code> and <code>--libs</code> (which are set up so that the Pure runtime header and library will be found), pure.pc also defines a few additional variables which can be queried with pkg-config’s <code>--variable</code> option:</p>
+<ul>
+<li><code>DLL</code>: shared library extension for the host platform</li>
+<li><code>PIC</code>: position-independent code flag if required on the host platform</li>
+<li><code>shared</code>: flag used to create shared libraries on the host platform</li>
+<li><code>extraflags</code>: same as <code>$shared $PIC</code></li>
+</ul>
+<p>Together with the <code>libdir</code> variable, this provides you with the information needed to build and install most Pure modules without much ado. As of Pure 0.55, pure.pc also defines the <code>tool_prefix</code> variable which gives the LLVM toolchain prefix specified at configure time, cf. <a href="#tool-prefix-and-llvm-version">Tool Prefix and LLVM Version</a>.</p>
+<p>If you want to use this information, you need to have pkg-config installed, see <a href="http://pkg-config.freedesktop.org" class="uri">http://pkg-config.freedesktop.org</a>. This program should be readily available on most Unix-like platforms, and a Windows version is available as well. An example illustrating the use of pkg-config can be found in the examples/hellomod directory in the sources.</p>
+<h2 id="system-notes">System Notes</h2>
+<p>Pure is known to work on recent Linux, Mac OS X and BSD versions under x86, x86-64 (AMD/Intel x86, 32 and 64 bit) and ppc (PowerPC), as well as on MS Windows (AMD/Intel x86, 32 bit). There are a few known quirks for specific platforms and/or LLVM versions which are discussed below, along with corresponding workarounds. As a fairly demanding LLVM application, Pure is also known to shake the bugs out of LLVM, so if you run into any LLVM-related issues, Pure isn’t necessarily the culprit! However, most of the bugs have been ironed out over the years, so Pure should work fine with any recent LLVM version (3.4 or later).</p>
+<h3 id="all-platforms">All Platforms</h3>
+<p>Compiling the default and release versions using gcc with all warnings turned on (<code>-Wall</code>) might give you the warning “dereferencing type-punned pointer will break strict-aliasing rules” at some point in util.cc with some older gcc versions. This is harmless and can be ignored.</p>
+<p>If your Pure program runs out of stack space, the interpreter may segfault. While the Pure interpreter does advisory stack checks to avoid that kind of mishap and generate an orderly exception instead, it has no way of knowing the actual stack size available to programs on your system. So if you’re getting segfaults due to stack overflows then you’ll have to set an appropriate stack size limit manually with the <a href="#envvar-PURE_STACK"><code>PURE_STACK</code></a> environment variable; see the Pure manual for details.</p>
+<h3 id="llvm-2.5">LLVM 2.5</h3>
+<p>The LLVM 2.5 JIT is broken on x86-32 if it is built with <code>--enable-pic</code>, so make sure you do <em>not</em> use this option when compiling LLVM &lt;=2.5 on 32 bit systems. On the other hand, building the Pure runtime library (libpure) on x86-64 systems <em>requires</em> that you configure LLVM 2.5 with <code>--enable-pic</code> so that the static LLVM libraries can be linked into the runtime library. With LLVM 2.6 and later, this option isn’t needed anymore.</p>
+<p>This LLVM version also has issues on PowerPC. Use LLVM 2.6 or later instead and check the notes on <a href="#powerpc">PowerPC</a> below.</p>
+<p>Please also note that LLVM 2.5 is the oldest LLVM version that we still support right now. If you’re still running this version (or any of the 2.x versions) then you should really upgrade. Newer LLVM versions offer substantial improvements in both compilation time and code quality. Support for LLVM versions older than 3.0 is likely to be dropped in future Pure releases.</p>
+<h3 id="llvm-3.3">LLVM 3.3</h3>
+<p>Reportedly the Pure batch compiler is broken when using LLVM 3.3 on Mac OS X. If you need the batch compiler then use either LLVM 3.2 or 3.4+ on OS X instead, these are known to work on that platform.</p>
+<h3 id="llvm-3.4">LLVM 3.4+</h3>
+<p>On Linux, the <code>llc</code> program from LLVM 3.4 and 3.5 is known to create native assembler (.s) code which doesn’t mangle assembler symbols as it used to be in earlier releases. When compiling Pure modules with the batch compiler, this results in native assembler code which can’t be compiled using the system assemblers. As a remedy, the batch compiler in Pure 0.61 and later now creates native object (.o) files directly using llc, without going through the native assembler stage.</p>
+<h3 id="llvm-3.6">LLVM 3.6+</h3>
+<p>Pure doesn’t work with LLVM versions 3.6 and beyond yet because these don’t include the “old” LLVM JIT any more. So until Pure gets ported to the new MCJIT, you will have to stick with LLVM 3.5. Fortunately, this version is still readily available on most platforms.</p>
+<h3 id="powerpc">PowerPC</h3>
+<p>(This hasn’t been checked in a <em>long</em> time, so this information may well be outdated.) You’ll need Pure &gt;= 0.35 and LLVM &gt;= 2.6. Also make sure that you always configure LLVM with <code>--disable-expensive-checks</code> and Pure with <code>--disable-fastcc</code>. With these settings Pure should work fine on ppc (tested on ppc32 running Fedora Core 11 and 12), but note that tail call optimization doesn’t work on this platform because of LLVM limitations.</p>
+<h3 id="linux">Linux</h3>
+<p>Linux is the primary development platform for this software, and the sources should build out of the box on all recent Linux distributions. Packages for various Linux distributions are also available, please check the Pure website for details.</p>
+<h3 id="mac-os-x">Mac OS X</h3>
+<p>Pure should build fine on recent OS X versions, and a port by Ryan Schmidt exists in the MacPorts collection, see <a href="http://www.macports.org/" class="uri">http://www.macports.org/</a>. If you install straight from the source, make sure that you use a recent LLVM version (LLVM 2.7 or later should work fine on all flavors of Intel Macs).</p>
+<p>Even if you compile Pure from source, we recommend installing LLVM and the other dependencies from MacPorts. In that case you’ll have to add a few options to the configure command so that the required header files, libraries and LLVM tools are found:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">./configure --enable-release --<span class="kw">prefix</span>=/opt/local \
+CPPFLAGS=-I/opt/local/include LDFLAGS=-L/opt/local/lib \
+--<span class="kw">with</span>-tool-<span class="kw">prefix</span>=/opt/local/libexec/llvm-<span class="dv">3.4</span>/bin</code></pre></div>
+<p>This assumes that your MacPorts installation lives under /opt/local and that you’re using LLVM 3.4; otherwise you’ll have to adjust the configure options accordingly.</p>
+<p>On really old Macs from the bygone PPC era you’ll have to be prepared to deal with all kinds of issues with compilers, LLVM toolchain etc. If you’re still using one of these, your best bet is to find an older port on MacPorts which works for your OS X version.</p>
+<h3 id="bsd">BSD</h3>
+<p>FreeBSD now offers a fairly extensive selection of Pure packages in their distribution.</p>
+<p>Compilation from source should also work fine on recent NetBSD and FreeBSD versions if you use Pure 0.33 or later. Also make sure that you install a recent port of LLVM which has the <code>--enable-optimized</code> flag enabled.</p>
+<p>Building Pure requires GNU make, thus you will have to use gmake instead of make. In addition to gmake, you’ll need recent versions of the following packages: perl5, flex, bison, gmp, mpfr and readline (or editline). Depending on your system, you might also have to set up some compiler and linker paths. E.g., the following reportedly does the trick on NetBSD:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">export C_INCLUDE_PATH=/usr/local/include:/usr/pkg/include
+export LIBRARY_PATH=/usr/local/lib:/usr/pkg/lib
+export LD_LIBRARY_PATH=/usr/pkg/lib:/usr/local/lib</code></pre></div>
+<h3 id="ms-windows">MS Windows</h3>
+<p>Thanks to Jiri Spitz’ perseverance, tireless testing and bug reports, the sources compile and run fine on Windows, using the Mingw port of the GNU C++ compiler and the MSYS environment from <a href="http://www.mingw.org/" class="uri">http://www.mingw.org/</a>. Just do the usual <code>./configure &amp;&amp; make &amp;&amp; make install</code>. You’ll need LLVM, of course (which builds with Mingw just fine), and a few additional libraries for which headers and precompiled binaries are available from the Pure website (<a href="http://purelang.bitbucket.org" class="uri">http://purelang.bitbucket.org</a>).</p>
+<p>However, the easiest way is to just go with the Pure MSI package available on the Pure website. This includes all required libraries and some shortcuts to run the Pure interpreter and read online documentation in html help format, as well as “PurePad”, an alternative GUI frontend for editing and running Pure scripts on Windows. The only limitation is that the binaries in this package still are for x86 (32 bit) only right now, but these do work fine on all recent 64 bit flavors of Windows (tested on Windows 7, 8 and 10).</p>
+</body>
+</html>

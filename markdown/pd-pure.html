@@ -1,0 +1,606 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pd-pure"></a></p>
+<h1 id="pd-pure-pd-loader-for-pure-scripts">pd-pure: Pd loader for Pure scripts</h1>
+<p>Version 0.24, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>This is a <a href="https://purelang.bitbucket.io/">Pure</a> “loader plugin” for <a href="http://puredata.info/">Pd</a>, Miller Puckette’s graphical dataflow programming system for realtime multimedia applications. If you are a Pd user, it lets you write external Pd objects in Pure, which is generally much more convenient and a lot more fun than having to code Pd externals in a comparatively low-level language such as C or C++. If you are a Pure user, it provides you with an alternative way to develop and run your Pure scripts in one of the best graphical dataflow environments available today.</p>
+<p>Pure certainly has its own learning curve, but once mastered, it makes programming many kinds of Pd objects a walk in the park. Its Pd interface is convenient to use and has livecoding support, i.e., the ability to reload Pure externals at any time while your Pd patch keeps running. Pure also offers a comprehensive library and many interfaces to third-party software useful for implementing Pd objects, such as <a href="http://www.octave.org/">Octave</a> and Grame’s <a href="http://faust.grame.fr/">Faust</a>.</p>
+<p>But pd-pure isn’t limited to just computer music and realtime multimedia programming, which are Pd’s hallmark applications. It also allows you to employ Pd as a graphical dataflow environment for developing and testing your Pure programs, leveraging Pd’s built-in facilities for creating graphical user interfaces for your application, while getting Pd’s sophisticated realtime multimedia capabilities for free.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> Pure is a <em>JIT</em> (“just in time”) <em>compiled</em> language which means that there may be some noticeable latencies when the embedded Pure runtime first loads your Pure scripts and compiles them on the fly. This shouldn’t be much of an issue on most contemporary hardware any more, and once the scripts <em>have</em> been loaded, they are executed very efficiently. Nevertheless, as a remedy it is also possible to <em>precompile</em> a collection of Pure objects to a binary external library which can be loaded quickly at startup with Pd’s <code>-lib</code> option. In addition, pd-pure 0.24+ offers the ability to preload Pure <em>source</em> scripts with the <code>-lib</code> option at startup, so that they don’t cause any more hiccups when the objects are instantiated later.</p>
+</blockquote>
+<hr />
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2009-2017 by Albert Graef. pd-pure is distributed under a 3-clause BSD-style license, please see the included COPYING file for details.</p>
+<h2 id="installation">Installation</h2>
+<p>You’ll need Pure 0.50+ and Pd 0.43+. We recommend using Pd versions 0.47.0 and above, since these offer substantial improvements in Pd’s “loader” functionality which pd-pure hooks into to provide Pure object creation.</p>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-0.24.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-0.24.tar.gz</a>.</p>
+<p>Usually, <code>make &amp;&amp; sudo make install</code> should do the trick. This will compile the external (you need to have GNU make, Pd and Pure installed to do that) and install it in the lib/pd/extra/pure directory.</p>
+<p>The Makefile tries to guess the installation prefix under which Pd is installed. If it guesses wrong, you can tell it the right prefix with <code>make prefix=/some/path</code>. Or you can specify the exact path of the lib/pd directory with <code>make pdlibdir=/some/path</code>; by default the Makefile assumes <code>$(prefix)/lib/pd</code>.</p>
+<p>It is also possible to specify an alternative flavor of Pd when building and installing the module, by adding a definition like <code>PD=pd-extended</code> to the <code>make</code> command line. This is known to work with <a href="http://puredata.info/downloads/pd-extended">pd-extended</a> and <a href="http://l2ork.music.vt.edu/main/?page_id=56">pd-l2ork</a>, two popular alternative Pd distributions available on the web, as well as <a href="">pd-l2ork</a>’s latest cross-platform version <a href="https://agraef.github.io/purr-data-intro/">purr-data</a>. (If you’re going with one of these, we recommend using <a href="https://agraef.github.io/purr-data-intro/">purr-data</a> since it has all the latest loader improvements.)</p>
+<p>The Makefile also tries to guess the host system type and Pure version, and set up some platform-specific things accordingly. If this doesn’t work for your system then you’ll have to edit the Makefile accordingly.</p>
+<p>MS Windows users please note that there’s a binary package in zip format available at the Pure website: <a href="https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-0.24-win32.zip" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-0.24-win32.zip</a>. You can simply drop the <code>pure</code> folder contained in the package into the <code>extra</code> folder of your Pd installation. In addition, you will also need an installation of the Pure interpreter itself; a corresponding Windows installer can be found in the <a href="https://bitbucket.org/purelang/pure-lang/downloads/">download section</a> of the Pure website as well (look for the latest pure-x.y.msi package).</p>
+<p>Mac users can find pd-pure and all its dependencies in <a href="http://www.macports.org/">MacPorts</a>. Please also check the <a href="https://bitbucket.org/purelang/pure-lang/wiki/PureOnMacOSX#markdown-header-pd-and-friends">Pure on Mac OS X</a> wiki page for details.</p>
+<h2 id="usage">Usage</h2>
+<p>After installation, you still have to tell Pd to load the Pure external at startup, either with the <code>-lib</code> option (<code>pd -lib pure</code>), or by specifying <code>pure</code> in Pd’s startup options. This setting can be saved so that the Pure loader is always available when you run Pd. Once the Pure loader has been activated, you should see a sign-on message like the following in the Pd main window, indicating that the external has been successfully loaded:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pd-pure <span class="dv">0.24</span> (pure-<span class="dv">0.64</span>) (c) <span class="dv">2009</span>-<span class="dv">2017</span> Albert Graef &lt;aggraef@gmail.com&gt;
+pd-pure: compiled for pd-<span class="dv">0.47</span> on Feb <span class="dv">21</span> <span class="dv">2017</span></code></pre></div>
+<p>Since version 0.12 pd-pure supports the definition of both <em>control</em> and <em>signal objects</em> in Pure. The latter are also known as “tilde” or “dsp objects” in Pd parlance; pd-pure follows the Pd convention in that these objects have a trailing tilde in their name. Signal objects are used primarily for processing audio signals, whereas control objects are employed for asynchronous message processing.</p>
+<p>Simple “one-off” control objects can be created with the <code>[pure]</code> class which takes the function to be evaluated as its argument. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">[pure (+<span class="dv">5</span>)]</code></pre></div>
+<p>This object takes numbers as inputs on its single inlet, adds 5 to them and outputs the result on its single outlet.</p>
+<p>Similarly, signal objects can be created with <code>[pure~]</code>. For instance, the following object processes incoming vectors of samples, multiplying each sample with 2:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">[pure~ map (*<span class="dv">2</span>)]</code></pre></div>
+<p>Note that in this case the object has actually two inlet/outlet pairs. The leftmost inlet/outlet pair is reserved for the processing of control messages (not used in this example), while the actual signal input and output can be found on the right.</p>
+<p>(Pure objects can also be configured to adjust the number of inlets and outlets. This will be described later.)</p>
+<p>The argument of <code>[pure]</code> and <code>[pure~]</code> can be any Pure expression (including local functions and variables, conditionals, etc.). We also refer to these as <em>anonymous</em> Pure objects. If an object is quite complicated or used several times in a patch, it is more convenient to implement it as a <em>named</em> object instead. To these ends, the object function is stored in a corresponding Pure script named after the object. For instance, we might put the following <code>add</code> function into a script named add.pure:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">add x y = x+y;</code></pre></div>
+<p>Now we can use the following object in a Pd patch:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">[add <span class="dv">5</span>]</code></pre></div>
+<p>The Pure loader then recognizes <code>add</code> as an instance of the object implemented by the add.pure file and loads the script into the Pure interpreter. The creation parameter <code>5</code> is passed as the first argument <code>x</code> of the <code>add</code> function in this example, while the <code>y</code> argument comes from the object’s inlet. The function performed by this object is thus the same as with <code>[pure (+5)]</code> above.</p>
+<p>More examples can be found in the pure-help.pd and pure~-help.pd patches. These can also be accessed in Pd by right-clicking on any Pure object and selecting the <code>Help</code> option. (Recent pd-pure versions also allow you to right-click and select <code>Open</code> to open the script of a named Pure object in a text editor, provided that your Pd version supports the <code>menu-open</code> command. Most reasonably recent Pd versions and flavors do.)</p>
+<p>In the following section, we first discuss in detail how <a href="#control-objects">control objects</a> are defined and used. After that, the necessary adjustments for implementing <a href="#signal-objects">signal objects</a> are explained. Some advanced uses of pd-pure are described under <a href="#advanced-features">Advanced Features</a>.</p>
+<h2 id="control-objects">Control Objects</h2>
+<p>Basically, to implement a Pd control object named <code>foo</code>, all you have to do is supply a Pure script named foo.pure which defines a function <code>foo</code> (and anything else that you might need to define the function). This function is also called the <em>object function</em>. You can put the script containing the object function either in the same directory as the Pd patch in which you want to use the <code>foo</code> object, or anywhere on Pd’s search path. (The latter is useful if the object is to be used in several patches located in different subdirectories. Also note that the former requires that you already <em>saved</em> the Pd patch in the directory containing the foo.pure script <em>before</em> you create a <code>foo</code> object in it, so that the Pure loader finds the script.)</p>
+<p>The script will be executed once, at the time the first object with the given name is created, and will be executed in the directory where it is located. Thus, if the script needs to import other Pure scripts or load some data files, you can put these into the same directory so that the object script can find them.</p>
+<p>The <code>foo</code> function gets evaluated at object creation time, receiving any additional parameters the object is created with. The resulting Pure expression should be another function which is executed at runtime, passing Pd messages from the inlets as parameters, and routing the function results to the outlets of the object. This two-stage definition process is useful because it allows special processing (such as initialization of required data structures) to be done at object creation time. However, the result of evaluating <code>foo</code> can also just be <code>foo</code> itself if no such special processing is needed. If we need to distinguish these two stages, we also call the two functions the <em>creation</em> and the <em>runtime</em> function of the object, respectively.</p>
+<p>Pd messages are translated to corresponding Pure expressions and vice versa in a straightforward fashion. Special support is provided for converting between the natural Pd and Pure representations of floating point numbers, symbols and lists. The following table summarizes the available conversions.</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Message Type</th>
+<th align="left">Pd</th>
+<th align="left">Pure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">symbol</td>
+<td align="left"><code>foo</code></td>
+<td align="left"><code>foo</code></td>
+</tr>
+<tr class="even">
+<td align="left">string</td>
+<td align="left"><code>a&amp;b</code></td>
+<td align="left"><code>&quot;a&amp;b&quot;</code></td>
+</tr>
+<tr class="odd">
+<td align="left">float</td>
+<td align="left"><code>float 1.23</code></td>
+<td align="left"><code>1.23</code></td>
+</tr>
+<tr class="even">
+<td align="left">list</td>
+<td align="left"><code>list 1 2 3</code></td>
+<td align="left"><code>[1.0,2.0,3.0]</code></td>
+</tr>
+<tr class="odd">
+<td align="left">other</td>
+<td align="left"><code>foo a 2 3</code></td>
+<td align="left"><code>foo a 2.0 3.0</code></td>
+</tr>
+</tbody>
+</table>
+<p>Note that Pd symbols which are no valid Pure symbols become strings in Pure. Conversely, both symbols and strings in Pure are mapped to corresponding Pd symbols. Pure (machine) integers and floating point values both become <code>float</code> messages in Pd. Pd list messages are translated to Pure list values, while other aggregate messages are mapped to Pure applications (and vice versa).</p>
+<h3 id="simple-objects">Simple Objects</h3>
+<p>By default, a Pure object has just one inlet and one outlet and thus acts like a simple function with no internal state. For instance, the following object accepts Pd <code>float</code> messages and adds 5 to each received value:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">add5 x = x+<span class="dv">5</span>;</code></pre></div>
+<p>In the Pd patch each <code>[add5]</code> object then has a single inlet supplying parameters and a single outlet for results of the add5 function.</p>
+<h3 id="creation-arguments">Creation Arguments</h3>
+<p>You can parameterize an object with creation arguments, which are passed to the Pure function at object creation time. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">add x y = x+y;</code></pre></div>
+<p>This object can then be invoked, e.g., as <code>[add 5]</code> in the Pd patch to supply the needed creation argument <code>x</code>. Please note that only a fixed number of creation arguments can be processed this way. However, the Pure loader also provides a mechanism to handle a variable number of creation arguments, see <a href="#variadic-creation-functions">Variadic Creation Functions</a> below.</p>
+<h3 id="the-pure-object">The [pure] Object</h3>
+<p>For simple kinds of objects like the above, the Pure loader provides the generic <code>[pure]</code> object as a quick means to create Pure control objects without actually preparing a script file. The creation parameter of <code>[pure]</code> is the object function. This can be a predefined Pure function, or you can define it on the fly in a <code>with</code> clause. You can also just load additional script files defining the functions you use with <code>[pure]</code>; see <a href="#controlling-the-runtime">Controlling the Runtime</a> and <a href="#loading-script-files-at-startup">Loading Script Files at Startup</a> for details.</p>
+<p>For instance, <code>[pure succ]</code> uses the predefined Pure function <code>succ</code> which adds 1 to its input, while the object <code>[pure add 5 with add x y = x+y end]</code> produces the same results as the <code>[add 5]</code> object defined using a separate add.pure script in the previous section. You can also generate constant values that way. E.g., the object <code>[pure cst 1.618]</code> responds to any message (such as <code>bang</code>) by producing the constant value 1.618, while the object <code>[pure cst [1..10]]</code> yields the constant list containing the numbers 1..10.</p>
+<h3 id="configuring-inlets-and-outlets">Configuring Inlets and Outlets</h3>
+<p>To create an object with multiple inlets and outlets for control messages, the object creation function must return the desired numbers of inlets and outlets, along with a second function to be applied at runtime, as a tuple <code>n,m,foo</code>. The input arguments to the runtime function as well as the corresponding function results are then encoded as pairs <code>k,val</code> where <code>k</code> denotes the inlet or outlet index. (Note that the <code>k</code> index is provided only if there actually is more than one inlet. Also, the outlet index is assumed to be zero if none is specified, so that it can be omitted if there’s only one outlet.)</p>
+<p>For instance, the following object, invoked as <code>[cross]</code> in the Pd patch, has two inlets and two outlets and routes messages from the left inlet to the right outlet and vice versa:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">cross = <span class="dv">2</span>,<span class="dv">2</span>,cross <span class="kw">with</span> cross (k,x) = (<span class="dv">1</span>-k,x) <span class="kw">end</span>;</code></pre></div>
+<p>You can also emit multiple messages, possibly to different outlets, in one go. These must be encoded as Pure vectors (or matrices) of values or <code>index,value</code> pairs, which are emitted in the order in which they are written. E.g., the following <code>[fan]</code> object implements an “n-fan” which routes its input to <code>n</code> outlets simultaneously:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">fan n = <span class="dv">1</span>,n,fan <span class="kw">with</span> fan x = reverse {k,x | k = <span class="dv">0</span>..n-<span class="dv">1</span>} <span class="kw">end</span>;</code></pre></div>
+<p>(Note that, because of the use of <code>reverse</code>, the <code>n</code> outlets are served in right-to-left order here. This is not strictly necessary, but matches the Pd convention.)</p>
+<p>Another example is the following <code>[dup]</code> object with a single inlet and outlet, which just sends out each received message twice:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">dup x = {x,x};</code></pre></div>
+<p>Note that this is different from the following, which outputs a list value to the outlet instead:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">dup2 x = [x,x];</code></pre></div>
+<p>(Also, please note that this behaviour is new in pd-pure 0.14. Previously, a list return value by itself would output multiple values instead. However, this made it very awkward to deal with Pd list values in pd-pure, and so as of pd-pure 0.14 Pure matrices must now be used to output multiple values.)</p>
+<p>An object can also just “swallow” messages and generate no output at all. To these ends, make the object return either an empty vector <code>{}</code> or the empty tuple <code>()</code>. (Note that, in contrast, returning the empty list <code>[]</code> does send a value back to Pd, namely an empty list value.) For instance, the following object <code>[echo]</code> implements a sink which just prints received messages on standard output, which is useful for debugging purposes:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> system;
+echo x = () <span class="kw">when</span> puts (str x) <span class="kw">end</span>;</code></pre></div>
+<p>You could also implement this object as follows, by just removing the superflous outlet (in this case all return values from the function will be ignored anyway):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> system;
+echo = <span class="dv">1</span>,<span class="dv">0</span>,puts.str;</code></pre></div>
+<h3 id="variadic-creation-functions">Variadic Creation Functions</h3>
+<p>Sometimes you may wish to implement an object which accepts a variable number of creation arguments. To these ends, the creation function <code>foo</code> may return an application of the form <code>varargs bar</code>. In this case, the function <code>bar</code> becomes the actual object creation function which is applied to a single argument, the list of all supplied creation arguments. For instance, if you invoke <code>foo</code> through an object like <code>[foo a b c]</code> in a patch, the loader would then create the object by calling <code>bar [a,b,c]</code> instead. Likewise, if the object gets created without any arguments at all, i.e., <code>[foo]</code>, then <code>bar</code> would be called as <code>bar []</code>. The function <code>bar</code> may then be used as the runtime function of the object, or it may yield the object function to be used, along with the desired number of inlets and outlets, as described in the previous subsection. This makes it possible to configure the inlets and outlets of the object according to the number and values of the supplied creation arguments, pretty much like some of the built-in Pd objects do, such as <code>pack</code> and <code>sel</code>.</p>
+<p>For instance, here is how you could implement something like Pd’s built-in <code>sel</code> object in Pure. The object compares its input against a number of values given as creation arguments, and bangs the corresponding outlet if it is found, or passes on the input on the rightmost outlet otherwise:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">mysel = varargs mysel <span class="kw">with</span>
+  mysel xs = <span class="dv">1</span>,#xs+<span class="dv">1</span>,mysel <span class="kw">with</span>
+    mysel x = i,bang <span class="kw">if</span> i&lt;#xs <span class="kw">when</span> i = #takewhile (~==x) xs <span class="kw">end</span>;
+            = #xs,x <span class="kw">otherwise</span>;
+  <span class="kw">end</span>;
+<span class="kw">end</span>;</code></pre></div>
+<p>Note that the runtime function is the innermost local <code>mysel</code> function (at line 3 in the example). The outermost local <code>mysel</code> function (at line 2) is the actual creation function which gets invoked by the loader on the list of all creation arguments; here it yields the number of inlets and outlets (where the latter depends on the number of creation arguments) along with the runtime function. You can invoke this object as, e.g., <code>[mysel a b c]</code>, in which case there will be four outlets, one for each given value and one for the rightmost “default” outlet.</p>
+<h3 id="local-state">Local State</h3>
+<p>Local state can be kept in Pure reference values. For instance, the following <code>[mycounter]</code> object produces the next counter value when receiving a <code>bang</code> message:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">nonfix</span> bang;
+mycounter = next (ref <span class="dv">0</span>) <span class="kw">with</span>
+  next r bang = put r (get r+<span class="dv">1</span>);
+  next _ _    = () <span class="kw">otherwise</span>;
+<span class="kw">end</span>;</code></pre></div>
+<p>Note that the state is kept as an additional first parameter to the local function <code>next</code> here. Alternatively, you can also make the state a local variable of <code>mycounter</code>:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">nonfix</span> bang;
+mycounter = next <span class="kw">with</span>
+  next bang = put r (get r+<span class="dv">1</span>);
+  next _    = () <span class="kw">otherwise</span>;
+<span class="kw">end</span> <span class="kw">when</span> r = ref <span class="dv">0</span> <span class="kw">end</span>;</code></pre></div>
+<h2 id="signal-objects">Signal Objects</h2>
+<p>If the name of a Pure object (i.e., the basename of the corresponding Pure script) ends with the <code>~</code> character, pd-pure assumes that it denotes a signal object whose primary purpose is to process sample data. The basic setup is similar to the case of control objects, with the following differences:</p>
+<ul>
+<li>The object function for a signal object <code>xyz~</code> is named <code>xyz_dsp</code> (rather than <code>xyz</code>). The function is defined in the <code>xyz~.pure</code> script file, which must be located in the same directory as the Pd patch or anywhere on Pd’s search path.</li>
+<li>To keep things simple, a Pure signal object is always equipped with exactly one control inlet and one control outlet, which are the leftmost inlet and outlet of the object. These can be used to process control messages in the usual fashion, in addition to the audio processing performed by the object.</li>
+<li>Any additional inlets and outlets of the object are signal inlets and outlets. By default, one signal inlet/outlet pair will be provided. Configuring a custom number of signal inlets and outlets works as with control objects. In this case the object creation function must return a triple <code>n,m,foo</code> where <code>n</code> and <code>m</code> are the desired number of signal inlets and outlets, respectively, and <code>foo</code> is the actual processing function to be invoked at runtime.</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> pd-pure’s convention of placing the control inlet/outlet pair of a signal object on the left is somewhat at odds with most other signal objects in Pd, which typically have a (main) signal inlet/outlet on the left and the control inlets and outlets on the right. However, we think that this kind of setup makes the most sense for Pure signal objects, since the control inlet/outlet pair will always be there in the same position, whereas the signal inlets and outlets may vary (and might actually not be present at all, e.g., if the sole purpose of a signal object is to have some code executed for each “dsp tick”).</p>
+</blockquote>
+<hr />
+<p>Whenever Pd has audio processing enabled, the object function is invoked with one block of sample data for each iteration of Pd’s audio loop. The sample data is encoded as a double matrix which has one row for each signal inlet of the object; row 0 holds the sample data for the first signal inlet, row 1 the sample data for the second signal inlet, etc. The row size corresponds to Pd’s <em>block size</em> which indicates how many samples per signal connection is processed in one go for each iteration of the audio loop. (Usually the default block size is 64, but this can be changed with Pd’s <code>-blocksize</code> option and also on a per-window basis using the <code>block~</code> object, see the Pd documentation for details.) Note that the input matrix will have zero rows if the object has zero signal inlets, in which case the row size of the matrix (as reported by the <a href="purelib.html#dim"><code>dim</code></a> function) still indicates the block size.</p>
+<p>When invoked with a signal matrix as argument, the object function should return another double matrix with the resulting sample data for the signal outlets of the object, which normally has one row per outlet and the same row size as the input matrix. (A lack or surplus of samples in the output matrix is handled gracefully, however. Missing samples are filled with zeros, while extra samples are silently ignored.)</p>
+<p>For instance, here’s a simple object with the default single signal inlet/outlet pair (in addition to the leftmost control inlet/outlet pair, which isn’t used in this example). This object just multiplies its input signal by 2:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">mul2_dsp x::<span class="dt">matrix</span> = map (*<span class="dv">2</span>) x;</code></pre></div>
+<p>This code would then be placed into a script file named <code>mul2~.dsp</code> and invoked in Pd as an object of the form <code>[mul2~]</code>.</p>
+<p>As with control objects, there’s a shortcut to create simple objects like these without preparing a script file, using the built-in <code>[pure~]</code> object. Thus the dsp function in the previous example could also be implemented using an object of the form <code>[pure~ map (*2)]</code> (which uses the same function, albeit in curried form).</p>
+<p>Creation parameters can also be used in the same way as with control objects. The following object is to be invoked in Pd as <code>[mul~ f]</code> where <code>f</code> is the desired gain factor.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">mul_dsp f::<span class="dt">double</span> x::<span class="dt">matrix</span> = map (*f) x;</code></pre></div>
+<p>Next, let’s try a custom number of signal inlets and outlets. The following object has two signal inlets and one signal outlet. Like Pd’s built-in <code>[*~]</code> object, it multiplies the two input signals, producing an amplitude (or ring) modulation effect:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">sigmul_dsp = <span class="dv">2</span>,<span class="dv">1</span>,sigmul <span class="kw">with</span>
+  sigmul x::<span class="dt">matrix</span> = zipwith (*) (row x <span class="dv">0</span>) (row x <span class="dv">1</span>);
+<span class="kw">end</span>;</code></pre></div>
+<p>Here’s another example which takes no inputs and produces one output signal, a random wave (i.e., white noise). Note the use of the <a href="purelib.html#dim"><code>dim</code></a> function to determine the number of samples to be generated for each block.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">double</span> genrand_real1() = random1;
+randomwave1_dsp = <span class="dv">0</span>,<span class="dv">1</span>,randomwave <span class="kw">with</span>
+  randomwave in::<span class="dt">matrix</span> = {random | i=<span class="dv">1</span>..n} <span class="kw">when</span> _,n = dim in <span class="kw">end</span>;
+  random = random1*<span class="dv">2</span>-<span class="dv">1</span>;
+<span class="kw">end</span>;</code></pre></div>
+<p>Control messages for the control outlet of the object may be added by returning a pair <code>sig,msg</code> where <code>sig</code> is the output signal matrix and <code>msg</code> is a single control message or vector of such messages (using the same format as with control objects). The signal matrix can also be omitted if no signal output is needed (unless the control data takes the form of a double matrix, which would be interpreted as signal data; in such a case you’d have to specify an empty signal matrix instead). The object function may also return <code>()</code> if neither signal nor control output is required. (This may be the case, e.g., for dsps which just analyze the incoming signal data and store the results somewhere for later retrieval.)</p>
+<p>Signal objects can also process control messages and generate responses on the leftmost inlet/outlet pair as usual. This is commonly used to set and retrieve various control parameters used or generated by the audio processing part of the object.</p>
+<p>For instance, here is a signal object which plays back a soundfile using the <a href="pure-audio.html#module-sndfile">sndfile</a> module (cf. <a href="pure-audio.html">pure-audio</a>). The object function reads the entire file (whose name is passed as a creation argument) at creation time and turns over processing to the <code>playsf</code> function which returns one block of samples from the file (along with the current position of the playback pointer) for each invocation with an (empty) input matrix. In addition, a <code>bang</code> message is output when the end of the file is reached. The object also responds to floating point values in the range from 0 to 1 on the control inlet by adjusting the playback pointer accordingly.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> sndfile;
+
+<span class="kw">nonfix</span> bang;
+
+playsf_dsp name = <span class="dv">0</span>,nchannels,playsf <span class="kw">with</span>
+  <span class="co">// Play one block of samples. Also output a number in the range 0..1 on the</span>
+  <span class="co">// control outlet to indicate the current position.</span>
+  playsf x::<span class="dt">matrix</span> = block,get pos/nsamples <span class="kw">when</span>
+    _,n = dim x; block = submat buf (<span class="dv">0</span>,get pos) (nchannels,n);
+    put pos (get pos+n);
+  <span class="kw">end</span> <span class="kw">if</span> get pos&gt;=<span class="dv">0</span> &amp;&amp; get pos&lt;=nsamples;
+  <span class="co">// Output a bang once to indicate that we&#39;re done.</span>
+  playsf x::<span class="dt">matrix</span> = bang <span class="kw">when</span>
+    _,n = dim x; put pos (-<span class="dv">1</span>);
+  <span class="kw">end</span> <span class="kw">if</span> get pos&gt;=<span class="dv">0</span>;
+  playsf _::<span class="dt">matrix</span> = ();
+  <span class="co">// A number in the range 0..1 places the playback pointer accordingly.</span>
+  playsf x::<span class="dt">double</span> = put pos $ <span class="dt">int</span> $ round $ x*nsamples $$ ();
+<span class="kw">end</span> <span class="kw">when</span>
+  <span class="co">// Open the audio file for reading.</span>
+  info = sf_info (); sf = sf_open name SFM_READ info;
+  <span class="co">// Get some information about the file.</span>
+  nsamples,rate,nchannels,_ = sf_get_info info;
+  nsamples = <span class="dt">int</span> nsamples;
+  <span class="co">// Read the file into memory.</span>
+  buf = <span class="dt">dmatrix</span> (nsamples,nchannels);
+  nsamples = <span class="dt">int</span> $ sf_readf_double sf buf nsamples;
+  <span class="co">// Convert interleaved samples (nsamples x nchannels) to one channel per row</span>
+  <span class="co">// (nchannels x nsamples).</span>
+  buf = transpose buf;
+  <span class="co">// Initialize the playback pointer:</span>
+  pos = ref <span class="dv">0</span>;
+<span class="kw">end</span>;</code></pre></div>
+<p>As another example, here’s a complete stereo amplifier stage with bass, treble, gain and balance controls and a dB meter. The dsp part is implemented in <a href="http://faust.grame.fr/">Faust</a>, Grame’s functional dsp programming language. The Pure program just does the necessary interfacing to Pd, which includes processing of incoming control messages for setting the control parameters of the Faust dsp, and the generation of output control messages to send the dB meter values (also computed in the Faust dsp) to Pd. (To run this example, you need the “faust2” branch of the Faust compiler so that the dsp can be inlined into the Pure program. Note that the entire section inside the <code>%&lt; %&gt;</code> braces is Faust code.)</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">%&lt; -*- dsp:amp -*-
+
+import(<span class="st">&quot;math.lib&quot;</span>);
+import(<span class="st">&quot;music.lib&quot;</span>);
+
+<span class="co">/* Fixed bass and treble frequencies. You might want to tune these for your</span>
+<span class="co">   setup. */</span>
+
+bass_freq       = <span class="dv">300</span>;
+treble_freq     = <span class="dv">1200</span>;
+
+<span class="co">/* Bass and treble gain controls in dB. The range of +/-20 corresponds to a</span>
+<span class="co">   boost/cut factor of 10. */</span>
+
+bass_gain       = nentry(<span class="st">&quot;bass&quot;</span>, <span class="dv">0</span>, -<span class="dv">20</span>, <span class="dv">20</span>, <span class="dv">0.1</span>);
+treble_gain     = nentry(<span class="st">&quot;treble&quot;</span>, <span class="dv">0</span>, -<span class="dv">20</span>, <span class="dv">20</span>, <span class="dv">0.1</span>);
+
+<span class="co">/* Gain and balance controls. */</span>
+
+gain            = db2linear(nentry(<span class="st">&quot;gain&quot;</span>, <span class="dv">0</span>, -<span class="dv">96</span>, <span class="dv">96</span>, <span class="dv">0.1</span>));
+bal             = hslider(<span class="st">&quot;balance&quot;</span>, <span class="dv">0</span>, -<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0.001</span>);
+
+<span class="co">/* Balance a stereo signal by attenuating the left channel if balance is on</span>
+<span class="co">   the right and vice versa. I found that a linear control works best here. */</span>
+
+balance         = *(<span class="dv">1</span>-max(<span class="dv">0</span>,bal)), *(<span class="dv">1</span>-max(<span class="dv">0</span>,<span class="dv">0</span>-bal));
+
+<span class="co">/* Generic biquad filter. */</span>
+
+filter(b0,b1,b2,a0,a1,a2)       = f : (+ ~ g)
+<span class="kw">with</span> {
+        f(x)    = (b0/a0)*x+(b1/a0)*x&#39;+(b2/a0)*x&#39;&#39;;
+        g(y)    = <span class="dv">0</span>-(a1/a0)*y-(a2/a0)*y&#39;;
+};
+
+<span class="co">/* Low and high shelf filters, straight from Robert Bristow-Johnson&#39;s &quot;Audio</span>
+<span class="co">   EQ Cookbook&quot;, see http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt. f0</span>
+<span class="co">   is the shelf midpoint frequency, g the desired gain in dB. S is the shelf</span>
+<span class="co">   slope parameter, we always set that to 1 here. */</span>
+
+low_shelf(f0,g)         = filter(b0,b1,b2,a0,a1,a2)
+<span class="kw">with</span> {
+        S  = <span class="dv">1</span>;
+        A  = pow(<span class="dv">10</span>,g/<span class="dv">40</span>);
+        w0 = <span class="dv">2</span>*PI*f0/SR;
+        alpha = sin(w0)/<span class="dv">2</span> * sqrt( (A + <span class="dv">1</span>/A)*(<span class="dv">1</span>/S - <span class="dv">1</span>) + <span class="dv">2</span> );
+
+        b0 =    A*( (A+<span class="dv">1</span>) - (A-<span class="dv">1</span>)*cos(w0) + <span class="dv">2</span>*sqrt(A)*alpha );
+        b1 =  <span class="dv">2</span>*A*( (A-<span class="dv">1</span>) - (A+<span class="dv">1</span>)*cos(w0)                   );
+        b2 =    A*( (A+<span class="dv">1</span>) - (A-<span class="dv">1</span>)*cos(w0) - <span class="dv">2</span>*sqrt(A)*alpha );
+        a0 =        (A+<span class="dv">1</span>) + (A-<span class="dv">1</span>)*cos(w0) + <span class="dv">2</span>*sqrt(A)*alpha;
+        a1 =   -<span class="dv">2</span>*( (A-<span class="dv">1</span>) + (A+<span class="dv">1</span>)*cos(w0)                   );
+        a2 =        (A+<span class="dv">1</span>) + (A-<span class="dv">1</span>)*cos(w0) - <span class="dv">2</span>*sqrt(A)*alpha;
+};
+
+high_shelf(f0,g)        = filter(b0,b1,b2,a0,a1,a2)
+<span class="kw">with</span> {
+        S  = <span class="dv">1</span>;
+        A  = pow(<span class="dv">10</span>,g/<span class="dv">40</span>);
+        w0 = <span class="dv">2</span>*PI*f0/SR;
+        alpha = sin(w0)/<span class="dv">2</span> * sqrt( (A + <span class="dv">1</span>/A)*(<span class="dv">1</span>/S - <span class="dv">1</span>) + <span class="dv">2</span> );
+
+        b0 =    A*( (A+<span class="dv">1</span>) + (A-<span class="dv">1</span>)*cos(w0) + <span class="dv">2</span>*sqrt(A)*alpha );
+        b1 = -<span class="dv">2</span>*A*( (A-<span class="dv">1</span>) + (A+<span class="dv">1</span>)*cos(w0)                   );
+        b2 =    A*( (A+<span class="dv">1</span>) + (A-<span class="dv">1</span>)*cos(w0) - <span class="dv">2</span>*sqrt(A)*alpha );
+        a0 =        (A+<span class="dv">1</span>) - (A-<span class="dv">1</span>)*cos(w0) + <span class="dv">2</span>*sqrt(A)*alpha;
+        a1 =    <span class="dv">2</span>*( (A-<span class="dv">1</span>) - (A+<span class="dv">1</span>)*cos(w0)                   );
+        a2 =        (A+<span class="dv">1</span>) - (A-<span class="dv">1</span>)*cos(w0) - <span class="dv">2</span>*sqrt(A)*alpha;
+};
+
+<span class="co">/* The tone control. We simply run a low and a high shelf in series here. */</span>
+
+tone            = low_shelf(bass_freq,bass_gain)
+                : high_shelf(treble_freq,treble_gain);
+
+<span class="co">/* Envelop follower. This is basically a 1 pole LP with configurable attack/</span>
+<span class="co">   release time. The result is converted to dB. You have to set the desired</span>
+<span class="co">   attack/release time in seconds using the t parameter below. */</span>
+
+t               = <span class="dv">0.1</span>;                  <span class="co">// attack/release time in seconds</span>
+g               = exp(-<span class="dv">1</span>/(SR*t));       <span class="co">// corresponding gain factor</span>
+
+env             = abs : *(<span class="dv">1</span>-g) : + ~ *(g) : linear2db;
+
+<span class="co">/* Use this if you want the RMS instead. Note that this doesn&#39;t really</span>
+<span class="co">   calculate an RMS value (you&#39;d need an FIR for that), but in practice our</span>
+<span class="co">   simple 1 pole IIR filter works just as well. */</span>
+
+rms             = sqr : *(<span class="dv">1</span>-g) : + ~ *(g) : sqrt : linear2db;
+sqr(x)          = x*x;
+
+<span class="co">/* The dB meters for left and right channel. These are passive controls. */</span>
+
+left_meter(x)   = attach(x, env(x) : hbargraph(<span class="st">&quot;left&quot;</span>, -<span class="dv">96</span>, <span class="dv">10</span>));
+right_meter(x)  = attach(x, env(x) : hbargraph(<span class="st">&quot;right&quot;</span>, -<span class="dv">96</span>, <span class="dv">10</span>));
+
+<span class="co">/* The main program of the Faust dsp. */</span>
+
+process         = (tone, tone) : (_*gain, _*gain) : balance
+                : (left_meter, right_meter);
+%&gt;
+
+<span class="co">// These are provided by the Pd runtime.</span>
+<span class="kw">extern</span> <span class="dt">float</span> sys_getsr(), <span class="dt">int</span> sys_getblksize();
+<span class="co">// Provide some reasonable default values in case the above are missing.</span>
+sys_getsr = <span class="dv">48000</span>; sys_getblksize = <span class="dv">64</span>;
+
+<span class="co">// Get Pd&#39;s default sample rate and block size.</span>
+<span class="kw">const</span> SR = <span class="dt">int</span> sys_getsr;
+<span class="kw">const</span> n = sys_getblksize;
+
+<span class="kw">using</span> faustui;
+
+amp_dsp = k,l,amp <span class="kw">with</span>
+  <span class="co">// The dsp part. This also outputs the left and right dbmeter values for</span>
+  <span class="co">// each processed block of samples on the control outlet, using messages of</span>
+  <span class="co">// the form left &lt;value&gt; and right &lt;value&gt;, respectively.</span>
+  amp in::<span class="dt">matrix</span> = amp::compute dsp n in out $$
+    out,{left (get_control left_meter),right (get_control right_meter)};
+  <span class="co">// Respond to control messages of the form &lt;control&gt; &lt;value&gt;. &lt;control&gt; may</span>
+  <span class="co">// be any of the input controls supported by the Faust program (bass,</span>
+  <span class="co">// treble, gain, etc.).</span>
+  amp (c@_ x::<span class="dt">double</span>) = put_control (ui!str c) x $$ x;
+<span class="kw">end</span> <span class="kw">when</span>
+  <span class="co">// Initialize the dsp.</span>
+  dsp = amp::newinit SR;
+  <span class="co">// Get the number of inputs and outputs and the control variables.</span>
+  k,l,ui = amp::info dsp;
+  ui = control_map $ controls ui;
+  {left_meter,right_meter} = ui!![<span class="st">&quot;left&quot;</span>,<span class="st">&quot;right&quot;</span>];
+  <span class="co">// Create a buffer large enough to hold the output from the dsp.</span>
+  out = <span class="dt">dmatrix</span> (l,n);
+<span class="kw">end</span>;</code></pre></div>
+<p>Note that it is possible to load the above Faust program directly in Pd, using the facilities described in <a href="faust2pd.html">faust2pd: Pd Patch Generator for Faust</a>. This is also more efficient since it avoids the overhead of the extra Pure layer. However, invoking Faust dsps via Pure also offers some benefits. In particular, it enables you to add more sophisticated control processing, interface to other 3rd party software for additional pre- and postprocessing of the signal data, or do live editing of Faust programs using the facilities described in <a href="#livecoding">Livecoding</a> below. An actual Pure implementation of a Faust external which does all this <em>and</em> provides the extra conveniences of faust2pd under one hood can be found in <a href="pd-faust.html">pd-faust</a>.</p>
+<h2 id="advanced-features">Advanced Features</h2>
+<p>This section discusses some advanced features of the Pd Pure loader. It explains the use of timer callbacks, “wireless” connections (send/receive), wave arrays, and the runtime control and livecoding facilities. We also give an overview of the API provided for pd-pure programmers.</p>
+<h3 id="asynchronous-messages">Asynchronous Messages</h3>
+<p>pd-pure provides a simple asynchronous messaging facility which allows a Pure object to schedule a message to be delivered to itself later. This is useful for implementing all kinds of delays and, more generally, any kind of object which, once triggered, does its own sequencing of control messages.</p>
+<p>To these ends, the object function may return a special message of the form <code>pd_delay t msg</code> (either by itself or as an element of a result list) to indicate that the message <code>msg</code> should be delivered to the object function after <code>t</code> milliseconds (where <code>t</code> is either a machine int or a double value). After the prescribed delay the object function will then be invoked on the given message, and the results of this call are processed as usual (routing messages to outlets and/or scheduling new timer events in response to further <code>pd_delay</code> messages). Note that if the delay is zero or negative, the message is scheduled to be delivered immediately.</p>
+<p>For instance, a simple kind of delay object can be implemented in Pure as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">mydelay _ (alarm msg) = msg;
+mydelay t msg = pd_delay t (alarm msg) <span class="kw">otherwise</span>;</code></pre></div>
+<p>The desired delay time is specified as a creation argument. The first equation handles messages of the form <code>alarm msg</code>; the action is to just output the delayed message given by the <code>msg</code> argument. All other input messages are scheduled by the second equation, which wraps the message in an <code>alarm</code> term so that it gets processed by the first equation when it is delivered.</p>
+<p>Note that pd-pure only allows you to schedule a single asynchronous event per call of the object function. Thus, if the <code>mydelay</code> object above receives another message while it is still waiting for the previous one to be delivered, the old timer is cancelled and the new one is scheduled instead; this works like Pd’s builtin <code>delay</code> object.</p>
+<p>Moreover, scheduling a new event at an infinite (or <code>nan</code>) time value cancels any existing timer. (Note that you still have to specify the <code>msg</code> parameter, but it will be ignored in this case.) We can use this to equip our <code>mydelay</code> object with a <code>stop</code> message as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">nonfix</span> stop;
+mydelay _ (alarm msg) = msg;
+mydelay _ stop = pd_delay inf ();
+mydelay t msg = pd_delay t (alarm msg) <span class="kw">otherwise</span>;</code></pre></div>
+<p>More elaborate functionality can be built on top of the basic timer facility. The following example shows how to maintain a timed message queue in a Pure list, in order to implement a simple delay line similar to Pd’s builtin <code>pipe</code> object. Here we also employ the <a href="#pd_time"><code>pd_time</code></a> function, which is provided by the Pure loader so that Pure scripts can access the current logical Pd time in milliseconds (see <a href="#programming-interface">Programming Interface</a> below). This is convenient if we need to deal with absolute time values, which we use in this example to keep track of the times at which messages in the queue are to be delivered:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">double</span> pd_time();
+mypipe t = process (ref []) <span class="kw">with</span>
+  process q () = <span class="kw">case</span> dequeue q <span class="kw">of</span>
+                   x,(t,_):_ = {x,pd_delay (t-pd_time) ()};
+                   x,_ = x;
+                 <span class="kw">end</span>;
+  process q x  = enqueue q x $$ pd_delay t () <span class="kw">if</span> null (get q);
+               = enqueue q x $$ () <span class="kw">otherwise</span>;
+  enqueue q x  = put q $ get q+[(pd_time+t,x)];
+  dequeue q    = x,put q xs <span class="kw">when</span> (_,x):xs = get q <span class="kw">end</span>;
+<span class="kw">end</span>;</code></pre></div>
+<h3 id="wireless-messaging">Wireless Messaging</h3>
+<p>As of version 0.14, pd-pure offers some facilities for sending and receiving messages directly, without any wired connections to the inlets and outlets of an object (similar to what the Pd <code>[send]</code> and <code>[receive]</code> objects provide). See the description for the <a href="#pd_send"><code>pd_send</code></a> and <a href="#pd_receive"><code>pd_receive</code></a> routines in the <a href="#programming-interface">Programming Interface</a> section.</p>
+<p>For instance, here’s how you can use the <code>pd_send</code> function to send messages to the Pd runtime:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pd_send <span class="st">&quot;pd&quot;</span> (dsp <span class="dv">1</span>); <span class="co">// turn on audio processing</span></code></pre></div>
+<p>This function also enables you to perform dynamic patching, by sending the appropriate messages to patches (i.e., <code>&quot;pd-patch&quot;</code> receivers, where <code>patch</code> is the name of the target patch). Useful messages to patches are listed in the <a href="http://puredata.info/docs/tutorials/TipsAndTricks#patch-messages">Tips and Tricks</a> section on the Pd community website, and some examples can be found <a href="http://pure-data.svn.sourceforge.net/svnroot/pure-data/trunk/doc/additional/pd-msg/">here</a>. For instance, the following Pure object, when banged, inserts a few objects into a subpatch named <code>test</code> and connects them to each other:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">void</span> pd_send(<span class="dt">char</span>*, <span class="dt">expr</span>*);
+
+pd_send_test _ = () <span class="kw">when</span>
+  pd_send <span class="st">&quot;pd-test&quot;</span> (obj <span class="dv">10</span> <span class="dv">0</span> <span class="st">&quot;osc~&quot;</span> <span class="dv">220</span>);
+  pd_send <span class="st">&quot;pd-test&quot;</span> (obj <span class="dv">10</span> <span class="dv">30</span> <span class="st">&quot;*~&quot;</span> <span class="dv">0.1</span>);
+  pd_send <span class="st">&quot;pd-test&quot;</span> (obj <span class="dv">10</span> <span class="dv">60</span> <span class="st">&quot;dac~&quot;</span>);
+  pd_send <span class="st">&quot;pd-test&quot;</span> (connect <span class="dv">0</span> <span class="dv">0</span> <span class="dv">1</span> <span class="dv">0</span>);
+  pd_send <span class="st">&quot;pd-test&quot;</span> (connect <span class="dv">1</span> <span class="dv">0</span> <span class="dv">2</span> <span class="dv">0</span>);
+  pd_send <span class="st">&quot;pd-test&quot;</span> (connect <span class="dv">1</span> <span class="dv">0</span> <span class="dv">2</span> <span class="dv">1</span>);
+<span class="kw">end</span>;</code></pre></div>
+<p>An object can also receive messages from any named source by means of the <code>pd_receive</code> function. This function must be called either at object creation time or when one of the dsp or control processing methods of the object is invoked. For instance, the following object calls <code>pd_receive</code> at creation time in order to receive messages sent to the <code>left</code> and <code>right</code> receivers, and outputs them on its left or right outlet, respectively:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">void</span> pd_receive(<span class="dt">char</span>*);
+
+pd_receive_test = <span class="dv">1</span>,<span class="dv">2</span>,process <span class="kw">with</span>
+  process (left x) = <span class="dv">0</span>,x;
+  process (right x) = <span class="dv">1</span>,x;
+<span class="kw">end</span> <span class="kw">when</span>
+  do pd_receive [<span class="st">&quot;left&quot;</span>,<span class="st">&quot;right&quot;</span>];
+<span class="kw">end</span>;</code></pre></div>
+<p>Please note that <code>pd_receive</code> itself doesn’t return any message, it merely registers a receiver symbol so that messages sent to that symbol may be received later. The received messages are always delivered to the leftmost inlet when Pd does its control processing. Moreover, the symbol identifying the source of the message is applied to the message itself, so that the receiver can figure out where the message came from and adjust accordingly. This operation is useful, in particular, to provide communication channels between Pd GUI elements and Pure objects. Wireless connections are often preferred in such cases, to reduce display clutter.</p>
+<h3 id="reading-and-writing-audio-data">Reading and Writing Audio Data</h3>
+<p>Besides the realtime processing of audio data, Pd also provides a means to store sample data in <em>arrays</em> which can be displayed in a patch and modified interactively, see the section on numeric arrays in the Pd documentation for details. Arrays can be used, e.g., as running waveform displays, as wavetables which are played back in the audio loop, or as waveshaping functions used to implement distortion effects.</p>
+<p>Each array has a name (Pd symbol) under which it can be accessed from Pure code. pd-pure makes it possible to transfer audio data directly between Pd arrays and Pure double vectors by means of the <a href="#pd_getbuffer"><code>pd_getbuffer</code></a> and <a href="#pd_setbuffer"><code>pd_setbuffer</code></a> routines. Please see <a href="#programming-interface">Programming Interface</a> below for a closer description of the provided routines.</p>
+<p>For instance, here is a <code>randomwave</code> object which fills a Pd array (whose name is given as the creation argument) with random values in response to a <code>bang</code> message:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">extern</span> <span class="dt">double</span> genrand_real1() = random1;
+
+<span class="kw">extern</span> <span class="dt">int</span> pd_getbuffersize(<span class="dt">char</span> *name);
+<span class="kw">extern</span> <span class="dt">void</span> pd_setbuffer(<span class="dt">char</span> *name, <span class="dt">expr</span> *x);
+
+<span class="kw">nonfix</span> bang;
+
+randomwave name = <span class="dv">1</span>,<span class="dv">0</span>,process <span class="kw">with</span>
+  process bang  = pd_setbuffer name {random | i = <span class="dv">1</span>..nsamples};
+  nsamples      = pd_getbuffersize name;
+  random    = random1*<span class="dv">2</span>-<span class="dv">1</span>;
+<span class="kw">end</span>;</code></pre></div>
+<h3 id="controlling-the-runtime">Controlling the Runtime</h3>
+<p>pd-pure provides a predefined <code>[pure-runtime]</code> object which makes it possible to control the embedded Pure interpreter in some ways. There can be any number of <code>[pure-runtime]</code> objects in a patch, which all refer to the same instance of the Pure interpreter.</p>
+<p>First and foremost, the <code>[pure-runtime]</code> object accepts some control messages which can be used to dynamically reload all loaded scripts, and to implement “remote control” of a patch using the <strong>pdsend</strong> program. This is described in more detail in the <a href="#livecoding">Livecoding</a> subsection.</p>
+<p>The second use of <code>[pure-runtime]</code> is to load additional Pure scripts. To these ends, <code>[pure-runtime]</code> can be invoked with the names of scripts to be loaded at object creation time as arguments. The script names should be specified without the <code>.pure</code> suffix; it will be added automatically. The scripts will be searched for in the directory of the patch containing the <code>[pure-runtime]</code> object and on the Pd path. For instance, to load the scripts <code>foo.pure</code> and <code>bar.pure</code>, you can add the following object to your patch:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">[pure-runtime foo bar]</code></pre></div>
+<p>This facility can be used, in particular, to load any additional scripts needed for anonymous objects defined with <code>[pure]</code> and <code>[pure~]</code>. Note that you shouldn’t use this to load named Pure objects, you should let the Pure loader handle these as it also keeps track of the scripts in <a href="#livecoding">livecoding</a>. Another caveat is that you <em>must</em> ensure that the <code>[pure-runtime]</code> object is inserted into the patch <em>before</em> any anonymous objects which depend on the loaded scripts. (Also note that the script loading facility of <code>[pure-runtime]</code> is by and large considered a legacy feature now that <code>[declare -lib]</code>, discussed in the next subsection, offers a better way to load additional script files using Pd’s built-in <code>-lib</code> mechanism.)</p>
+<p>Last but not least, you can also specify <code>-w</code> as an argument to <code>[pure-runtime]</code> in order to enable warnings in the embedded Pure interpreter. This has the same effect as running <code>pure -w</code> on the command line. It causes the interpreter to produce additional warning messages for some dubious (albeit correct) constructs, which may be a useful aid, in particular, for Pure novices. This is a global option; once enabled, it applies to all subsequently loaded Pure scripts until the interpreter is restarted from scratch (see <a href="#livecoding">Livecoding</a>). The <code>-w</code> option can also be combined with names of scripts to be loaded, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">[pure-runtime -w foo bar]</code></pre></div>
+<h3 id="loading-script-files-at-startup">Loading Script Files at Startup</h3>
+<p>As of version 0.24, pd-pure provides an easier and more familiar way to load additional Pure scripts using Pd’s <code>-lib</code> mechanism during Pd’s startup or when a patch is loaded. Compared to the rather rudimentary script loading facility provided by the <code>[pure-runtime]</code> object, this also offers two chief advantages:</p>
+<ul>
+<li>It works with <em>both</em> named Pure objects and auxiliary library scripts defining functions to be used with the <code>[pure]</code> and <code>[pure~]</code> objects.</li>
+<li>The Pure loader keeps track of the loaded scripts and allows them to be reloaded at any time using the <a href="#livecoding">livecoding</a> facility.</li>
+</ul>
+<p>Note that at present, this feature requires the latest incarnation of the Pd loader, which means that you should make sure that you’re using Pd 0.47.0 or later, or a compatible Pd flavor such as <a href="https://agraef.github.io/purr-data-intro/">purr-data</a>.</p>
+<p>To load some script files at startup, just add the corresponding script names (without the <code>.pure</code> suffix) to Pd’s startup libraries, or invoke them from the command line using the <code>-lib</code> option, just like you’d do with any other Pd externals and libraries. E.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pd -lib foo -lib bar</code></pre></div>
+<p>Note that these options <em>must</em> come after any options required to launch the Pure loader (see <a href="#usage">Usage</a> above), otherwise Pd will <em>not</em> recognize the scripts as loadable libraries. You can also specify the relative or absolute path to the scripts if needed, for instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pd -lib ~/pd-pure-externals/foo -lib ~/pd-pure-externals/bar</code></pre></div>
+<p>Or you can use Pd’s <code>-path</code> option (or Pd’s search path configuration dialog) to specify where Pd should go looking for the script files:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pd -path ~/pd-pure-externals -lib foo -lib bar</code></pre></div>
+<p>Note that no special search path will be needed if you just drop the Pure scripts to be loaded into one of the directories on Pd’s default search path. E.g., on Linux this usually includes the <code>~/pd-externals</code> folder (<code>~/pd-l2ork-externals</code> when using <a href="http://l2ork.music.vt.edu/main/?page_id=56">pd-l2ork</a> or <a href="https://agraef.github.io/purr-data-intro/">purr-data</a>). The default path will be different depending on the platform and Pd flavor you use, so please check your local Pd documentation for details.</p>
+<p>The <code>-lib</code> mechanism also works with Pd’s <code>[declare]</code> object, so that, like the <code>[pure-runtime]</code> object, it can also be used in patches. For instance, you can invoke the <code>foo</code> and <code>bar</code> script files in a patch by inserting the following object (using the same <code>-lib</code> and <code>-path</code> options that you’d use on the command line):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">[declare -lib foo -lib bar]</code></pre></div>
+<p>The scripts will then be loaded automagically as soon as you open the patch in Pd. (Note that, as with the <code>[pure-runtime]</code> object, the <code>[declare]</code> object needs to be inserted <em>before</em> any objects which depend on the loaded scripts.) This facility is most useful with anonymous objects, since named objects will be loaded anyway if needed, if you just type their name into an object box. But it works with named objects, too, and it also allows you to mix and match named and anonymous objects in a single script file, <em>and</em> make sure that the script gets loaded (and reloaded when livecoding) even if the patch doesn’t contain any instance of the named object at all.</p>
+<h3 id="livecoding">Livecoding</h3>
+<p>Livecoding means changing Pure objects on the fly while a patch is running. A simple, but rather limited way to do this is to just edit the boxes containing Pure objects interactively, as you can do with any kind of Pd object. In this case, the changes take effect immediately after you finish editing a box. However, for more elaborate changes, you may have to edit the underlying Pure scripts and notify the Pure interpreter so that it reloads the scripts. The Pure loader provides the special <code>[pure-runtime]</code> object to do this.</p>
+<p>Please note that <code>[pure-runtime]</code> is a rather primitive way of doing these things, so pd-pure also provides a more convenient <code>[pure-remote]</code> helper abstraction which takes care of all the gory details and also provides a useful “remote control” feature. We <em>really</em> recommend using that instead of fiddling around with <code>[pure-runtime]</code>, but since <code>[pure-remote]</code> is implemented using <code>[pure-runtime]</code>, it may be useful to know how all this works at the most basic level, which is what we explain below. (If you don’t care about the nitty-gritty stuff then you may just skip ahead to the <a href="#remote-control">Remote Control</a> section now.)</p>
+<p>Sending a <code>bang</code> to the <code>[pure-runtime]</code> object tells the plugin to reload all object scripts and update the Pure objects in your patch accordingly. The object also provides two outlets to deal with the inevitable latencies caused by the compilation process. The right outlet is banged when the compilation starts and the left outlet gets a bang when the compilation is finished, so that a patch using this facility can respond to these events in the appropriate way (e.g., disabling output during compilation).</p>
+<p>The <code>reload</code> message works similarly, but while the <code>bang</code> message only reloads the object scripts, <code>reload</code> restarts the Pure interpreter from scratch and reloads everything, including the prelude and imported modules. This will usually take much longer, but is only necessary if you edited imported library modules which won’t be reloaded with the <code>bang</code> message.</p>
+<p>While this facility is tremendously useful for interactive development, there are some limitations and corresponding workarounds that you should keep in mind.</p>
+<p>First, since the compilation is done in Pd’s main thread, it may lead to undesirable pauses in Pd’s audio and control processing. With the <code>bang</code> message the delays will usually be small, but may still be noticeable. There’s no way around this in the current implementation, but as a remedy you can try to keep the compilation times to a minimum. This can be achieved by putting all code which you don’t plan to edit “live” into library modules which are imported in the object scripts. By these means, the number of definitions in the object scripts themselves can be kept small, resulting in faster compilation.</p>
+<p>Second, Pd doesn’t allow objects to change their inlet/outlet configuration on the fly. If a code change in a Pure object involves any such modifications, the reloaded objects will still appear to have the same inlets and outlets as before (and often cease to function properly). The quickest way to force an update of all affected Pure objects in one go, while preserving the current object connections, is to select the corresponding part of the patch and use Pd’s cut and paste commands to reinsert it (if there are a lot of Pure objects scattered out all over the patch then you might just want to select and reinsert the entire contents of the patch).</p>
+<p>Finally, note that the reloading of object scripts amounts to a “cold restart” of the Pure objects in your patches. If a Pure object keeps some <a href="#local-state">local state</a>, it will be lost. As a remedy, the loader implements a simple protocol which allows Pure objects to record their internal state before a script gets reloaded, and restore it afterwards. To these ends, a Pure object may respond to the following two messages:</p>
+<ul>
+<li>Before reloading, the Pure object will receive the <code>pd_save</code> message. In response, the object should return a Pure expression encoding its internal state in a way which can be serialized (see the description of the <a href="purelib.html#blob"><code>blob</code></a> function in the <a href="purelib.html">Pure Library Manual</a> for details). Usually, it is sufficient to just pack up all state data in a tuple, list or some other aggregate and return that as the response to the <code>pd_save</code> message.</li>
+<li>After reloading, the Pure object will receive a <code>pd_restore state</code> message, where <code>state</code> is the previously recorded state, as returned by the object in response to the <code>pd_save</code> message. It should then restore its internal state from the saved data. (The return value of this message invocation is ignored.)</li>
+</ul>
+<p>In order to participate in the <code>pd_save</code>/<code>pd_restore</code> protocol, an object must subscribe to it. This is done by setting <code>pd_save</code> as a sentry on the object function (see the description of the <a href="purelib.html#sentry"><code>sentry</code></a> function in the <a href="purelib.html">Pure Library Manual</a> for details). For instance, here’s the mycounter example from <a href="#local-state">Local State</a> again, with the necessary additions to support the <code>pd_save</code>/<code>pd_restore</code> protocol:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">nonfix</span> bang pd_save;
+mycounter = sentry pd_save $ next (ref <span class="dv">0</span>) <span class="kw">with</span>
+  next r bang = put r (get r+<span class="dv">1</span>);
+  next r pd_save = get r;
+  next r (pd_restore n) = put r n;
+  next _ _ = () <span class="kw">otherwise</span>;
+<span class="kw">end</span>;</code></pre></div>
+<h3 id="remote-control">Remote Control</h3>
+<p>The distribution also includes an abstraction pure-remote.pd which you can include in your patch to enable live coding, as well as remote control of the patch through the <strong>pdsend</strong> program. This abstraction is installed directly under Pd’s <code>extra</code> directory so that normally it should be available without any further ado. As already mentioned, <code>[pure-remote]</code> provides a more convenient way to enable live coding in your patches, so you should normally use this abstraction instead of fiddling around with <code>[pure-runtime]</code> itself.</p>
+<p>Sending a <code>bang</code> or <code>reload</code> to <code>[pure-remote]</code> causes a reload of the object scripts, as described under <a href="#livecoding">Livecoding</a> above. The former can also be triggered directly by clicking the bang control of the abstraction (which also provides visual feedback while a compilation is still in progress). Note that the single inlet of the abstraction actually gets routed to the embedded <code>[pure-runtime]</code> object, and conversely its two outlets receive the output from that object, so that <code>[pure-remote]</code> can also be operated basically in the same way as <code>[pure-runtime]</code> if needed. But usually the abstraction’s bang control should be all that you need to care about.</p>
+<p>For added convenience, <code>[pure-remote]</code> also accepts any <em>other</em> message of the form <code>receiver message</code> and will route the given message to the given receiver. In addition it listens on a certain port (4711 by default, but you can change this inside the abstraction if needed) for messages coming in from other applications, typically via the <strong>pdsend</strong> program. This is intended to provide remote control of the Pure runtime as well as various parameters in patches. For instance, by having <strong>pdsend</strong> send a <code>bang</code> to port 4711, you can trigger a reload of the Pure objects in your patches. Moreover, by sending a <code>play 0</code> or <code>play 1</code> message, one might implement a simple playback control, provided that your patch includes an appropriate receiver (often a GUI object). See the pure-help.pd patch for an example.</p>
+<p>To make these features available in <strong>emacs</strong>, there’s an accompanying elisp program (pure-remote.el) which contains some keybindings for the necessary <strong>pdsend</strong> invocations, so that you can operate the pure-remote patch with simple keystrokes directly from the text editor. The same bindings are also available in Emacs Pure mode, but need to be enabled before you can use them; please see the pure-remote.el file for details. As shipped, pure-remote.el and Pure mode implement the following commands:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td align="left"><code>C-C C-X</code></td>
+<td align="left">Quick Reload</td>
+<td align="left">Sends a <code>bang</code> message to reload object scripts.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>C-C M-X</code></td>
+<td align="left">Full Reload</td>
+<td align="left">Sends a <code>reload</code> message to reload everything.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>C-C C-M</code></td>
+<td align="left">Message</td>
+<td align="left">Prompts for a message and sends it to pure-remote.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>C-C C-S</code></td>
+<td align="left">Play</td>
+<td align="left">Sends a <code>play 1</code> message.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>C-C C-T</code></td>
+<td align="left">Stop</td>
+<td align="left">Sends a <code>play 0</code> message.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>C-C C-G</code></td>
+<td align="left">Restart</td>
+<td align="left">Sends a <code>play 0</code> message followed by <code>play 1</code>.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>C-/</code></td>
+<td align="left">Dsp On</td>
+<td align="left">Sends a <code>pd dsp 1</code> (enable audio processing).</td>
+</tr>
+<tr class="even">
+<td align="left"><code>C-.</code></td>
+<td align="left">Dsp Off</td>
+<td align="left">Sends a <code>pd dsp 0</code> (disable audio processing).</td>
+</tr>
+</tbody>
+</table>
+<p>Of course you can easily add more like these, just have a look at how the keybindings are implemented in pure-remote.el or pure-mode.el and create your own in an analogous fashion. Together with Pure mode, this gives you a nice interactive environment for developing pd-pure applications.</p>
+<h3 id="compiling-objects">Compiling Objects</h3>
+<p>pd-pure’s livecoding abilities require that objects are run from source code. As already mentioned, this needs some (in some cases, substantial) time at startup when the Pure interpreter is loaded and your Pure scripts are compiled to native code on the fly. This is wasted effort if you are finished developing your Pure objects and just want to run them as they are.</p>
+<p>Therefore pd-pure also supports compiling a collection of Pure objects to a binary which can be loaded with Pd’s <code>-lib</code> option just like any other external library of Pd objects. This basically involves using the Pure interpreter as a batch compiler to translate the Pure scripts implementing the objects to a shared library. You also have to link in a small amount of C code so that the shared module can be loaded by Pd and registers its Pd object classes with pd-pure. The examples/libexample folder contains a complete example showing how this is done.</p>
+<p>Note that even if you load all your pd-pure objects from such libraries, you still need to load the pd-pure module first, since it provides the basic infrastructure required to run any kind of pd-pure object (no matter whether it’s implemented in compiled or source form).</p>
+<h3 id="programming-interface">Programming Interface</h3>
+<p>The Pure loader provides a number of interface routines which can be called by Pure scripts running in the Pd environment. We give a brief description of these functions below. These functions are all implemented in C, so in order to access them in your Pure scripts, you will need corresponding <code>extern</code> declarations (see the “C Interface” section in <a href="pure.html">The Pure Manual</a> for details). For your convenience, there’s a <code>pd.pure</code> script included in the distribution which already contains all the required <code>extern</code> declarations, so you just need to import this script in your Pure scripts and you’re set.</p>
+<p>The <code>pd.pure</code> script will be installed in the <code>lib</code> subfolder along with the Pd Pure loader external and the examples. The embedded Pure runtime has been set up so that it always has this directory in its search path, so that it’s enough to include a declaration like the following in your Pure scripts if you want to call one of the interface routines:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> pd;</code></pre></div>
+<p>(We mention in passing that, in the same fashion you can also put your own library scripts into the <code>extra/pure/lib</code> folder to make them available to all your Pure object scripts.)</p>
+<dl>
+<dt><a name="pd_version_s"></a><code>extern char *pd_version_s()</code></dt>
+<dd><p>Returns the Pd version number as a string. Note that this routine will only be available when a script is running inside Pd, so you can quickly check if that’s the case as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">let</span> ok = stringp $ eval <span class="st">&quot;extern char *pd_version_s(); pd_version_s;&quot;</span>;</code></pre></div>
+<p>The <code>ok</code> variable will then be true iff the script is running inside Pd.</p>
+</dd>
+<dt><a name="pd_path"></a><code>extern expr *pd_path()</code></dt>
+<dd>Returns the Pd path (set in Pd’s <code>Path</code> dialog or via the <code>-path</code> command line option) as a list of directory names. This is useful if your Pure scripts need to locate files on the Pd search path.
+</dd>
+<dt><a name="pd_libdir"></a><code>extern char *pd_libdir()</code></dt>
+<dd>Returns the Pd library dir (determined at runtime). This is useful if your Pure scripts need to access files in that directory.
+</dd>
+<dt><a name="pd_getdir"></a><code>extern expr *pd_getdir()</code></dt>
+<dd>Returns the directory of the patch the current object is in. This is useful if a Pure object needs to access files in the patch directory. Please note that this function must be called during object creation or in the method calls of an object, so that it is clear what the current object is; otherwise the function will fail. Also note that the results may differ for different instances of the same object class, depending on which patches the objects are located in.
+</dd>
+<dt><a name="pd_getfile"></a><code>extern expr *pd_getfile()</code></dt>
+<dd>Returns the name of the file that will be opened with the <code>menu-open</code> action (accessible by right-clicking on a Pure object and selecting <code>Open</code>). This is usually the Pure script of the object, if available, but this can be changed with <a href="#pd_setfile"><code>pd_setfile</code></a> below. The function must be called during object creation or in the method calls of an object, so that it is clear what the current object is; otherwise the function will fail.
+</dd>
+<dt><a name="pd_setfile"></a><code>extern void pd_setfile(char *s)</code></dt>
+<dd>Sets the name of the file to be opened with the <code>menu-open</code> action. By default, this is the Pure script of the object, if available; this function can be used to change the name of the file on a per-object basis. The function must be called during object creation or in the method calls of an object, so that it is clear what the current object is; otherwise the function will have no effect.
+</dd>
+<dt><a name="pd_post"></a><code>extern void pd_post(char *s)</code></dt>
+<dd>Posts a message in the Pd main window. A trailing newline is added automatically. This is a convenience function which is equivalent to calling Pd’s <code>post()</code> (which is a varargs function) as <code>post &quot;%s&quot; s</code>.
+</dd>
+<dt><a name="pd_error_s"></a><code>extern void pd_error_s(char *s)</code></dt>
+<dd>Like <a href="#pd_post"><code>pd_post</code></a>, but prints an error message instead. If this routine is invoked from an object (i.e., during object creation or a method call) then Pd’s <code>pd_error()</code> function is called, which allows the object to be tracked down with Pd’s <code>Find Last Error</code> menu command. Otherwise (i.e., if the function is called at load time) Pd’s <code>error()</code> function is called which just outputs the message.
+</dd>
+<dt><a name="pd_time"></a><code>extern double pd_time()</code></dt>
+<dd>Retrieves the current Pd time as a double value in milliseconds, which is useful, in particular, when used in conjunction with the asynchronous message facility described under <a href="#asynchronous-messages">Asynchronous Messages</a>.
+</dd>
+<dt><a name="pd_send"></a><code>extern void pd_send(char *sym, expr *x)</code></dt>
+<dd>Sends a message, specified as a Pure term <code>x</code>, to the receiver given by the symbol <code>sym</code> (specified as a string). This is a no-op if the receiver doesn’t exist.
+</dd>
+<dt><a name="pd_receive"></a><code>extern void pd_receive(char *sym)</code></dt>
+<dd>Prepares an object so that it can receive messages sent to the given symbol <code>sym</code>. This function must be called during object creation or method calls. It can be called for different symbols, as many times as needed. The messages are always delivered to the leftmost inlet, and the given symbol is applied to the original message, so that the receiver can figure out where the message came from.
+</dd>
+<dt><a name="pd_unreceive"></a><code>extern void pd_unreceive(char *sym)</code></dt>
+<dd>Switches off receiving messages for the given symbol <code>sym</code>. Use this to undo the effects of a previous <code>pd_receive</code> call.
+</dd>
+<dt><a name="pd_getbuffer"></a><code>extern expr *pd_getbuffer(char *name)</code>, <a name="pd_setbuffer"></a><code>extern void pd_setbuffer(char *name, expr *x)</code>, <a name="pd_getbuffersize"></a><code>extern int pd_getbuffersize(char *name)</code>, <a name="pd_setbuffersize"></a><code>extern void pd_setbuffersize(char *name, int sz)</code></dt>
+<dd><p>Routines to access the Pd array (sample buffer) with the given name. These functions can be used to transfer audio data between Pd and Pure scripts; see <a href="#reading-and-writing-audio-data">Reading and Writing Audio Data</a> above for an example.</p>
+<p><a href="#pd_getbuffersize"><code>pd_getbuffersize</code></a> and <a href="#pd_setbuffersize"><code>pd_setbuffersize</code></a> gets or sets the size of the given buffer, respectively.</p>
+<p><a href="#pd_getbuffer"><code>pd_getbuffer</code></a> reads the contents of the buffer and returns it as a Pure vector (or fails if the array with the given name doesn’t exist).</p>
+<p><a href="#pd_setbuffer"><code>pd_setbuffer</code></a> sets the contents of the buffer from the given Pure vector <code>x</code>. If the size of the vector exceeds the size of the buffer, the former is truncated. Conversely, if the size of the buffer exceeds the size of the Pure vector, the trailing samples are unaffected. <em>Note:</em> The second argument of <a href="#pd_setbuffer"><code>pd_setbuffer</code></a> can also be a pair <code>(i,x)</code> denoting an offset <code>i</code> into the array at which the sample data is to be written, so that this routine allows you to overwrite any part of the array.</p>
+</dd>
+</dl>
+</body>
+</html>

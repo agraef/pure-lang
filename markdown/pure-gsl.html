@@ -1,0 +1,2254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-gsl"></a></p>
+<h1 id="pure-gsl---gnu-scientific-library-interface-for-pure">pure-gsl - GNU Scientific Library Interface for Pure</h1>
+<p><a name="module-gsl"></a></p>
+<p>Version 0.12, March 06, 2017</p>
+<div style="white-space: pre-line;">Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;
+Eddie Rucker &lt;<a href="mailto:erucker@bmc.edu">erucker@bmc.edu</a>&gt;</div>
+<p>License: GPL V3 or later, see the accompanying COPYING file</p>
+<p>Building on Pure’s GSL-compatible matrix support, this module aims to provide a complete wrapper for the GNU Scientific Library which provides a wide range of mathematical routines useful for scientific programming, number crunching and signal processing applications.</p>
+<p>This is still work in progress, only a small part of the interface is finished right now. Here is a brief summary of the operations which are implemented:</p>
+<ul>
+<li>Matrix-scalar and matrix-matrix arithmetic. This is fairly complete and includes matrix multiplication, as well as element-wise exponentiation (^) and integer operations (div, mod, bit shifts and bitwise logical operations) which aren’t actually in the GSL API.</li>
+<li>SVD (singular value decomposition), as well as the corresponding solvers, pseudo inverses and left and right matrix division. This is only available for real matrices right now, as GSL doesn’t implement complex SVD.</li>
+<li>Random distributions (p.d.f. and c.d.f.) and statistic functions.</li>
+<li>Polynomial evaluation and roots.</li>
+<li>Linear least-squares fitting. Multi-fitting is not available yet.</li>
+</ul>
+<p>Installation instructions: Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-gsl-0.12.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-gsl-0.12.tar.gz</a>. Run <code>make</code> to compile the module and <code>make install</code> (as root) to install it in the Pure library directory. This requires GNU make, and of course you need to have Pure and GSL installed. The <code>make install</code> step is only necessary for system-wide installation.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix, and <code>make PIC=-fPIC</code> or some similar flag might be needed for compilation on 64 bit systems. Please see the Makefile for details.</p>
+<p>The current release requires GSL 1.11 or later and Pure 0.45 or later. Older GSL versions might still work, but then some operations may be missing. The latest and greatest GSL version is always available from <a href="http://www.gnu.org/software/gsl" class="uri">http://www.gnu.org/software/gsl</a>.</p>
+<p>After installation, you can import the entire GSL interface as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> gsl;</code></pre></div>
+<p>For convenience, the different parts of the GSL interface are also available as separate modules. E.g., if you only need the matrix operations:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> gsl::<span class="dt">matrix</span>;</code></pre></div>
+<p>In either case, the global <code>gsl_version</code> variable reports the installed GSL version:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; show gsl_version
+<span class="kw">let</span> gsl_version = <span class="st">&quot;1.11&quot;</span>;</code></pre></div>
+<p>(This variable used to be defined by the Pure runtime but has been moved into pure-gsl as of Pure 0.37.)</p>
+<p>Most other operations are declared in separate namespaces which are in 1-1 correspondence with the module names. Thus, e.g., the <code>gsl_poly_eval</code> routine is named <code>gsl::poly::eval</code> in Pure and can be found in the <code>gsl::poly</code> module and namespace. The <code>using namespace</code> declaration can be used to facilitate access to the operations in a given namespace, e.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::poly;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::poly;
+&gt; eval {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>} <span class="dv">2</span>;
+<span class="dv">17</span></code></pre></div>
+<p>See the <code>examples</code> folder in the sources for some examples.</p>
+<p>If you’d like to contribute, please mail the authors or contact us at <a href="http://groups.google.com/group/pure-lang" class="uri">http://groups.google.com/group/pure-lang</a>.</p>
+<h2 id="polynomials">Polynomials</h2>
+<p><a name="module-gslpoly"></a></p>
+<p>This module provides Pure wrappers for the GSL polynomial routines. For detail about the routines, see Chapter 6 of the GSL manual,</p>
+<p><a href="http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html" class="uri">http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html</a>.</p>
+<p>Polynomials are represented by vectors (one row matrices).</p>
+<h3 id="routines">Routines</h3>
+<dl>
+<dt><a name="gsl::poly::eval"></a><code>gsl::poly::eval c::matrix  x</code></dt>
+<dd><p>implements <code>gsl_poly_eval</code>, <code>gsl_poly_complex_eval</code>, and <code>gsl_complex_poly_eval</code> without the <code>len</code> parameter.</p>
+<p>GSL does not supply an integer routine for evaluating polynomials with <code>int</code> or <code>bigint</code> coefficients. Therefore, an integer routine has been provided in pure-gsl using the Chinese Remainder Theorem.</p>
+</dd>
+<dt><a name="gsl::poly::dd_init"></a><code>gsl::poly::dd_init x::matrix  y::matrix</code></dt>
+<dd>implements <code>gsl_poly_dd_init</code> without the <code>size</code> parameter.
+</dd>
+<dt><a name="gsl::poly::dd_eval"></a><code>gsl::poly::dd_eval dd::matrix  xa::matrix  x::double</code></dt>
+<dd>implements <code>gsl_poly_dd_eval</code> without the <code>size</code> parameter.
+</dd>
+<dt><a name="gsl::poly::dd_taylor"></a><code>gsl::poly::dd_taylor xp::double  dd::matrix  xa::matrix</code></dt>
+<dd>implements <code>gsl_poly_dd_taylor</code> without the <code>size</code> and workspace <code>w</code> arguments.
+</dd>
+<dt><a name="gsl::poly::solve_quadratic"></a><code>gsl::poly::solve_quadratic a  b  c</code></dt>
+<dd>implements <code>gsl_poly_solve_quadratic</code>. This function returns a list of roots instead of passing them through the parameters <code>x0</code> and <code>x1</code>.
+</dd>
+<dt><a name="gsl::poly::complex_solve_quadratic"></a><code>gsl::poly::complex_solve_quadratic a  b  c</code></dt>
+<dd>implements <code>gsl_poly_complex_solve_quadratic</code>. This function returns a list of roots instead of passing trhough the parameters <code>z0</code> and <code>z1</code>.
+</dd>
+<dt><a name="gsl::poly::solve_cubic"></a><code>gsl::poly::solve_cubic a  b  c</code></dt>
+<dd>implements <code>gsl_poly_solve_cubic</code>. This function returns a list of roots instead of passing them through the parameters <code>x0</code>, <code>x1</code>, and <code>x2</code>.
+</dd>
+<dt><a name="gsl::poly::complex_solve_cubic"></a><code>gsl::poly::complex_solve_cubic a  b  c</code></dt>
+<dd>implements <code>gsl_poly_complex_colve_cubic</code>. This function returns a list of roots instead of passing them through the parameters <code>z0</code>, <code>z1</code>, and <code>z2</code>.
+</dd>
+<dt><a name="gsl::poly::complex_solve"></a><code>gsl::poly::complex_solve c::matrix</code></dt>
+<dd>implements <code>gsl_poly_complex_solve</code> omitting the parametrs <code>n</code> and <code>w</code>. The GSL routines for creating and freeing the workspace are handled automatically.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples">Examples</h3>
+<p>Usage of each library routine is illustrated below.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::poly;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::poly;
+&gt; eval {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>} <span class="dv">2</span>;
+<span class="dv">17</span>
+&gt; eval {<span class="dv">1.0</span>,<span class="dv">2.0</span>,<span class="dv">3.0</span>} (-<span class="dv">2.0</span>);
+<span class="dv">9.0</span>
+&gt; eval {<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>} (<span class="dv">1</span>+:<span class="dv">1</span>);
+<span class="dv">3.0</span>+:<span class="dv">6.0</span>
+&gt; eval {<span class="dv">1</span>+:<span class="dv">2</span>, <span class="dv">2</span>+:<span class="dv">3</span>, <span class="dv">2</span>+:<span class="dv">3</span>} (<span class="dv">1</span>+:<span class="dv">1</span>);
+-<span class="dv">6.0</span>+:<span class="dv">11.0</span>
+&gt; <span class="kw">let</span> dd = dd_init {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>} {<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">6</span>};
+&gt; dd;
+{<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">0.0</span>}
+&gt; dd_eval dd {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>} <span class="dv">2</span>;
+<span class="dv">4.0</span>
+&gt; dd_taylor <span class="dv">0.0</span> dd {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>};
+{<span class="dv">0.0</span>,<span class="dv">2.0</span>,<span class="dv">0.0</span>}
+&gt; solve_quadratic <span class="dv">2</span> <span class="dv">4</span> <span class="dv">1</span>;
+[-<span class="dv">1.70710678118655</span>,-<span class="dv">0.292893218813452</span>]
+&gt; solve_quadratic <span class="dv">1</span> <span class="dv">4</span> <span class="dv">4</span>;
+[-<span class="dv">2.0</span>,-<span class="dv">2.0</span>]
+&gt; solve_quadratic <span class="dv">0</span> <span class="dv">2</span> <span class="dv">1</span>;
+[-<span class="dv">0.5</span>]
+&gt; solve_quadratic <span class="dv">1</span> <span class="dv">2</span> <span class="dv">8</span>;
+[]
+&gt; complex_solve_quadratic <span class="dv">0</span> <span class="dv">2</span> <span class="dv">1</span>;
+[-<span class="dv">0.5</span>+:<span class="dv">0.0</span>]
+&gt; complex_solve_quadratic <span class="dv">2</span> <span class="dv">2</span> <span class="dv">3</span>;
+[-<span class="dv">0.5</span>+:-<span class="dv">1.11803398874989</span>,-<span class="dv">0.5</span>+:<span class="dv">1.11803398874989</span>]   
+&gt; solve_cubic <span class="dv">3</span> <span class="dv">3</span> <span class="dv">1</span>;
+[-<span class="dv">1.0</span>,-<span class="dv">1.0</span>,-<span class="dv">1.0</span>]
+&gt; solve_cubic <span class="dv">3</span> <span class="dv">2</span> <span class="dv">1</span>;
+[-<span class="dv">2.32471795724475</span>]
+&gt; complex_solve_cubic <span class="dv">2</span> <span class="dv">2</span> <span class="dv">1</span>;
+[-<span class="dv">1.0</span>+:<span class="dv">0.0</span>,-<span class="dv">0.5</span>+:-<span class="dv">0.866025403784439</span>,-<span class="dv">0.5</span>+:<span class="dv">0.866025403784439</span>]
+&gt; complex_solve {<span class="dv">6</span>,<span class="dv">1</span>,-<span class="dv">7</span>,-<span class="dv">1</span>,<span class="dv">1</span>};
+[<span class="dv">1.0</span>+:<span class="dv">0.0</span>,-<span class="dv">1.0</span>+:<span class="dv">0.0</span>,-<span class="dv">2.0</span>+:<span class="dv">0.0</span>,<span class="dv">3.0</span>+:<span class="dv">0.0</span>]</code></pre></div>
+<h2 id="special-functions">Special Functions</h2>
+<p><a name="module-gslsf"></a></p>
+<p>This module is loaded via the command <code>using gsl::sf</code> and provides Pure wrappers for the GSL Special Functions. For details, see Chapter 7 of the GSL manual,</p>
+<p><a href="http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html" class="uri">http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html</a>.</p>
+<p>To load the library, use the Pure command <code>using gsl::sf</code>. Modes for the functions must be one of:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">GSL_PREC_DOUBLE
+GSL_PREC_SINGLE
+GSL_PREC_APPROX</code></pre></div>
+<p>Results for some of the functions are returned as a Pure list instead of the <code>gsl_sf_result</code> or <code>gsl_sf_result_e10</code> structures in C. In these cases, the resulting list is one of the following forms.</p>
+<blockquote>
+<ul>
+<li><code>[val, err]</code> for the <code>gsl_sf_result</code> struct and</li>
+<li><code>[val, err, e10]</code> for the <code>gsl_sf_result_e10</code> struct.</li>
+</ul>
+</blockquote>
+<h3 id="airy-functions">Airy Functions</h3>
+<dl>
+<dt><a name="gsl::sf::airy_Ai"></a><code>gsl::sf::airy_Ai x</code>, <a name="gsl::sf::airy_Ai"></a><code>gsl::sf::airy_Ai (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_e"></a><code>gsl::sf::airy_Ai_e x</code>, <a name="gsl::sf::airy_Ai_e"></a><code>gsl::sf::airy_Ai_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_scaled"></a><code>gsl::sf::airy_Ai_scaled x</code>, <a name="gsl::sf::airy_Ai_scaled"></a><code>gsl::sf::airy_Ai_scaled (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_scaled</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_scaled_e"></a><code>gsl::sf::airy_Ai_scaled_e x</code>, <a name="gsl::sf::airy_Ai_scaled_e"></a><code>gsl::sf::airy_Ai_scaled_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_scaled_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi"></a><code>gsl::sf::airy_Bi x</code>, <a name="gsl::sf::airy_Bi"></a><code>gsl::sf::airy_Bi (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_e"></a><code>gsl::sf::airy_Bi_e x</code>, <a name="gsl::sf::airy_Bi_e"></a><code>gsl::sf::airy_Bi_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_scaled"></a><code>gsl::sf::airy_Bi_scaled x</code>, <a name="gsl::sf::airy_Bi_scaled"></a><code>gsl::sf::airy_Bi_scaled (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_scaled</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_scaled_e"></a><code>gsl::sf::airy_Bi_scaled_e x</code>, <a name="gsl::sf::airy_Bi_scaled_e"></a><code>gsl::sf::airy_Bi_scaled_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_scaled_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_deriv"></a><code>gsl::sf::airy_Ai_deriv x</code>, <a name="gsl::sf::airy_Ai_deriv"></a><code>gsl::sf::airy_Ai_deriv (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_deriv</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_deriv_e"></a><code>gsl::sf::airy_Ai_deriv_e x</code>, <a name="gsl::sf::airy_Ai_deriv_e"></a><code>gsl::sf::airy_Ai_deriv_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_deriv_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_deriv_scaled"></a><code>gsl::sf::airy_Ai_deriv_scaled x</code>, <a name="gsl::sf::airy_Ai_deriv_scaled"></a><code>gsl::sf::airy_Ai_deriv_scaled (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_deriv_scaled</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Ai_deriv_scaled_e"></a><code>gsl::sf::airy_Ai_deriv_scaled_e x</code>, <a name="gsl::sf::airy_Ai_deriv_scaled_e"></a><code>gsl::sf::airy_Ai_deriv_scaled_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Ai_deriv_scaled_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_deriv"></a><code>gsl::sf::airy_Bi_deriv x</code>, <a name="gsl::sf::airy_Bi_deriv"></a><code>gsl::sf::airy_Bi_deriv (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_deriv</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_deriv_e"></a><code>gsl::sf::airy_Bi_deriv_e x</code>, <a name="gsl::sf::airy_Bi_deriv_e"></a><code>gsl::sf::airy_Bi_deriv_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_deriv_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_deriv_scaled"></a><code>gsl::sf::airy_Bi_deriv_scaled x</code>, <a name="gsl::sf::airy_Bi_deriv_scaled"></a><code>gsl::sf::airy_Bi_deriv_scaled (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_deriv_scaled</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_Bi_deriv_scaled_e"></a><code>gsl::sf::airy_Bi_deriv_scaled_e x</code>, <a name="gsl::sf::airy_Bi_deriv_scaled_e"></a><code>gsl::sf::airy_Bi_deriv_scaled_e (x, mode::int)</code></dt>
+<dd>implements <code>gsl_sf_airy_Bi_deriv_scaled_e</code>. The first form computes the function with <code>mode = GSL_PREC_DOUBLE</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Ai"></a><code>gsl::sf::airy_zero_Ai s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Ai</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Ai_e"></a><code>gsl::sf::airy_zero_Ai_e s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Ai_e</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Bi"></a><code>gsl::sf::airy_zero_Bi s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Bi</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Bi_e"></a><code>gsl::sf::airy_zero_Bi_e s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Bi_e</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Ai_deriv"></a><code>gsl::sf::airy_zero_Ai_deriv s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Ai_deriv</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Ai_deriv_e"></a><code>gsl::sf::airy_zero_Ai_deriv_e s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Ai_deriv_e</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Bi_deriv"></a><code>gsl::sf::airy_zero_Bi_deriv s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Bi_deriv</code>.
+</dd>
+<dt><a name="gsl::sf::airy_zero_Bi_deriv_e"></a><code>gsl::sf::airy_zero_Bi_deriv_e s</code></dt>
+<dd>implements <code>gsl_sf_airy_zero_Bi_deriv_e</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-1">Examples</h3>
+<p>The following illustrate the Airy functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::sf;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::sf;
+&gt; airy_Ai (-<span class="dv">1.2</span>); <span class="co">// defaults to GSL_PREC_DOUBLE</span>
+<span class="dv">0.52619437480212</span>
+&gt; airy_Ai_scaled (-<span class="dv">1.2</span>);
+<span class="dv">0.52619437480212</span>
+&gt; airy_Ai (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+<span class="dv">0.526194374771687</span>
+&gt; airy_Ai_scaled (-<span class="dv">1.2</span>, GSL_PREC_SINGLE);
+<span class="dv">0.526194374771687</span>
+&gt; airy_Ai_e (-<span class="dv">1.2</span>);
+[<span class="dv">0.52619437480212</span>,<span class="dv">1.88330586480371e-15</span>]
+&gt; airy_Ai_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[<span class="dv">0.526194374771687</span>,<span class="dv">1.01942940819652e-08</span>]
+&gt; airy_Ai_scaled_e (-<span class="dv">1.2</span>);
+[<span class="dv">0.52619437480212</span>,<span class="dv">1.88330586480371e-15</span>]
+&gt; airy_Ai_scaled_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[<span class="dv">0.526194374771687</span>,<span class="dv">1.01942940819652e-08</span>]
+&gt; airy_Bi (-<span class="dv">1.2</span>);
+-<span class="dv">0.015821370184632</span>
+&gt; airy_Bi_scaled (-<span class="dv">1.2</span>);
+-<span class="dv">0.015821370184632</span>
+&gt; airy_Bi (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+-<span class="dv">0.0158213701898015</span>
+&gt; airy_Bi_scaled (-<span class="dv">1.2</span>, GSL_PREC_SINGLE);
+-<span class="dv">0.0158213701898015</span>
+&gt; airy_Bi_e (-<span class="dv">1.2</span>);
+[-<span class="dv">0.015821370184632</span>,<span class="dv">1.31448899295896e-16</span>]
+&gt; airy_Bi_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[-<span class="dv">0.0158213701898015</span>,<span class="dv">4.10638404843775e-10</span>]
+&gt; airy_Bi_scaled_e (-<span class="dv">1.2</span>);
+[-<span class="dv">0.015821370184632</span>,<span class="dv">1.31448899295896e-16</span>]
+&gt; airy_Bi_scaled_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[-<span class="dv">0.0158213701898015</span>,<span class="dv">4.10638404843775e-10</span>]
+&gt; airy_Ai_deriv (-<span class="dv">1.2</span>); <span class="co">// defaults to GSL_PREC_DOUBLE</span>
+<span class="dv">0.107031569272281</span>
+&gt; airy_Ai_deriv_scaled (-<span class="dv">1.2</span>);
+<span class="dv">0.107031569272281</span>
+&gt; airy_Ai_deriv (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+<span class="dv">0.107031569264504</span>
+&gt; airy_Ai_deriv_scaled (-<span class="dv">1.2</span>, GSL_PREC_SINGLE);
+<span class="dv">0.107031569264504</span>
+&gt; airy_Ai_deriv_e (-<span class="dv">1.2</span>);
+[<span class="dv">0.107031569272281</span>,<span class="dv">3.02919983680384e-16</span>]
+&gt; airy_Ai_deriv_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[<span class="dv">0.107031569264504</span>,<span class="dv">9.25921017197604e-11</span>]
+&gt; airy_Ai_deriv_scaled_e (-<span class="dv">1.2</span>);
+[<span class="dv">0.107031569272281</span>,<span class="dv">3.02919983680384e-16</span>]
+&gt; airy_Ai_deriv_scaled_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[<span class="dv">0.107031569264504</span>,<span class="dv">9.25921017197604e-11</span>]
+&gt; airy_Bi_deriv (-<span class="dv">1.2</span>);
+<span class="dv">0.601710157437464</span>
+&gt; airy_Bi_deriv_scaled (-<span class="dv">1.2</span>);
+<span class="dv">0.601710157437464</span>
+&gt; airy_Bi_deriv (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+<span class="dv">0.601710157441937</span>
+&gt; airy_Bi_deriv_scaled (-<span class="dv">1.2</span>, GSL_PREC_SINGLE);
+<span class="dv">0.601710157441937</span>
+&gt; airy_Bi_deriv_e (-<span class="dv">1.2</span>);
+[<span class="dv">0.601710157437464</span>,<span class="dv">1.7029557943563e-15</span>]
+&gt; airy_Bi_deriv_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[<span class="dv">0.601710157441937</span>,<span class="dv">5.20534347823991e-10</span>]
+&gt; airy_Bi_deriv_scaled_e (-<span class="dv">1.2</span>);
+[<span class="dv">0.601710157437464</span>,<span class="dv">1.7029557943563e-15</span>]
+&gt; airy_Bi_deriv_scaled_e (-<span class="dv">1.2</span>,GSL_PREC_APPROX);
+[<span class="dv">0.601710157441937</span>,<span class="dv">5.20534347823991e-10</span>]
+&gt; airy_zero_Ai <span class="dv">2</span>;
+-<span class="dv">4.08794944413097</span>
+&gt; airy_zero_Ai_e <span class="dv">3</span>;
+[-<span class="dv">5.52055982809555</span>,<span class="dv">1.22581052599448e-15</span>]
+&gt; airy_zero_Bi <span class="dv">2</span>;
+-<span class="dv">3.27109330283635</span>
+&gt; airy_zero_Bi_e <span class="dv">3</span>;
+[-<span class="dv">4.83073784166202</span>,<span class="dv">1.07263927554824e-15</span>]
+&gt; airy_zero_Ai_deriv <span class="dv">2</span>;
+-<span class="dv">3.24819758217984</span>
+&gt; airy_zero_Ai_deriv_e <span class="dv">3</span>;
+[-<span class="dv">4.82009921117874</span>,<span class="dv">1.07027702504564e-15</span>]
+&gt; airy_zero_Bi_deriv <span class="dv">2</span>;
+-<span class="dv">4.07315508907183</span>
+&gt; airy_zero_Bi_deriv_e <span class="dv">3</span>;
+[-<span class="dv">5.5123957296636</span>,<span class="dv">1.22399773198358e-15</span>]</code></pre></div>
+<h3 id="bessel-functions">Bessel Functions</h3>
+<dl>
+<dt><a name="gsl::sf::bessel_J0"></a><code>gsl::sf::bessel_J0 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_J0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_J0_e"></a><code>gsl::sf::bessel_J0_e x</code></dt>
+<dd>implements <code>gsl_sf_besselJ0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_J1"></a><code>gsl::sf::bessel_J1 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_J1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_J1_e"></a><code>gsl::sf::bessel_J1_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_J1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Jn"></a><code>gsl::sf::bessel_Jn n  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Jn</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Jn_e"></a><code>gsl::sf::bessel_Jn_e n  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Jn_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Jn_array"></a><code>gsl::sf::bessel_Jn_array nmin::int  nmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Jn_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Y0"></a><code>gsl::sf::bessel_Y0 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Y0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Y0_e"></a><code>gsl::sf::bessel_Y0_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Y0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Y1"></a><code>gsl::sf::bessel_Y1 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Y1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Y1_e"></a><code>gsl::sf::bessel_Y1_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Y1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Yn"></a><code>gsl::sf::bessel_Yn x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Yn</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Yn_e"></a><code>gsl::sf::bessel_Yn_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Yn_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Yn_array"></a><code>gsl::sf::bessel_Yn_array nmin::int  nmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Yn_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I0"></a><code>gsl::sf::bessel_I0 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I0_e"></a><code>gsl::sf::bessel_I0_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I1"></a><code>gsl::sf::bessel_I1 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I1_e"></a><code>gsl::sf::bessel_I1_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_In"></a><code>gsl::sf::bessel_In n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_In</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_In_e"></a><code>gsl::sf::bessel_In_e n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_In_e</code>
+</dd>
+<dt><a name="gsl::sf::bessel_In_array"></a><code>gsl::sf::bessel_In_array nmin::int  nmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_In_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I0_scaled"></a><code>gsl::sf::bessel_I0_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I0_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I0_scaled_e"></a><code>gsl::sf::bessel_I0_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I0_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I1_scaled"></a><code>gsl::sf::bessel_I1_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I1_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_I1_scaled_e"></a><code>gsl::sf::bessel_I1_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_I1_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_In_scaled"></a><code>gsl::sf::bessel_In_scaled n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_In_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_In_scaled_e"></a><code>gsl::sf::bessel_In_scaled_e n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_In_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_In_scaled_array"></a><code>gsl::sf::bessel_In_scaled_array nmin::int  nmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_In_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K0"></a><code>gsl::sf::bessel_K0 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K0_e"></a><code>gsl::sf::bessel_K0_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K1"></a><code>gsl::sf::bessel_K1 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K1_e"></a><code>gsl::sf::bessel_K1_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Kn"></a><code>gsl::sf::bessel_Kn n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Kn</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Kn_e"></a><code>gsl::sf::bessel_Kn_e n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Kn_e</code>
+</dd>
+<dt><a name="gsl::sf::bessel_Kn_array"></a><code>gsl::sf::bessel_Kn_array nmin::int  nmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Kn_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K0_scaled"></a><code>gsl::sf::bessel_K0_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K0_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K0_scaled_e"></a><code>gsl::sf::bessel_K0_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K0_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K1_scaled"></a><code>gsl::sf::bessel_K1_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K1_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_K1_scaled_e"></a><code>gsl::sf::bessel_K1_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_K1_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Kn_scaled"></a><code>gsl::sf::bessel_Kn_scaled n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Kn_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Kn_scaled_e"></a><code>gsl::sf::bessel_Kn_scaled_e n::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Kn_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Kn_scaled_array"></a><code>gsl::sf::bessel_Kn_scaled_array nmin::int  nmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Kn_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_j0"></a><code>gsl::sf::bessel_j0 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_j0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_j0_e"></a><code>gsl::sf::bessel_j0_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_j0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_j1"></a><code>gsl::sf::bessel_j1 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_j1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_j1_e"></a><code>gsl::sf::bessel_j1_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_j1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_j2"></a><code>gsl::sf::bessel_j2 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_j2</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_j2_e"></a><code>gsl::sf::bessel_j2_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_j2_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_jl"></a><code>gsl::sf::bessel_jl l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_jl</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_jl_e"></a><code>gsl::sf::bessel_jl_e l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_jl_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_jl_array"></a><code>gsl::sf::bessel_jl_array lmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_jl_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_jl_steed_array"></a><code>gsl::sf::bessel_jl_steed_array lmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_jl_steed_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_y0"></a><code>gsl::sf::bessel_y0 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_y0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_y0_e"></a><code>gsl::sf::bessel_y0_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_y0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_y1"></a><code>gsl::sf::bessel_y1 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_y1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_y1_e"></a><code>gsl::sf::bessel_y1_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_y1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_y2"></a><code>gsl::sf::bessel_y2 x</code></dt>
+<dd>implements <code>gsl_sf_bessel_y2</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_y2_e"></a><code>gsl::sf::bessel_y2_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_y2_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_yl"></a><code>gsl::sf::bessel_yl l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_yl</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_yl_e"></a><code>gsl::sf::bessel_yl_e l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_yl_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_yl_array"></a><code>gsl::sf::bessel_yl_array lmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_yl_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_i0_scaled"></a><code>gsl::sf::bessel_i0_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_i0_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_i0_scaled_e"></a><code>gsl::sf::bessel_i0_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_i0_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_i1_scaled"></a><code>gsl::sf::bessel_i1_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_i1_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_i1_scaled_e"></a><code>gsl::sf::bessel_i1_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_i1_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_i2_scaled"></a><code>gsl::sf::bessel_i2_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_i2_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_i2_scaled_e"></a><code>gsl::sf::bessel_i2_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_i2_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_il_scaled"></a><code>gsl::sf::bessel_il_scaled l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_il_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_il_scaled_e"></a><code>gsl::sf::bessel_il_scaled_e l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_il_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_il_scaled_array"></a><code>gsl::sf::bessel_il_scaled_array lmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_il_scaled_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_k0_scaled"></a><code>gsl::sf::bessel_k0_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_k0_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_k0_scaled_e"></a><code>gsl::sf::bessel_k0_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_k0_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_k1_scaled"></a><code>gsl::sf::bessel_k1_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_k1_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_k1_scaled_e"></a><code>gsl::sf::bessel_k1_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_ik_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_k2_scaled"></a><code>gsl::sf::bessel_k2_scaled x</code></dt>
+<dd>implements <code>gsl_sf_bessel_k2_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_k2_scaled_e"></a><code>gsl::sf::bessel_k2_scaled_e x</code></dt>
+<dd>implements <code>gsl_sf_bessel_k2_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_kl_scaled"></a><code>gsl::sf::bessel_kl_scaled l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_kl_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_kl_scaled_e"></a><code>gsl::sf::bessel_kl_scaled_e l::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_kl_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_kl_scaled_array"></a><code>gsl::sf::bessel_kl_scaled_array lmax::int  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_il_scaled_array</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Jnu"></a><code>gsl::sf::bessel_Jnu nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Jnu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Jnu_e"></a><code>gsl::sf::bessel_Jnu_e nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Jnu_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_sequence_Jnu_e"></a><code>gsl::sf::bessel_sequence_Jnu_e nu  v::matrix</code></dt>
+<dd>implements <code>gsl_sf_bessel_sequence_Jnu_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Ynu"></a><code>gsl::sf::bessel_Ynu nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Ynu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Ynu_e"></a><code>gsl::sf::bessel_Ynu_e nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Ynu_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Inu"></a><code>gsl::sf::bessel_Inu nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Inu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Inu_e"></a><code>gsl::sf::bessel_Inu_e nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Inu_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Inu_scaled"></a><code>gsl::sf::bessel_Inu_scaled nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Inu_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Inu_scaled_e"></a><code>gsl::sf::bessel_Inu_scaled_e nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Inu_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Knu"></a><code>gsl::sf::bessel_Knu nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Knu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Knu_e"></a><code>gsl::sf::bessel_Knu_e nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Knu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_lnKnu"></a><code>gsl::sf::bessel_lnKnu nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_lnKnu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_lnKnu_e"></a><code>gsl::sf::bessel_lnKnu_e nu  x</code></dt>
+<dd>implements <code>gsl_sf_bessel_lnKnu_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Knu_scaled"></a><code>gsl::sf::bessel_Knu_scaled nu x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Knu_scaled</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_Knu_scaled_e"></a><code>gsl::sf::bessel_Knu_scaled_e nu x</code></dt>
+<dd>implements <code>gsl_sf_bessel_Knu_scaled_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_zero_J0"></a><code>gsl::sf::bessel_zero_J0 s::int</code></dt>
+<dd>implements <code>gsl_sf_bessel_zero_J0</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_zero_J0_e"></a><code>gsl::sf::bessel_zero_J0_e s::int</code></dt>
+<dd>implements <code>gsl_sf_bessel_zero_J0_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_zero_J1"></a><code>gsl::sf::bessel_zero_J1 s::int</code></dt>
+<dd>implements <code>gsl_sf_bessel_zero_J1</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_zero_J1_e"></a><code>gsl::sf::bessel_zero_J1_e s::int</code></dt>
+<dd>implements <code>gsl_sf_bessel_zero_J1_e</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_zero_Jnu"></a><code>gsl::sf::bessel_zero_Jnu nu  s::int</code></dt>
+<dd>implements <code>gsl_sf_bessel_zero_Jnu</code>.
+</dd>
+<dt><a name="gsl::sf::bessel_zero_Jnu_e"></a><code>gsl::sf::bessel_zero_Jnu_e nu  s::int</code></dt>
+<dd>implements <code>gsl_sf_bessel_zero_Jnu</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-2">Examples</h3>
+<p>The following illustrate the Bessel functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::sf;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::sf;
+&gt; bessel_J0 (-<span class="dv">1.2</span>);
+<span class="dv">0.671132744264363</span>
+&gt; bessel_J0_e <span class="dv">0.75</span>;
+[<span class="dv">0.864242275166649</span>,<span class="dv">7.07329111491049e-16</span>]
+&gt; bessel_J1 <span class="dv">1.2</span>;
+<span class="dv">0.498289057567216</span>
+&gt; bessel_J1_e (-<span class="dv">0.2</span>);
+[-<span class="dv">0.099500832639236</span>,<span class="dv">5.00768737808415e-17</span>]
+&gt; bessel_Jn <span class="dv">0</span> (-<span class="dv">1.2</span>);
+<span class="dv">0.671132744264363</span>
+&gt; bessel_Jn_e <span class="dv">2</span> <span class="dv">0.75</span>;
+[<span class="dv">0.0670739972996506</span>,<span class="dv">5.48959386474892e-17</span>]
+&gt; bessel_Jn_array <span class="dv">0</span> <span class="dv">4</span> <span class="dv">0.5</span>;
+[<span class="dv">0.938469807240813</span>,<span class="dv">0.242268457674874</span>,<span class="dv">0.0306040234586826</span>,
+ <span class="dv">0.00256372999458724</span>,<span class="dv">0.000160736476364288</span>]
+&gt; bessel_Y0 <span class="dv">0.25</span>;
+-<span class="dv">0.931573024930059</span>
+&gt; bessel_Y0_e <span class="dv">0.25</span>;
+[-<span class="dv">0.931573024930059</span>,<span class="dv">6.4279898430593e-16</span>]
+&gt; bessel_Y1 <span class="dv">0.125</span>;
+-<span class="dv">5.19993611253477</span>
+&gt; bessel_Y1_e <span class="dv">4.325</span>;
+[<span class="dv">0.343041276811844</span>,<span class="dv">2.74577716760089e-16</span>]
+&gt; bessel_Yn <span class="dv">3</span> <span class="dv">4.325</span>;
+-<span class="dv">0.0684784962694202</span>
+&gt; bessel_Yn_e <span class="dv">3</span> <span class="dv">4.325</span>;
+[-<span class="dv">0.0684784962694202</span>,<span class="dv">3.37764590906247e-16</span>]
+&gt; bessel_Yn_array <span class="dv">2</span> <span class="dv">4</span> <span class="dv">1.35</span>;
+[-<span class="dv">1.07379345815726</span>,-<span class="dv">2.66813016175689</span>,-<span class="dv">10.7845628163178</span>]
+&gt; bessel_I0 <span class="dv">1.35</span>;
+<span class="dv">1.51022709775726</span>
+&gt; bessel_I0_e <span class="dv">1.35</span>;
+[<span class="dv">1.51022709775726</span>,<span class="dv">2.37852166449918e-15</span>]
+&gt; bessel_I1 <span class="dv">0.35</span>;
+<span class="dv">0.177693400031422</span>
+&gt; bessel_I1_e <span class="dv">0.35</span>;
+[<span class="dv">0.177693400031422</span>,<span class="dv">1.55520651386126e-16</span>]
+&gt; bessel_In <span class="dv">2</span> <span class="dv">3.0</span>;
+<span class="dv">2.24521244092995</span>
+&gt; bessel_In_e <span class="dv">2</span> <span class="dv">3.0</span>;
+<span class="dv">2.24521244092995</span>,<span class="dv">5.98244771302867e-15</span>]
+&gt; bessel_In_array <span class="dv">3</span> <span class="dv">5</span> (-<span class="dv">0.1</span>);
+[-<span class="dv">2.08463574223272e-05</span>,<span class="dv">2.60546902129966e-07</span>,-<span class="dv">2.6052519298937e-09</span>]
+&gt; bessel_I0_scaled <span class="dv">1.05</span>;
+<span class="dv">0.453242541279856</span>
+&gt; bessel_I0_scaled_e <span class="dv">1.05</span>;
+[<span class="dv">0.453242541279856</span>,<span class="dv">4.10118141697477e-16</span>]
+&gt; bessel_I1_scaled <span class="dv">1.05</span>;
+<span class="dv">0.210226017612868</span>
+&gt; bessel_I1_scaled_e <span class="dv">1.05</span>;
+[<span class="dv">0.210226017612868</span>,<span class="dv">2.12903131803686e-16</span>]
+&gt; bessel_In_scaled <span class="dv">3</span> <span class="dv">1.05</span>;
+<span class="dv">0.00903732602788281</span>
+&gt; bessel_In_scaled_e <span class="dv">3</span> <span class="dv">1.05</span>;
+[<span class="dv">0.00903732602788281</span>,<span class="dv">2.00668948743994e-17</span>]
+&gt; bessel_In_scaled_array <span class="dv">3</span> <span class="dv">5</span> <span class="dv">1.05</span>;
+[<span class="dv">0.00903732602788281</span>,<span class="dv">0.0011701685245855</span>,<span class="dv">0.000121756316755217</span>]
+&gt; bessel_K0 <span class="dv">2.3</span>;
+<span class="dv">0.0791399330020936</span>
+&gt; bessel_K0_e <span class="dv">2.3</span>;
+[<span class="dv">0.0791399330020936</span>,<span class="dv">1.15144454318261e-16</span>]
+&gt; bessel_K1 <span class="dv">2.3</span>;
+<span class="dv">0.0949824438453627</span>
+&gt; bessel_K1_e <span class="dv">2.3</span>;
+[<span class="dv">0.0949824438453627</span>,<span class="dv">9.85583638959967e-17</span>]
+&gt; bessel_Kn <span class="dv">2</span> <span class="dv">3.4</span>;
+<span class="dv">0.0366633035851529</span>
+&gt; bessel_Kn_e <span class="dv">2</span> <span class="dv">3.4</span>;
+[<span class="dv">0.0366633035851529</span>,<span class="dv">2.01761856558251e-16</span>]
+&gt; bessel_Kn_array <span class="dv">1</span> <span class="dv">3</span> <span class="dv">2.5</span>;
+[<span class="dv">0.0738908163477471</span>,<span class="dv">0.121460206278564</span>,<span class="dv">0.268227146393449</span>]
+&gt; bessel_K0_scaled <span class="dv">1.5</span>;
+<span class="dv">0.367433609054158</span>
+&gt; bessel_K0_scaled_e <span class="dv">1.5</span>;
+[<span class="dv">0.958210053294896</span>,<span class="dv">1.25816573186951e-14</span>]
+&gt; bessel_K1_scaled <span class="dv">1.5</span>;
+<span class="dv">1.24316587355255</span>
+&gt; bessel_K1_scaled_e <span class="dv">1.5</span>;
+[<span class="dv">1.24316587355255</span>,<span class="dv">2.32370553362606e-15</span>]
+&gt; bessel_Kn_scaled <span class="dv">4</span> <span class="dv">1.5</span>;
+<span class="dv">35.4899165934682</span>
+&gt; bessel_Kn_scaled_e <span class="dv">4</span> <span class="dv">1.5</span>;
+[<span class="dv">35.4899165934682</span>,<span class="dv">3.89252285021454e-14</span>]
+&gt; bessel_Kn_scaled_array <span class="dv">4</span> <span class="dv">6</span> <span class="dv">1.5</span>;
+[<span class="dv">35.4899165934682</span>,<span class="dv">197.498093175689</span>,<span class="dv">1352.14387109806</span>]
+&gt; bessel_j0 <span class="dv">0.01</span>;
+<span class="dv">0.999983333416666</span>
+&gt; bessel_j0_e <span class="dv">0.01</span>;
+[<span class="dv">0.999983333416666</span>,<span class="dv">4.44081808400239e-16</span>]
+&gt; bessel_j1 <span class="dv">0.2</span>;
+<span class="dv">0.0664003806703222</span>
+&gt; bessel_j1_e <span class="dv">0.2</span>;
+[<span class="dv">0.0664003806703222</span>,<span class="dv">2.94876925856268e-17</span>]
+&gt; bessel_j2 <span class="dv">0.3</span>;
+<span class="dv">0.00596152486862022</span>
+&gt; bessel_j2_e <span class="dv">0.3</span>;
+[<span class="dv">0.00596152486862022</span>,<span class="dv">2.64744886840705e-18</span>]
+&gt; bessel_jl <span class="dv">4</span> <span class="dv">0.3</span>;
+<span class="dv">8.53642426502516e-06</span>
+&gt; bessel_jl_e <span class="dv">4</span> <span class="dv">0.3</span>;
+[<span class="dv">8.53642426502516e-06</span>,<span class="dv">1.02355215483598e-19</span>]
+&gt; bessel_jl_array <span class="dv">2</span> <span class="dv">1.2</span>;
+[<span class="dv">0.776699238306022</span>,<span class="dv">0.34528456985779</span>,<span class="dv">0.0865121863384538</span>]
+&gt; bessel_jl_steed_array <span class="dv">2</span> <span class="dv">1.2</span>;
+[<span class="dv">0.776699238306022</span>,<span class="dv">0.34528456985779</span>,<span class="dv">0.0865121863384538</span>]
+&gt; bessel_y0 <span class="dv">1</span>;
+-<span class="dv">0.54030230586814</span>
+&gt; bessel_y0_e <span class="dv">3</span>;
+[<span class="dv">0.329997498866815</span>,<span class="dv">2.93096657048522e-16</span>]
+&gt; bessel_y1 <span class="dv">3</span>;
+<span class="dv">0.062959163602316</span>
+&gt; bessel_y1_e <span class="dv">3.0</span>;
+[<span class="dv">0.062959163602316</span>,<span class="dv">1.04609100698801e-16</span>]
+&gt; bessel_yl <span class="dv">3</span> <span class="dv">5</span>;
+-<span class="dv">0.0154429099129942</span>
+&gt; bessel_yl_e <span class="dv">3</span> <span class="dv">5</span>;
+[-<span class="dv">0.0154429099129942</span>,<span class="dv">2.87258769784673e-17</span>]
+&gt; bessel_i0_scaled <span class="dv">3</span>;
+<span class="dv">0.166253541303889</span>
+&gt; bessel_i0_scaled_e <span class="dv">3</span>;
+[<span class="dv">0.166253541303889</span>,<span class="dv">7.38314037924188e-17</span>]
+&gt; bessel_i1_scaled <span class="dv">3</span>;
+<span class="dv">0.111661944928148</span>
+&gt; bessel_i1_scaled_e <span class="dv">3</span>;
+[<span class="dv">0.111661944928148</span>,<span class="dv">4.95878648934625e-17</span>]
+&gt; bessel_i2_scaled <span class="dv">3</span>;
+<span class="dv">0.0545915963757409</span>
+&gt; bessel_i2_scaled_e <span class="dv">3</span>;
+[<span class="dv">0.0545915963757409</span>,<span class="dv">2.42435388989563e-17</span>]
+&gt; bessel_il_scaled <span class="dv">3</span> <span class="dv">1</span>;
+<span class="dv">0.0037027398773348</span>
+&gt; bessel_il_scaled_e <span class="dv">3</span> <span class="dv">1</span>;
+[<span class="dv">0.0037027398773348</span>,<span class="dv">8.46838615599053e-17</span>]
+&gt; bessel_il_scaled_array <span class="dv">3</span> <span class="dv">1</span>;
+[<span class="dv">0.432332358381693</span>,<span class="dv">0.135335283236613</span>,<span class="dv">0.0263265086718556</span>,<span class="dv">0.0037027398773348</span>]
+&gt; bessel_k0_scaled <span class="dv">3</span>;
+<span class="dv">0.523598775598299</span>
+&gt; bessel_k0_scaled_e <span class="dv">3</span>;
+[<span class="dv">0.523598775598299</span>,<span class="dv">2.32524566533909e-16</span>]
+&gt; bessel_k1_scaled <span class="dv">4</span>;
+<span class="dv">0.490873852123405</span>
+&gt; bessel_k1_scaled_e <span class="dv">4</span>;
+[<span class="dv">0.490873852123405</span>,<span class="dv">2.17991781125539e-16</span>]
+&gt; bessel_k2_scaled <span class="dv">4</span>;
+<span class="dv">0.760854470791278</span>
+&gt; bessel_k2_scaled_e <span class="dv">4</span>;
+[<span class="dv">0.760854470791278</span>,<span class="dv">3.37887260744586e-16</span>]
+&gt; bessel_kl_scaled <span class="dv">2</span> <span class="dv">4</span>;
+<span class="dv">0.760854470791278</span>
+&gt; bessel_kl_scaled_e <span class="dv">2</span> <span class="dv">4</span>;
+[<span class="dv">0.760854470791278</span>,<span class="dv">3.37887260744586e-16</span>]
+&gt; bessel_kl_scaled_array <span class="dv">2</span> <span class="dv">4</span>;
+[<span class="dv">0.392699081698724</span>,<span class="dv">0.490873852123405</span>,<span class="dv">0.760854470791278</span>]
+&gt; bessel_Jnu <span class="dv">2</span> <span class="dv">2.3</span>;
+<span class="dv">0.413914591732062</span>
+&gt; bessel_Jnu_e <span class="dv">2</span> <span class="dv">2.3</span>;
+[<span class="dv">0.413914591732062</span>,<span class="dv">6.43352513956959e-16</span>]
+&gt; bessel_sequence_Jnu_e <span class="dv">2</span> {.<span class="dv">1</span>,.<span class="dv">2</span>,.<span class="dv">3</span>};
+[<span class="dv">0.00124895865879992</span>,<span class="dv">0.00498335415278356</span>,<span class="dv">0.011165861949064</span>]
+&gt; bessel_Ynu <span class="dv">1</span> <span class="dv">0.5</span>;
+-<span class="dv">1.47147239267024</span>
+&gt; bessel_Ynu_e <span class="dv">1</span> <span class="dv">0.5</span>;
+[-<span class="dv">1.47147239267024</span>,<span class="dv">8.49504515830242e-15</span>]
+&gt; bessel_Inu <span class="dv">1.2</span> <span class="dv">3.4</span>;
+<span class="dv">5.25626563437082</span>
+&gt; bessel_Inu_e <span class="dv">1.2</span> <span class="dv">3.4</span>;
+[<span class="dv">5.25626563437082</span>,<span class="dv">1.00839636820646e-13</span>]
+&gt; bessel_Inu_scaled <span class="dv">1.2</span> <span class="dv">3.4</span>;
+<span class="dv">0.175418771999042</span>
+&gt; bessel_Inu_scaled_e <span class="dv">1.2</span> <span class="dv">3.4</span>;
+[<span class="dv">0.175418771999042</span>,<span class="dv">3.15501414592188e-15</span>]
+&gt; bessel_Knu <span class="dv">3</span> <span class="dv">3</span>;
+<span class="dv">0.122170375757184</span>
+&gt; bessel_Knu_e <span class="dv">3</span> <span class="dv">3</span>;
+[<span class="dv">0.122170375757184</span>,<span class="dv">4.34036365096743e-16</span>]
+&gt; bessel_lnKnu <span class="dv">3</span> <span class="dv">3</span>;
+-<span class="dv">2.10233868587978</span>
+&gt; bessel_lnKnu_e <span class="dv">3</span> <span class="dv">3</span>;
+[-<span class="dv">2.10233868587978</span>,<span class="dv">4.24157124665032e-15</span>]
+&gt; bessel_Knu_scaled <span class="dv">3</span> <span class="dv">3</span>;
+<span class="dv">2.45385759319062</span>
+&gt; bessel_Knu_scaled_e <span class="dv">3</span> <span class="dv">3</span>;
+[<span class="dv">2.45385759319062</span>,<span class="dv">7.6281217575122e-15</span>]
+&gt; bessel_zero_J0 <span class="dv">3</span>;
+<span class="dv">8.65372791291102</span>
+&gt; bessel_zero_J0_e <span class="dv">3</span>;
+[<span class="dv">8.65372791291102</span>,<span class="dv">2.59611837387331e-14</span>]
+&gt; bessel_zero_J1 <span class="dv">3</span>;
+<span class="dv">10.1734681350627</span>
+&gt; bessel_zero_J1_e <span class="dv">3</span>;
+[<span class="dv">10.1734681350627</span>,<span class="dv">2.03469362701254e-13</span>]
+&gt; bessel_zero_Jnu <span class="dv">1.2</span> <span class="dv">3</span>;
+<span class="dv">10.46769</span>
+&gt; bessel_zero_Jnu_e <span class="dv">1.2</span> <span class="dv">3</span>;
+[<span class="dv">10.4676986203553</span>,<span class="dv">2.09353972407105e-14</span>]<span class="dv">86203553</span></code></pre></div>
+<h3 id="clausen-functions">Clausen Functions</h3>
+<dl>
+<dt><a name="gsl::sf::clausen"></a><code>gsl::sf::clausen x</code></dt>
+<dd>implements <code>gsl_sf_clausen</code>.
+</dd>
+<dt><a name="gsl::sf::clausen_e"></a><code>gsl::sf::clausen_e x</code></dt>
+<dd>implements <code>gsl_sf_clausen_e</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-3">Examples</h3>
+<p>The following illustrate the Clausen functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::sf;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::sf;
+&gt; clausen <span class="dv">4.5</span>;
+-<span class="dv">0.831839220823219</span>
+&gt; clausen_e <span class="dv">4.5</span>;
+[-<span class="dv">0.831839220823219</span>,<span class="dv">8.60688668835964e-16</span>]</code></pre></div>
+<h3 id="colomb-functions">Colomb Functions</h3>
+<p>The results of the Coulomb wave functions are returned as a list whose elements are ordered corresponding to the argument order of the corresponding C functions in GSL library.</p>
+<dl>
+<dt><a name="gsl::sf::hydrogenicR_1"></a><code>gsl::sf::hydrogenicR_1 Z  r</code></dt>
+<dd>implements <code>gsl_sf_hydrogenicR_1</code>.
+</dd>
+<dt><a name="gsl::sf::hydrogenicR_1_e"></a><code>gsl::sf::hydrogenicR_1_e Z  r</code></dt>
+<dd>implements <code>gsl_sf_hydrogenicR_1_e</code>.
+</dd>
+<dt><a name="gsl::sf::hydrogenicR"></a><code>gsl::sf::hydrogenicR n::int  l::int  Z  r</code></dt>
+<dd>implements <code>gsl_sf_hydrogenicR_1</code>.
+</dd>
+<dt><a name="gsl::sf::hydrogenicR_e"></a><code>gsl::sf::hydrogenicR_e n::int  l::int  Z  r</code></dt>
+<dd>implements <code>gsl_sf_hydrogenicR_1_e</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_wave_FG_e"></a><code>gsl::sf::coulomb_wave_FG_e eta  x  L_F  k::int</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_FG_e</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_wave_F_array"></a><code>gsl::sf::coulomb_wave_F_array L_min  kmax::int  eta  x</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_F_array</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_wave_FG_array"></a><code>gsl::sf::coulomb_wave_FG_array L_min  kmax::int  eta  x</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_FG_array</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_wave_FGp_array"></a><code>gsl::sf::coulomb_wave_FGp_array L_min  kmax::int  eta x</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_FGp_array</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_wave_sphF_array"></a><code>gsl::sf::coulomb_wave_sphF_array L_min  kmax::int  eta  x</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_sphF_array</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_CL_e"></a><code>gsl::sf::coulomb_CL_e L  eta</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_CL_e</code>.
+</dd>
+<dt><a name="gsl::sf::coulomb_CL_array"></a><code>gsl::sf::coulomb_CL_array Lmin  kmax  eta</code></dt>
+<dd>implements <code>gsl_sf_coulomb_wave_CL_array</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-4">Examples</h3>
+<p>The following illustrate the Coulomb functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::sf;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::sf;
+&gt; hydrogenicR_1 <span class="dv">0.2</span> <span class="dv">4</span>;
+<span class="dv">0.0803784086420537</span>
+&gt; hydrogenicR_1_e <span class="dv">0.2</span> <span class="dv">4</span>;
+[<span class="dv">0.0803784086420537</span>,<span class="dv">2.85561471862841e-17</span>]
+&gt; hydrogenicR <span class="dv">3</span> <span class="dv">1</span> <span class="dv">0.25</span> <span class="dv">3.2</span>;
+<span class="dv">0.00802954301593587</span>
+&gt; hydrogenicR_e <span class="dv">3</span> <span class="dv">1</span> <span class="dv">0.25</span> <span class="dv">3.2</span>;
+[<span class="dv">0.00802954301593587</span>,<span class="dv">3.90138748076797e-17</span>]
+&gt; coulomb_wave_F_array <span class="dv">1</span> <span class="dv">2</span> <span class="dv">0.5</span> <span class="dv">0.5</span>;
+[{<span class="dv">0.0387503306520188</span>,<span class="dv">0.0038612830533923</span>,<span class="dv">0.000274978904710252</span>},<span class="dv">0.0</span>]
+&gt; coulomb_wave_FG_array <span class="dv">1</span> <span class="dv">2</span> <span class="dv">0.5</span> <span class="dv">0.5</span>;
+[{<span class="dv">0.0387503306520188</span>,<span class="dv">0.0038612830533923</span>,<span class="dv">0.000274978904710252</span>},
+ {<span class="dv">4.13731494044202</span>,<span class="dv">25.4479852847406</span>,<span class="dv">257.269816591168</span>},<span class="dv">0.0</span>,<span class="dv">0.0</span>]
+&gt; coulomb_wave_FGp_array <span class="dv">1</span> <span class="dv">2</span> <span class="dv">0.5</span> <span class="dv">0.5</span>;
+[{<span class="dv">0.0387503306520188</span>,<span class="dv">0.0038612830533923</span>,<span class="dv">0.000274978904710252</span>},
+ {<span class="dv">4.13731494044202</span>,<span class="dv">25.4479852847406</span>,<span class="dv">257.269816591168</span>},<span class="dv">0.0</span>,<span class="dv">0.0</span>]
+&gt; coulomb_wave_sphF_array <span class="dv">1</span> <span class="dv">2</span> <span class="dv">0.5</span> <span class="dv">0.5</span>;
+[{<span class="dv">0.0775006613040376</span>,<span class="dv">0.0077225661067846</span>,<span class="dv">0.000549957809420504</span>},<span class="dv">0.0</span>]
+&gt; coulomb_CL_e (-<span class="dv">0.5</span>) <span class="dv">3</span>;
+[<span class="dv">0.000143036170217949</span>,<span class="dv">2.92195771135514e-18</span>]
+&gt; coulomb_CL_array (-<span class="dv">0.5</span>) <span class="dv">4</span> <span class="dv">1.5</span>;
+[<span class="dv">0.0159218263353144</span>,<span class="dv">0.0251746178646226</span>,<span class="dv">0.00890057150292734</span>,
+ <span class="dv">0.00172996014234001</span>,<span class="dv">0.000235267570111599</span>]</code></pre></div>
+<h3 id="coupling-coefficients">Coupling Coefficients</h3>
+<dl>
+<dt><a name="gsl::sf::coupling_3j"></a><code>gsl::sf::coupling_3j m::matrix</code></dt>
+<dd>implements <code>gsl_sf_coupling_3j</code> except the input is a 2x3 (row by column) integer matrix instead of six integer arguments.
+</dd>
+<dt><a name="gsl::sf::coupling_3j_e"></a><code>gsl::sf::coupling_3j_e m::matrix</code></dt>
+<dd>implements <code>gsl_sf_coupling_3j_e</code> except the input is a 2x3 (row by column) integer matrix instead of six integer arguments.
+</dd>
+<dt><a name="gsl::sf::coupling_6j"></a><code>gsl::sf::coupling_6j m::matrix</code></dt>
+<dd>implements <code>gsl_sf_coupling_6j</code> except the input is a 2x3 (row by column) integer matrix instead of six integer arguments.
+</dd>
+<dt><a name="gsl::sf::coupling_6j_e"></a><code>gsl::sf::coupling_6j_e m::matrix</code></dt>
+<dd>implements <code>gsl_sf_coupling_6j_e</code> except the input is a 2x3 (row by column) integer matrix instead of six integer arguments.
+</dd>
+<dt><a name="gsl::sf::coupling_9j"></a><code>gsl::sf::coupling_9j m::matrix</code></dt>
+<dd>implements <code>gsl_sf_coupling_9j</code> except the input is a 3x3 integer matrix instead of six integer arguments.
+</dd>
+<dt><a name="gsl::sf::coupling_9j_e"></a><code>gsl::sf::coupling_9j_e m::matrix</code></dt>
+<dd>implements <code>gsl_sf_coupling_9j_e</code> except the input is a 3x3 integer matrix instead of six integer arguments.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-5">Examples</h3>
+<p>The following illustrate the coupling coefficient functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::sf;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::sf;
+&gt; coupling_3j {<span class="dv">6</span>,<span class="dv">4</span>,<span class="dv">2</span>;<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>};
+-<span class="dv">0.29277002188456</span>
+&gt; coupling_3j_e {<span class="dv">6</span>,<span class="dv">4</span>,<span class="dv">2</span>;<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>};
+[-<span class="dv">0.29277002188456</span>,<span class="dv">1.300160076865e-16</span>]
+&gt; coupling_6j {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>;<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">2</span>};
+-<span class="dv">0.166666666666667</span>
+&gt; coupling_6j_e {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>;<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">2</span>};
+[-<span class="dv">0.166666666666667</span>,<span class="dv">2.22044604925031e-16</span>]
+&gt; coupling_9j {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>;<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">2</span>;<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>};
+-<span class="dv">0.0962250448649376</span>
+&gt; coupling_9j_e {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>;<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">2</span>;<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>};
+[-<span class="dv">0.0962250448649376</span>,<span class="dv">4.84948508304183e-16</span>]</code></pre></div>
+<h3 id="dawson-function">Dawson Function</h3>
+<dl>
+<dt><a name="gsl::sf::dawson"></a><code>gsl::sf::dawson x</code></dt>
+<dd>implements <code>gsl_sf_dawson</code>.
+</dd>
+<dt><a name="gsl::sf::dawson_e"></a><code>gsl::sf::dawson_e x</code></dt>
+<dd>implements <code>gsl_sf_dawson_e</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-6">Examples</h3>
+<p>The following illustrate the dawson functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; dawson <span class="dv">3</span>;<span class="co">/**-</span>
+<span class="co">0.178271030610558</span>
+<span class="co">&gt; dawson_e 3;</span>
+<span class="co">[0.178271030610558,8.9920386788099e-16]</span></code></pre></div>
+<h3 id="debye-functions">Debye Functions</h3>
+<dl>
+<dt><a name="gsl::sf::debye_1"></a><code>gsl::sf::debye_1 x</code></dt>
+<dd>implements <code>gsl_sf_debye_1</code>.
+</dd>
+<dt><a name="gsl::sf::debye_1_e"></a><code>gsl::sf::debye_1_e x</code></dt>
+<dd>implements <code>gsl_sf_debye_1_e</code>.
+</dd>
+<dt><a name="gsl::sf::debye_2"></a><code>gsl::sf::debye_2 x</code></dt>
+<dd>implements <code>gsl_sf_debye_2</code>.
+</dd>
+<dt><a name="gsl::sf::debye_2_e"></a><code>gsl::sf::debye_2_e x</code></dt>
+<dd>implements <code>gsl_sf_debye_2_e</code>.
+</dd>
+<dt><a name="gsl::sf::debye_3"></a><code>gsl::sf::debye_3 x</code></dt>
+<dd>implements <code>gsl_sf_debye_3</code>.
+</dd>
+<dt><a name="gsl::sf::debye_3_e"></a><code>gsl::sf::debye_3_e x</code></dt>
+<dd>implements <code>gsl_sf_debye_3_e</code>.
+</dd>
+<dt><a name="gsl::sf::debye_4"></a><code>gsl::sf::debye_4 x</code></dt>
+<dd>implements <code>gsl_sf_debye_4</code>.
+</dd>
+<dt><a name="gsl::sf::debye_4_e"></a><code>gsl::sf::debye_4_e x</code></dt>
+<dd>implements <code>gsl_sf_debye_4_e</code>.
+</dd>
+<dt><a name="gsl::sf::debye_5"></a><code>gsl::sf::debye_5 x</code></dt>
+<dd>implements <code>gsl_sf_debye_5</code>.
+</dd>
+<dt><a name="gsl::sf::debye_5_e"></a><code>gsl::sf::debye_5_e x</code></dt>
+<dd>implements <code>gsl_sf_debye_5_e</code>.
+</dd>
+<dt><a name="gsl::sf::debye_6"></a><code>gsl::sf::debye_6 x</code></dt>
+<dd>implements <code>gsl_sf_debye_6</code>.
+</dd>
+<dt><a name="gsl::sf::debye_6_e"></a><code>gsl::sf::debye_6_e x</code></dt>
+<dd>implements <code>gsl_sf_debye_6_e</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-7">Examples</h3>
+<p>The following illustrate the debye functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; debye_1 <span class="dv">0.4</span>;
+<span class="dv">0.904437352623294</span>
+&gt; debye_1_e <span class="dv">0.4</span>;
+[<span class="dv">0.904437352623294</span>,<span class="dv">3.84040456356756e-16</span>]
+&gt; debye_2 <span class="dv">1.4</span>;
+<span class="dv">0.613281386045505</span>
+&gt; debye_2_e <span class="dv">1.4</span>;
+[<span class="dv">0.613281386045505</span>,<span class="dv">5.15090106564116e-16</span>]
+&gt; debye_3 <span class="dv">2.4</span>;
+<span class="dv">0.370136882985216</span>
+&gt; debye_3_e <span class="dv">2.4</span>;
+[<span class="dv">0.370136882985216</span>,<span class="dv">6.0792125556598e-16</span>]
+&gt; debye_4 <span class="dv">3.4</span>;
+<span class="dv">0.205914922541978</span>
+&gt; debye_4_e <span class="dv">3.4</span>;
+[<span class="dv">0.205914922541978</span>,<span class="dv">7.42872979584512e-16</span>]
+&gt; debye_5 <span class="dv">4.4</span>;
+<span class="dv">0.107477287722471</span>
+&gt; debye_5_e <span class="dv">4.4</span>;
+[<span class="dv">0.107477287722471</span>,<span class="dv">2.38647518907499e-17</span>]
+&gt; debye_6 <span class="dv">5.4</span>;
+<span class="dv">0.0533132925698824</span>
+&gt; debye_6_e <span class="dv">5.4</span>;
+[<span class="dv">0.0533132925698824</span>,<span class="dv">1.18379289859322e-17</span>]</code></pre></div>
+<h3 id="dilogarithm">Dilogarithm</h3>
+<dl>
+<dt><a name="gsl::sf::dilog"></a><code>gsl::sf::dilog x</code></dt>
+<dd>implements <code>gsl_sf_dilog</code>.
+</dd>
+<dt><a name="gsl::sf::dilog"></a><code>gsl::sf::dilog (r&lt;:theta)</code></dt>
+<dd>implements <code>gsl_sf_complex_dilog_e</code> except that results are returned as the complex value <code>re+:im</code> and the error values are not returned.
+</dd>
+<dt><a name="gsl::sf::dilog_e"></a><code>gsl::sf::dilog_e x</code></dt>
+<dd>implements <code>gsl_sf_dilog_e</code>.
+</dd>
+<dt><a name="gsl::sf::dilog_e"></a><code>gsl::sf::dilog_e (r&lt;:theta)</code></dt>
+<dd>implements <code>gsl_sf_complex_dilog_e</code> except the results are returned as the list <code>[re+:im, re_error, im_error]</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-8">Examples</h3>
+<p>The following illustrate the dilog functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; dilog <span class="dv">1.0</span>;
+<span class="dv">1.64493406684823</span>
+&gt; dilog (<span class="dv">1</span>&lt;:<span class="dv">2</span>);
+-<span class="dv">0.496658586741567</span>+:<span class="dv">0.727146050863279</span>
+&gt; dilog_e (<span class="dv">1</span>%<span class="dv">3</span>);
+[<span class="dv">0.366213229977064</span>,<span class="dv">8.22687466397711e-15</span>]
+&gt; dilog_e (<span class="dv">1</span>&lt;:<span class="dv">3</span>);
+[-<span class="dv">0.817454913536463</span>+:<span class="dv">0.0980262093913011</span>,<span class="dv">3.8224192909699e-15</span>,
+ <span class="dv">1.47247478976757e-15</span>]</code></pre></div>
+<dl>
+<dt><a name="gsl::sf::multiply_e"></a><code>gsl::sf::multiply_e x  y</code></dt>
+<dd>implements <code>gsl_sf_multiply_e</code>.
+</dd>
+<dt><a name="gsl::sf::multiply_err_e"></a><code>gsl::sf::multiply_err_e x  dx  y  dy</code></dt>
+<dd>implements <code>gsl_sf_multiply_err_e</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-9">Examples</h3>
+<p>The following illustrate the multiply functions.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; multiply_e <span class="dv">10.0</span> <span class="dv">11.0</span>;
+[<span class="dv">110.0</span>,<span class="dv">4.88498130835069e-14</span>]
+&gt; multiply_err_e <span class="dv">10.0</span> <span class="dv">0.04</span> <span class="dv">11.0</span> <span class="dv">0.002</span>;
+[<span class="dv">110.0</span>,<span class="dv">0.460000000000049</span>]</code></pre></div>
+<h2 id="matrices">Matrices</h2>
+<p><a name="module-gslmatrix"></a></p>
+<p>This module is loaded via the command <code>using gsl::matrix</code> and provides wrappers for many of the GSL matrix, BLAS, and linear algebra routines found in Chapters 8, 12, and 13, respectively of the GSL Reference Manual:</p>
+<ul>
+<li><a href="http://www.gnu.org/software/gsl/manual/html_node/Vectors-and-Matrices.html">Vectors and Matrices</a></li>
+<li><a href="http://www.gnu.org/software/gsl/manual/html_node/BLAS-Support.html">BLAS Support</a></li>
+<li><a href="http://www.gnu.org/software/gsl/manual/html_node/Linear-Algebra.html">Linear Algebra</a></li>
+</ul>
+<p>It also contains some general utility functions for creating various types of matrices.</p>
+<h3 id="matrix-creation">Matrix Creation</h3>
+<p>The utility functions <code>zeros</code> and <code>ones</code> create matrices with all elements zero or one, respectively, and <code>eye</code> creates identity matrices. These functions can be invoked either with a pair <em>(n,m)</em> denoting the desired number of rows or columns, or an integer <em>n</em> in which case a square <em>n</em> x <em>n</em> matrix is created. The result is always a double matrix. Analogous functions <code>izeros</code>, <code>czeros</code>, etc. are provided to create integer and complex matrices, respectively.</p>
+<dl>
+<dt><a name="gsl::matrix::zeros"></a><code>gsl::matrix::zeros (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> double matrix with all of its entries being zero.
+</dd>
+<dt><a name="gsl::matrix::zeros"></a><code>gsl::matrix::zeros n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> double matrix with all of its entries being zero.
+</dd>
+<dt><a name="gsl::matrix::izeros"></a><code>gsl::matrix::izeros (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> integer matrix with all of its entries being zero.
+</dd>
+<dt><a name="gsl::matrix::izeros"></a><code>gsl::matrix::izeros n :: int</code></dt>
+<dd>creates an nx`n` integer matrix with all of its entries being zero.
+</dd>
+<dt><a name="gsl::matrix::czeros"></a><code>gsl::matrix::czeros (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> complex matrix with all of its entries being zero.
+</dd>
+<dt><a name="gsl::matrix::czeros"></a><code>gsl::matrix::czeros n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> complex matrix with all of its entries being zero.
+</dd>
+<dt><a name="gsl::matrix::ones"></a><code>gsl::matrix::ones (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> double matrix with all of its entries being one.
+</dd>
+<dt><a name="gsl::matrix::ones"></a><code>gsl::matrix::ones n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> double matrix with all of its entries being one.
+</dd>
+<dt><a name="gsl::matrix::iones"></a><code>gsl::matrix::iones (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> integer matrix with all of its entries being one.
+</dd>
+<dt><a name="gsl::matrix::iones"></a><code>gsl::matrix::iones n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> integer matrix with all of its entries being one.
+</dd>
+<dt><a name="gsl::matrix::cones"></a><code>gsl::matrix::cones (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> complex matrix with all of its entries being one.
+</dd>
+<dt><a name="gsl::matrix::cones"></a><code>gsl::matrix::cones n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> complex matrix with all of its entries being one.
+</dd>
+<dt><a name="gsl::matrix::eye"></a><code>gsl::matrix::eye (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> identity matrix with double entries.
+</dd>
+<dt><a name="gsl::matrix::eye"></a><code>gsl::matrix::eye n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> identity matrix with double entries.
+</dd>
+<dt><a name="gsl::matrix::ieye"></a><code>gsl::matrix::ieye (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> identity matrix with integer entries.
+</dd>
+<dt><a name="gsl::matrix::ieye"></a><code>gsl::matrix::ieye n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> identity matrix with integer entries.
+</dd>
+<dt><a name="gsl::matrix::ceye"></a><code>gsl::matrix::ceye (n :: int, m :: int)</code></dt>
+<dd>creates an <em>n</em> x <em>m</em> identity matrix with complex entries.
+</dd>
+<dt><a name="gsl::matrix::ceye"></a><code>gsl::matrix::ceye n :: int</code></dt>
+<dd>creates an <em>n</em> x <em>n</em> identity matrix with complex entries.
+</dd>
+</dl>
+<!-- -->
+<h3 id="matrix-operators-and-functions">Matrix Operators and Functions</h3>
+<p>The following operations are defined for constant <code>a</code> and matrices <code>x</code> and <code>y</code>. Some operators are not defined in the GSL library but are provided here for convenience.</p>
+<dl>
+<dt><a name="+/gsl_matrix"></a><code>a + x</code>, <a name="+/gsl_matrix"></a><code>x + a</code></dt>
+<dd>returns a matrix with entries <code>a + x!(i,j)</code>.
+</dd>
+<dt><a name="+/gsl_matrix"></a><code>x + y</code></dt>
+<dd>adds matrix <code>x</code> to matrix <code>y</code>.
+</dd>
+<dt><a name="-/gsl_matrix"></a><code>- x</code></dt>
+<dd>returns a matrix with entries <code>- x!(i,j)</code>. Note that <code>neg x</code> is equivalent to <code>- x</code>.
+</dd>
+<dt><a name="-/gsl_matrix"></a><code>a - x</code></dt>
+<dd>returns a matrix with entries <code>a - x!(i,j)</code>.
+</dd>
+<dt><a name="-/gsl_matrix"></a><code>x - a</code></dt>
+<dd>returns a matrix with entries <code>x!(i,j) - a</code>.
+</dd>
+<dt><a name="-/gsl_matrix"></a><code>x - y</code></dt>
+<dd>subtracts matrix <code>y</code> from matrix <code>x</code>.
+</dd>
+<dt><a name="*/gsl_matrix"></a><code>a * x</code>, <a name="*/gsl_matrix"></a><code>x * a</code></dt>
+<dd>returns a matrix with entries <code>a * x!(i,j)</code>.
+</dd>
+<dt><a name=".*/gsl_matrix"></a><code>x .* y</code></dt>
+<dd>multiplies, element-wise, matrix <code>x</code> to matrix <code>y</code>.
+</dd>
+<dt><a name="*/gsl_matrix"></a><code>x * y</code></dt>
+<dd>multiplies matrix <code>x</code> to matrix <code>y</code>.
+</dd>
+<dt><a name="//gsl_matrix"></a><code>a / x</code></dt>
+<dd>returns a matrix with entries <code>a / x!(i,j)</code>. Note that matrix <code>x</code> must not have any zero entries.
+</dd>
+<dt><a name="//gsl_matrix"></a><code>x / a</code></dt>
+<dd>returns a matrix with entries <code>x!(i,j) / a</code>. Note that <code>a</code> must be nonzero.
+</dd>
+<dt><a name=".//gsl_matrix"></a><code>x ./ y</code></dt>
+<dd>divides, element-wise, matrix <em>x</em> by matrix <em>y</em>.
+</dd>
+<dt><a name="//gsl_matrix"></a><code>x / y</code></dt>
+<dd>right divides matrix <em>x</em> by matrix <em>y</em>.
+</dd>
+<dt><a name="\/gsl_matrix"></a><code>x \ y</code></dt>
+<dd>left divides matrix <em>x</em> by matrix <em>y</em>.
+</dd>
+<dt><a name="div/gsl_matrix"></a><code>a div x</code></dt>
+<dd>returns an integer matrix with entries <code>a div x!(i,j)</code>. Note that <em>a</em> must be an integer and matrix <code>x</code> must be an integer matrix with nonzero entries.
+</dd>
+<dt><a name="div/gsl_matrix"></a><code>x div a</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) div a</code>. Note that <code>a</code> must be a nonzero integer and matrix <code>x</code> must have integer entries.
+</dd>
+<dt><a name="div/gsl_matrix"></a><code>x div y</code></dt>
+<dd>computes the quotient integer matrix <code>x</code> by integer matrix <code>y</code>.
+</dd>
+<dt><a name="mod/gsl_matrix"></a><code>a mod x</code></dt>
+<dd>returns an integer matrix with entries <code>a mod x!(i,j)</code>. Note that <code>a</code> must be an integer and matrix <code>x</code> must be an integer matrix with nonzero entries.
+</dd>
+<dt><a name="mod/gsl_matrix"></a><code>x mod a</code></dt>
+<dd>returns an integer matrix with entries <code>a mod x!(i,j)</code>. Note that <code>a</code> must be an integer and matrix <code>x</code> must be an integer matrix with nonzero entries.
+</dd>
+<dt><a name="mod/gsl_matrix"></a><code>x mod y</code></dt>
+<dd>returns the remainder integer matrix <code>x</code> mod integer matrix <code>y</code>.
+</dd>
+<dt><a name="not/gsl_matrix"></a><code>not x</code></dt>
+<dd>returns a matrix with integer entries <code>not x!(i,j)</code>. Note that <code>x</code> must be a matrix with integer entries and <code>not</code> is the bitwise negation operation.
+</dd>
+<dt><a name="^/gsl_matrix"></a><code>a ^ x</code></dt>
+<dd>returns a matrix with entries <code>a ^ x!(i,j)</code>. Note that <code>0^0</code> is defined as 1.
+</dd>
+<dt><a name="^/gsl_matrix"></a><code>x ^ a</code></dt>
+<dd>returns a matrix with entries <code>x!(i,j) ^ a</code>. Note that <code>0^0</code> is defined as 1.
+</dd>
+<dt><a name=".^/gsl_matrix"></a><code>x .^ y</code></dt>
+<dd>returns a matrix with entries <code>x!(i,j) ^ y!(i,j)</code>.
+</dd>
+<dt><a name="^/gsl_matrix"></a><code>x ^ y</code></dt>
+<dd>returns a matrix with entries <code>x!(i,j) ^ y!(i,j)</code>.
+</dd>
+<dt><a name="<</gsl_matrix"></a><code>x &lt;&lt; a</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) &lt;&lt; a</code>. Note that <code>a</code> must be an integer and matrix <code>x</code> must have integer entries.
+</dd>
+<dt><a name="<</gsl_matrix"></a><code>x &lt;&lt; y</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) &lt;&lt; y!(i,j)</code>. Note that <code>x</code> and <code>y</code> must have integer entries.
+</dd>
+<dt><a name="&gt;&gt;/gsl_matrix"></a><code>x &gt;&gt; a</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) &gt;&gt; a</code>. Note that <code>a</code> must be an integer and matrix <code>x</code> must have integer entries.
+</dd>
+<dt><a name="&gt;&gt;/gsl_matrix"></a><code>x &gt;&gt; y</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) &gt;&gt; y!(i,j)</code>. Note that <code>x</code> and <code>y</code> must have integer entries.
+</dd>
+<dt><a name="and/gsl_matrix"></a><code>x and a</code>, <a name="and/gsl_matrix"></a><code>a and x</code></dt>
+<dd>returns an integer matrix with entries <code>a and x!(i,j)</code>. Note that <code>a</code> must be an integer, matrix <code>x</code> must have integer entries, and <code>and</code> is a bitwise operator.
+</dd>
+<dt><a name="and/gsl_matrix"></a><code>x and y</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) and y!(i,j)</code>. Note that <code>x</code> and <code>y</code> must be matrices with integer entries.
+</dd>
+<dt><a name="or/gsl_matrix"></a><code>x or a</code>, <a name="or/gsl_matrix"></a><code>a or x</code></dt>
+<dd>returns an integer matrix with entries <code>a or x!(i,j)</code>. Note that <code>a</code> must be an integer, matrix <code>x</code> must have integer entries, and <code>or</code> is a bitwise operator.
+</dd>
+<dt><a name="or/gsl_matrix"></a><code>x or y</code></dt>
+<dd>returns an integer matrix with entries <code>x!(i,j) or y!(i,j)</code>. Note that <code>x</code> and <code>y</code> must be matrices with integer entries.
+</dd>
+</dl>
+<!-- -->
+<p>The <code>pow</code> function computes powers of matrices by repeated matrix multiplication.</p>
+<dl>
+<dt><a name="pow/gsl_matrix"></a><code>pow x :: matrix  k :: int</code>, <a name="pow/gsl_matrix"></a><code>pow x :: matrix  k :: bigint</code></dt>
+<dd>Raises matrix <code>x</code> to the <code>k</code> th power. Note <code>x</code> must be a square matrix and <code>k</code> a nonnegative integer.
+</dd>
+</dl>
+<!-- -->
+<h3 id="singular-value-decomposition">Singular Value Decomposition</h3>
+<p>For a given <em>n</em> x <em>m</em> matrix <code>x</code>, these functions yield a singular-value decomposition <code>u</code>, <code>s</code>, <code>v</code> of the matrix such that <code>x == u*s*transpose v</code>, where <code>u</code> and <code>v</code> are orthogonal matrices of dimensions <em>n</em> x <em>m</em> and <em>n</em> x <em>n</em>, respectively, and <em>s</em> is a <em>n</em> x <em>n</em> diagonal matrix which has the singular values in its diagonal, in descending order. Note that GSL implements this only for double matrices right now. Also, GSL only handles the case of square or overdetermined systems, but we work around that in our wrapper functions by just adding a suitable number of zero rows in the underdetermined case.</p>
+<dl>
+<dt><a name="gsl::matrix::svd"></a><code>gsl::matrix::svd x</code></dt>
+<dd>singular-value decomposition of matrix <code>x</code>.
+</dd>
+<dt><a name="gsl::matrix::svd_mod"></a><code>gsl::matrix::svd_mod x</code></dt>
+<dd>This uses the modified Golub-Reinsch algorithm, which is faster if <code>n &gt; m</code> but needs <em>O(m^2)</em> extra memory as internal workspace.
+</dd>
+<dt><a name="gsl::matrix::svd_jacobi"></a><code>gsl::matrix::svd_jacobi x</code></dt>
+<dd>This uses one-sided Jacobi orthogonalization which provides better relative accuracy but is slower.
+</dd>
+<dt><a name="gsl::matrix::svd_solve"></a><code>gsl::matrix::svd_solve (u, s, v)  b</code></dt>
+<dd>Solve the system <code>Ax=b</code>, using the SVD of <code>A</code>. <code>svd_solve</code> takes the result <code>(u,s,v)</code> of a <code>svd</code> call, and a column vector <code>b</code> of the appropriate dimension. The result is another column vector solving the system (possibly in the least-squares sense).
+</dd>
+<dt><a name="gsl::matrix::pinv"></a><code>gsl::matrix::pinv x</code></dt>
+<dd>Computes the pseudo inverse of a matrix from its singular value decomposition.
+</dd>
+</dl>
+<!-- -->
+<h2 id="least-squares-fitting">Least-Squares Fitting</h2>
+<p><a name="module-gslfit"></a></p>
+<p>This module is loaded via the command <code>using gsl::fit</code> and provides Pure wrappers for the GSL least-squares fitting routines found in Chapter 36 of the GSL manual,</p>
+<p><a href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html" class="uri">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html</a>.</p>
+<h3 id="routines-1">Routines</h3>
+<dl>
+<dt><a name="gsl::fit::linear"></a><code>gsl::fit::linear x::matrix  y::matrix</code></dt>
+<dd>implements <code>gsl_fit_linear</code> without the <code>xstride</code>, <code>ystride</code>, and <code>n</code> parameters. Results are returned as a list <code>[c0, c1, cov00, cov01, cov11, sumsq]</code>.
+</dd>
+<dt><a name="gsl::fit::wlinear"></a><code>gsl::fit::wlinear x::matrix  w::matrix  y::matrix</code></dt>
+<dd>implements <code>gsl_fit_wlinear</code> without the <code>xstride</code>, <code>wstride</code>, <code>ystride</code>, and <code>n</code> parameters. Results are given as a list <code>[c0, c1, cov00, cov01, cov11, chisq]</code>.
+</dd>
+<dt><a name="gsl::fit::linear_est"></a><code>gsl::fit::linear_est x  c0::double  c1::double  cov00::double  cov01::double  cov11::double</code></dt>
+<dd>implements <code>gsl_fit_linear_est</code>. Results are returned as a list <code>[y, y_err]</code>.
+</dd>
+<dt><a name="gsl::fit::mul"></a><code>gsl::fit::mul x::matrix  y::matrix</code></dt>
+<dd>implements <code>gsl_fit_mul</code> omitting the parameters <code>xstride</code>, <code>ystride</code>, and <code>n</code>. Results are returned as a list <code>[c1, cov11, sumsq]</code>.
+</dd>
+<dt><a name="gsl::fit::wmul"></a><code>gsl::fit::wmul x::matrix  w::matrix  y::matrix</code></dt>
+<dd>implements <code>gsl_fit_wmul</code> omitting the parametrs <code>xstride</code>, <code>ystride</code>, and <code>n</code>. Results are returned as a list <code>[c1, cov11, sumsq]</code>.
+</dd>
+<dt><a name="gsl::fit::mul_est"></a><code>gsl::fit::mul_est x  c1::double  cov11::double</code></dt>
+<dd>implements <code>gsl_fit_mul_est</code>. Results are returned as a list <code>[y, y_err]</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-10">Examples</h3>
+<p>Usage of each implemented library routine is illustrated below.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::fit;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::fit;</code></pre></div>
+<p>The following code determines the equation for the least-squares line through the points (1,0.01), (2,1.11), (3,1.9), (4,2.85), and (5,4.01).</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; Y x = &#39;(a + b * x)
+&gt; <span class="kw">when</span>
+&gt;   a:b:_ = linear {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} {<span class="dv">0.01</span>,<span class="dv">1.11</span>,<span class="dv">1.9</span>,<span class="dv">2.85</span>,<span class="dv">4.01</span>}
+&gt; <span class="kw">end</span>;
+&gt; Y x;
+-<span class="dv">0.946</span>+<span class="dv">0.974</span>*x
+&gt; eval $ Y <span class="dv">2</span>;
+<span class="dv">1.002</span></code></pre></div>
+<p>The following code illustrates estimating y-values without constructing an equation for the least-squares line determined by the points <code>{x1,x2,x3,...,xn}</code>, <code>{y1,y2,y3,...,yn}</code>. Here we estimate the <em>y</em>-value at <em>x</em> = 1, <em>x</em> = 2, and <em>x</em> = 3. Compare the output above at <em>x</em> = 2 to the output at <em>x</em> = 2 below.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> c0:c1:cov00:cov01:cov11:_ = linear {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>}
+&gt;   {<span class="dv">0.01</span>,<span class="dv">1.11</span>,<span class="dv">1.9</span>,<span class="dv">2.85</span>,<span class="dv">4.01</span>};
+&gt; linear_est <span class="dv">1</span> c0 c1 cov00 cov01 cov11;
+[<span class="dv">0.028</span>,<span class="dv">0.0838570211729465</span>]
+&gt; linear_est <span class="dv">2</span> c0 c1 cov00 cov01 cov11;
+[<span class="dv">1.002</span>,<span class="dv">0.0592958683214944</span>]
+&gt; linear_est <span class="dv">3</span> c0 c1 cov00 cov01 cov11;
+[<span class="dv">1.976</span>,<span class="dv">0.0484148737476408</span>]</code></pre></div>
+<p>Next, we determine a least-squares line through the points (1,0.01), (2,1.11), (3,1.9), (4,2.85), and (5,4.01) using weights 0.1, 0.2, 0.3, 0.4, and 0.5.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; W x = &#39;(a + b * x)
+&gt; <span class="kw">when</span>
+&gt;   a:b:_ = wlinear (<span class="dt">matrix</span> (<span class="dv">1</span>..<span class="dv">5</span>)) 
+&gt;           {<span class="dv">0.1</span>, <span class="dv">0.2</span>, <span class="dv">0.3</span>, <span class="dv">0.4</span>, <span class="dv">0.5</span>}
+&gt;           {<span class="dv">0.01</span>, <span class="dv">1.11</span>, <span class="dv">1.9</span>, <span class="dv">2.85</span>, <span class="dv">4.01</span>};
+&gt; <span class="kw">end</span>;
+&gt; W u;
+-<span class="dv">0.99</span>+<span class="dv">0.986</span>*u
+&gt; eval $ W <span class="dv">2</span>;
+<span class="dv">0.982</span></code></pre></div>
+<p>The least-squares slope for <code>Y = c1 * X</code> using the points (1,3), (2,5), and (3,7) is calculated below. Also, the <em>y</em>-values and standard error about <em>x</em> = 1, 2, and 3 are given.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> c1:cov11:sumsq:_ = mul {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>} {<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>};
+&gt; mul_est <span class="dv">1</span> c1 cov11;
+[<span class="dv">2.42857142857143</span>,<span class="dv">0.123717914826348</span>]
+&gt; mul_est <span class="dv">2</span> c1 cov11;
+[<span class="dv">4.85714285714286</span>,<span class="dv">0.247435829652697</span>]
+&gt; mul_est <span class="dv">3</span> c1 cov11;
+[<span class="dv">7.28571428571428</span>,<span class="dv">0.371153744479045</span>]</code></pre></div>
+<p>The least-squares slope for <code>Y = c1 * X</code> using the points (1,3), (2,5), and (3,7), and weights 0.4, 0.9, and 0.4 is calculated below. The approximation of y-values and standard error about <em>x</em> = 1, 2, and 3 follows.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> c1:cov11:sumsq:_ = wmul {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>} {<span class="dv">0.4</span>,<span class="dv">0.9</span>,<span class="dv">0.4</span>} {<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>};
+&gt; mul_est <span class="dv">1</span> c1 cov11;
+[<span class="dv">2.44736842105263</span>,<span class="dv">0.362738125055006</span>]
+&gt; mul_est <span class="dv">2</span> c1 cov11;
+[<span class="dv">4.89473684210526</span>,<span class="dv">0.725476250110012</span>]
+&gt; mul_est <span class="dv">3</span> c1 cov11;
+[<span class="dv">7.34210526315789</span>,<span class="dv">1.08821437516502</span>]</code></pre></div>
+<h2 id="statistics">Statistics</h2>
+<p><a name="module-gslstats"></a></p>
+<p>This module is loaded via the command <code>using gsl::stats</code> and provides Pure wrappers for the GSL Statistics routines found in Chapter 20 of the GSL manual,</p>
+<p><a href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html" class="uri">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
+<h3 id="routines-2">Routines</h3>
+<dl>
+<dt><a name="gsl::stats::mean"></a><code>gsl::stats::mean data::matrix</code></dt>
+<dd>implements <code>gsl_stats_mean</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::variance"></a><code>gsl::stats::variance data::matrix</code></dt>
+<dd>implements <code>gsl_stats_variance</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::variance"></a><code>gsl::stats::variance data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_variance_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::sd"></a><code>gsl::stats::sd data::matrix</code></dt>
+<dd>implements <code>gsl_stats_sd</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::sd_m"></a><code>gsl::stats::sd_m data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_sd_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::tss"></a><code>gsl::stats::tss data::matrix</code></dt>
+<dd>implements <code>gsl_stats_tss</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::tss_m"></a><code>gsl::stats::tss_m data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_tss_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::variance_with_fixed_mean"></a><code>gsl::stats::variance_with_fixed_mean data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_variance_with_fixed_mean</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::sd_with_fixed_mean"></a><code>gsl::stats::sd_with_fixed_mean data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_sd_with_fixed_mean</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::absdev"></a><code>gsl::stats::absdev data::matrix</code></dt>
+<dd>implements <code>gsl_stats_absdev</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::absdev_m"></a><code>gsl::stats::absdev_m data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_absdev_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::skew"></a><code>gsl::stats::skew data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_skew</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::skew_m_sd"></a><code>gsl::stats::skew_m_sd data::matrix  mean  sd</code></dt>
+<dd>implements <code>gsl_stats_skew_m_sd</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::kurtosis"></a><code>gsl::stats::kurtosis data::matrix</code></dt>
+<dd>implements <code>gsl_stats_kurtosis</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::kurtosis_m_sd"></a><code>gsl::stats::kurtosis_m_sd data::matrix  mean  sd</code></dt>
+<dd>implements <code>gsl_stats_kurtosis_m_sd</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::lag1_autocorrelation"></a><code>gsl::stats::lag1_autocorrelation data::matrix</code></dt>
+<dd>implements <code>gsl_stats_lag1_autocorrelation</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::lag1_autocorrelation_m"></a><code>gsl::stats::lag1_autocorrelation_m data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_lag1_autocorrelation_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::covariance"></a><code>gsl::stats::covariance d1::matrix  d2::matrix</code></dt>
+<dd>implements <code>gsl_stats_covariance</code> without <code>stride1</code>, <code>stride2</code>, and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::covariance_m"></a><code>gsl::stats::covariance_m d1::matrix  d2::matrix  mean1  mean2</code></dt>
+<dd>implements <code>gsl_stats_covariance_m</code> without <code>stride1</code>, <code>stride2</code>, and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::correlation"></a><code>gsl::stats::correlation d1::matrix  d2::matrix</code></dt>
+<dd>implements <code>gsl_stats_correlation</code> without <code>stride1</code>, <code>stride2</code>, and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wmean"></a><code>gsl::stats::wmean weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wmean</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wvariance"></a><code>gsl::stats::wvariance weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wvariance</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wvariance_m"></a><code>gsl::stats::wvariance_m weight::matrix  data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_wvariance_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wsd"></a><code>gsl::stats::wsd weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wsd</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wsd_m"></a><code>gsl::stats::wsd_m weight::matrix  data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_wsd_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wvariance_with_fixed_mean"></a><code>gsl::stats::wvariance_with_fixed_mean weight::matrix  data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_wvariance_with_fixed_mean</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wsd_with_fixed_mean"></a><code>gsl::stats::wsd_with_fixed_mean weight::matrix  data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_wsd_with_fixed_mean</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wtss"></a><code>gsl::stats::wtss weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wtss</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wtss_m"></a><code>gsl::stats::wtss_m weight::matrix  data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_wtss_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wabsdev"></a><code>gsl::stats::wabsdev weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wabsdev</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wabsdev_m"></a><code>gsl::stats::wabsdev_m weight::matrix  data::matrix  mean</code></dt>
+<dd>implements <code>gsl_stats_wabsdev_m</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wskew"></a><code>gsl::stats::wskew weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wskew</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wskew_m_sd"></a><code>gsl::stats::wskew_m_sd weight::matrix  data::matrix  mean  sd</code></dt>
+<dd>implements <code>gsl_stats_wskew_m_sd</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wkurtosis"></a><code>gsl::stats::wkurtosis weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wkurtosis</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::wkurtosis_m_sd"></a><code>gsl::stats::wkurtosis_m_sd weight::matrix  data::matrix</code></dt>
+<dd>implements <code>gsl_stats_wkurtosis_m_sd</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::max"></a><code>gsl::stats::max data::matrix</code></dt>
+<dd>implements <code>gsl_stats_max</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::min"></a><code>gsl::stats::min data::matrix</code></dt>
+<dd>implements <code>gsl_stats_min</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::minmax"></a><code>gsl::stats::minmax data::matrix</code></dt>
+<dd>implements <code>gsl_stats_minmax</code> without <code>stride</code> and <code>n</code> arguments. Results are returned as a list <code>[min, max]</code>.
+</dd>
+<dt><a name="gsl::stats::min_index"></a><code>gsl::stats::min_index data::matrix</code></dt>
+<dd>implements <code>gsl_stats_min_index</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::max_index"></a><code>gsl::stats::max_index data::matrix</code></dt>
+<dd>implements <code>gsl_stats_max_index</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::minmax_index"></a><code>gsl::stats::minmax_index data::matrix</code></dt>
+<dd>implements <code>gsl_stats_minmax_index</code> without <code>stride</code> and <code>n</code> arguments. Results are returned as a list <code>[min_index, max_index]</code>.
+</dd>
+<dt><a name="gsl::stats::median_from_sorted_data"></a><code>gsl::stats::median_from_sorted_data data::matrix</code></dt>
+<dd>implements <code>gsl_stats_median_from_sorted_data</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+<dt><a name="gsl::stats::quantile_from_sorted_data"></a><code>gsl::stats::quantile_from_sorted_data data::matrix  f::double</code></dt>
+<dd>implements <code>gsl_stats_quantile_from_sorted_data</code> without <code>stride</code> and <code>n</code> arguments.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-11">Examples</h3>
+<p>The following illustrates the use of each function in the <code>stats</code> module.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::stats;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::stats;
+&gt; mean {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">3.0</span>
+&gt; variance {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">2.5</span>
+&gt; variance_m {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>}  <span class="dv">4</span>;
+<span class="dv">3.75</span>
+&gt; sd {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">1.58113883008419</span>
+&gt; sd_m {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">4</span>;
+<span class="dv">1.93649167310371</span>
+&gt; tss {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">10.0</span>
+&gt; tss_m {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">4</span>;
+<span class="dv">15.0</span>
+&gt; variance_with_fixed_mean {<span class="dv">0.0</span>,<span class="dv">1.2</span>,<span class="dv">3.4</span>,<span class="dv">5.6</span>,<span class="dv">6.0</span>} <span class="dv">4.1</span>;
+<span class="dv">6.314</span>
+&gt; sd_with_fixed_mean {<span class="dv">0.0</span>,<span class="dv">1.2</span>,<span class="dv">3.4</span>,<span class="dv">5.6</span>,<span class="dv">6.0</span>} <span class="dv">4.1</span>;
+<span class="dv">2.51276739870606</span>
+&gt; absdev {<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>};
+<span class="dv">0.8</span>
+&gt; absdev_m {<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>} <span class="dv">4</span>;
+<span class="dv">1.0</span>
+&gt; skew {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">30</span>};
+<span class="dv">2.94796699504537</span>
+&gt; skew_m_sd {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">3</span> <span class="dv">1</span>;
+<span class="dv">0.0</span>
+&gt; kurtosis  {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+-<span class="dv">0.230769230769231</span>
+&gt; kurtosis_m_sd {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">3</span> <span class="dv">1</span>;
+-<span class="dv">0.230769230769231</span>
+&gt; lag1_autocorrelation {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">0.4</span>
+&gt; lag1_autocorrelation_m {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">2.5</span>;
+<span class="dv">0.444444444444444</span>
+&gt; covariance {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} {<span class="dv">3.0</span>,<span class="dv">4.5</span>,<span class="dv">6.0</span>,<span class="dv">7.5</span>,<span class="dv">9.0</span>};
+<span class="dv">3.75</span>
+&gt; covariance_m {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} {<span class="dv">3.0</span>,<span class="dv">4.5</span>,<span class="dv">6.0</span>,<span class="dv">7.5</span>,<span class="dv">9.0</span>} <span class="dv">3</span> <span class="dv">6</span>;
+<span class="dv">3.75</span>
+&gt; correlation {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">1.0</span>
+&gt; wmean {<span class="dv">0.4</span>,<span class="dv">0.2</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>};
+<span class="dv">3.93333333333333</span>
+&gt; wvariance {<span class="dv">0.4</span>,<span class="dv">0.2</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>};
+<span class="dv">2.7752808988764</span>
+&gt; wvariance_m {<span class="dv">0.4</span>,<span class="dv">0.2</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>} <span class="dv">3.0</span>;
+<span class="dv">3.87640449438202</span>
+&gt; wsd {<span class="dv">0.4</span>,<span class="dv">0.2</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>};
+<span class="dv">1.66591743459164</span>
+&gt; wsd_m {<span class="dv">0.4</span>,<span class="dv">0.2</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>,<span class="dv">0.3</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>} <span class="dv">3.0</span>;
+<span class="dv">1.96885867811329</span>
+&gt; wvariance_with_fixed_mean {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>} {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>} <span class="dv">2.5</span>;
+<span class="dv">1.25</span>
+&gt; wsd_with_fixed_mean {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>} {<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>} <span class="dv">2.5</span>;
+<span class="dv">1.11803398874989</span>
+&gt; wtss {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">6.83333333333333</span>
+&gt; wtss_m {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">3.1</span>;
+<span class="dv">10.06</span>
+&gt; wabsdev {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+<span class="dv">0.888888888888889</span>
+&gt; wabsdev_m {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">3.1</span>;
+<span class="dv">1.13333333333333</span>
+&gt; wskew {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+-<span class="dv">0.299254338484713</span>
+&gt; wskew_m_sd {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">3.1</span> <span class="dv">1.2</span>;
+<span class="dv">1.33526234567901</span>
+&gt; wkurtosis {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+-<span class="dv">1.96206512878137</span>
+&gt; wkurtosis_m_sd {<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>} {<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} <span class="dv">3.1</span> <span class="dv">1.2</span>;
+-<span class="dv">0.681921939300412</span>
+&gt; min {<span class="dv">9</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">9</span>};
+<span class="dv">1</span>
+&gt; max {<span class="dv">9.1</span>,<span class="dv">4.2</span>,<span class="dv">2.6</span>,<span class="dv">1.1</span>,<span class="dv">9.2</span>};
+<span class="dv">9.2</span>
+&gt; minmax {<span class="dv">9.0</span>,<span class="dv">4.0</span>,<span class="dv">2.0</span>,<span class="dv">1.0</span>,<span class="dv">9.0</span>};
+[<span class="dv">1.0</span>,<span class="dv">9.0</span>]
+&gt; min_index {<span class="dv">9.1</span>,<span class="dv">4.2</span>,<span class="dv">2.6</span>,<span class="dv">1.1</span>,<span class="dv">9.2</span>};
+<span class="dv">3</span>
+&gt; max_index {<span class="dv">9</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">9</span>};
+<span class="dv">0</span>
+&gt; minmax_index {<span class="dv">9</span>,<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">9</span>};
+[<span class="dv">4</span>,<span class="dv">0</span>]
+&gt; median_from_sorted_data {<span class="dv">1.0</span>,<span class="dv">2.0</span>,<span class="dv">3.0</span>};
+<span class="dv">2.0</span>
+&gt; quantile_from_sorted_data {<span class="dv">1.0</span>,<span class="dv">2.0</span>,<span class="dv">3.0</span>} <span class="dv">0.25</span>;
+<span class="dv">1.5</span></code></pre></div>
+<h2 id="random-number-distributions">Random Number Distributions</h2>
+<p><a name="module-gslrandist"></a></p>
+<p>This module is loaded via the command <code>using gsl::randist</code> and provides Pure wrappers for the GSL random distribution routines found in Chapter 19 of the GSL manual,</p>
+<p><a href="http://www.gnu.org/software/gsl/manual/html_node/Random-Number-Distributions.html" class="uri">http://www.gnu.org/software/gsl/manual/html_node/Random-Number-Distributions.html</a>.</p>
+<p>There are two namespaces provided by randist.pure, <code>gsl::ran</code> for probability densitity functions and <code>gsl::cdf</code> for cumulative distribution functions. The two namespaces minimize typing of the prefixes <code>gsl_ran_</code> and <code>gsl_cdf_</code> respectively.</p>
+<h3 id="routines-3">Routines</h3>
+<dl>
+<dt><a name="gsl::ran::ugaussian_pdf"></a><code>gsl::ran::ugaussian_pdf x</code></dt>
+<dd>implements <code>gsl_ran_ugaussian</code>.
+</dd>
+<dt><a name="gsl::ran::gaussian_pdf"></a><code>gsl::ran::gaussian_pdf x  sigma</code></dt>
+<dd>implements <code>gsl_ran_gaussian_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::gaussian_tail_pdf"></a><code>gsl::ran::gaussian_tail_pdf x  a  sigma</code></dt>
+<dd>implements <code>gsl_ran_gaussian_tail_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::ugaussian_tail_pdf"></a><code>gsl::ran::ugaussian_tail_pdf x  a</code></dt>
+<dd>implements <code>gsl_ran_ugaussian_tail_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::bivariate_gaussian_pdf"></a><code>gsl::ran::bivariate_gaussian_pdf x  a</code></dt>
+<dd>implements <code>gsl_ran_bivariate_gaussian_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::exponential_pdf"></a><code>gsl::ran::exponential_pdf x  mu</code></dt>
+<dd>implements <code>gsl_ran_exponential_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::laplace_pdf"></a><code>gsl::ran::laplace_pdf x  a</code></dt>
+<dd>implements <code>gsl_ran_laplace_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::exppow_pdf"></a><code>gsl::ran::exppow_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_exppow_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::cauchy_pdf"></a><code>gsl::ran::cauchy_pdf x  a</code></dt>
+<dd>implements <code>gsl_ran_cauchy_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::rayleigh_pdf"></a><code>gsl::ran::rayleigh_pdf x  sigma</code></dt>
+<dd>implements <code>gsl_ran_rayleigh_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::rayleigh_tail_pdf"></a><code>gsl::ran::rayleigh_tail_pdf x  a  sigma</code></dt>
+<dd>implements <code>gsl_ran_rayleigh_tail_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::landau_pdf"></a><code>gsl::ran::landau_pdf x</code></dt>
+<dd>implements <code>gsl_ran_landau_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::gamma_pdf"></a><code>gsl::ran::gamma_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_gamma_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::flat_pdf"></a><code>gsl::ran::flat_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_flat_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::lognormal_pdf"></a><code>gsl::ran::lognormal_pdf x  zeta  sigma</code></dt>
+<dd>implements <code>gsl_ran_lognormal_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::chisq_pdf"></a><code>gsl::ran::chisq_pdf x  nu</code></dt>
+<dd>implements <code>gsl_ran_chisq_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::fdist_pdf"></a><code>gsl::ran::fdist_pdf x  nu1  nu2</code></dt>
+<dd>implements <code>gsl_ran_fdist_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::tdist_pdf"></a><code>gsl::ran::tdist_pdf x  nu</code></dt>
+<dd>implements <code>gsl_ran_tdist_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::beta_pdf"></a><code>gsl::ran::beta_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_beta_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::logistic_pdf"></a><code>gsl::ran::logistic_pdf x  a</code></dt>
+<dd>implements <code>gsl_ran_logistic_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::pareto_pdf"></a><code>gsl::ran::pareto_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_pareto_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::weibull_pdf"></a><code>gsl::ran::weibull_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_weibull_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::gumbel1_pdf"></a><code>gsl::ran::gumbel1_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_gumbel1_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::gumbel2_pdf"></a><code>gsl::ran::gumbel2_pdf x  a  b</code></dt>
+<dd>implements <code>gsl_ran_gumbel2_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::dirichlet_pdf"></a><code>gsl::ran::dirichlet_pdf alpha::matrix  theta::matrix</code></dt>
+<dd>implements <code>gsl_ran_dirichlet_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::dirichlet_lnpdf"></a><code>gsl::ran::dirichlet_lnpdf alpha::matrix  theta::matrix</code></dt>
+<dd>implements <code>gsl_ran_dirichlet_lnpdf</code>.
+</dd>
+<dt><a name="gsl::ran::discrete_preproc"></a><code>gsl::ran::discrete_preproc p::matrix</code></dt>
+<dd>implements <code>gsl_ran_discrete_preproc</code> without the <code>K</code> parameter.
+</dd>
+<dt><a name="gsl::ran::discrete_pdf"></a><code>gsl::ran::discrete_pdf k::int  p::pointer</code></dt>
+<dd>implements <code>gsl_ran_discrete_pdf</code> without the <code>K</code> parameter.
+</dd>
+<dt><a name="gsl::ran::discrete_free"></a><code>gsl::ran::discrete_free p::pointer</code></dt>
+<dd>implements <code>gsl_ran_discrete_free</code>
+</dd>
+<dt><a name="gsl::ran::poisson_pdf"></a><code>gsl::ran::poisson_pdf k::int  mu</code></dt>
+<dd>implements <code>gsl_ran_poisson_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::bernoulli_pdf"></a><code>gsl::ran::bernoulli_pdf k::int  p</code></dt>
+<dd>implements <code>gsl_ran_bernoulli_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::binomial_pdf"></a><code>gsl::ran::binomial_pdf k::int  p  n::int</code></dt>
+<dd>implements <code>gsl_ran_binomial_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::multinomial_pdf"></a><code>gsl::ran::multinomial_pdf p::matrix  n::matrix</code></dt>
+<dd>implements <code>gsl_ran_multinomial_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::multinomial_lnpdf"></a><code>gsl::ran::multinomial_lnpdf p::matrix  n::matrix</code></dt>
+<dd>implements <code>gsl_ran_multinomial_lnpdf</code>.
+</dd>
+<dt><a name="gsl::ran::negative_binomial_pdf"></a><code>gsl::ran::negative_binomial_pdf k::int  p  n</code></dt>
+<dd>implements <code>gsl_ran_negative_binomial_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::pascal_pdf"></a><code>gsl::ran::pascal_pdf k::int  p  n::int</code></dt>
+<dd>implements <code>gsl_ran_pascal_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::geometric_pdf"></a><code>gsl::ran::geometric_pdf k::int  p</code></dt>
+<dd>implements <code>gsl_ran_geometric_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::hypergeometric_pdf"></a><code>gsl::ran::hypergeometric_pdf k::int  n1::int  n2::int  t::int</code></dt>
+<dd>implements <code>gsl_ran_hypergeometric_pdf</code>.
+</dd>
+<dt><a name="gsl::ran::logarithmic_pdf"></a><code>gsl::ran::logarithmic_pdf k::int  p</code></dt>
+<dd>implements <code>gsl_ran_logarithmic_pdf</code>.
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="gsl::cdf::ugaussian_P"></a><code>gsl::cdf::ugaussian_P x</code></dt>
+<dd>implements <code>gsl_cdf_ugaussian_P</code>.
+</dd>
+<dt><a name="gsl::cdf::ugaussian_Q"></a><code>gsl::cdf::ugaussian_Q x</code></dt>
+<dd>implements <code>gsl_cdf_ugaussian_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::ugaussian_Pinv"></a><code>gsl::cdf::ugaussian_Pinv p</code></dt>
+<dd>implements <code>gsl_cdf_ugaussian_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::ugaussian_Qinv"></a><code>gsl::cdf::ugaussian_Qinv q</code></dt>
+<dd>implements <code>gsl_cdf_ugaussian_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gaussian_P"></a><code>gsl::cdf::gaussian_P x  sigma</code></dt>
+<dd>implements <code>gsl_cdf_gaussian_P</code>.
+</dd>
+<dt><a name="gsl::cdf::gaussian_Q"></a><code>gsl::cdf::gaussian_Q x  sigma</code></dt>
+<dd>implements <code>gsl_cdf_gaussian_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::gaussian_Pinv"></a><code>gsl::cdf::gaussian_Pinv p  sigma</code></dt>
+<dd>implements <code>gsl_cdf_gaussian_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::guassian_Qinv"></a><code>gsl::cdf::guassian_Qinv q  sigma</code></dt>
+<dd>implements <code>gsl_cdf_gaussian_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::exponential_P"></a><code>gsl::cdf::exponential_P x  mu</code></dt>
+<dd>implements <code>gsl_cdf_exponential_P</code>.
+</dd>
+<dt><a name="gsl::cdf::exponential_Q"></a><code>gsl::cdf::exponential_Q x  mu</code></dt>
+<dd>implements <code>gsl_cdf_exponential_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::exponential_Pinv"></a><code>gsl::cdf::exponential_Pinv p  mu</code></dt>
+<dd>implements <code>gsl_cdf_exponential_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::exponential_Qinv"></a><code>gsl::cdf::exponential_Qinv q  mu</code></dt>
+<dd>implements <code>gsl_cdf_exponential_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::laplace_P"></a><code>gsl::cdf::laplace_P x  a</code></dt>
+<dd>implements <code>gsl_cdf_laplace_P</code>.
+</dd>
+<dt><a name="gsl::cdf::laplace_Q"></a><code>gsl::cdf::laplace_Q x  a</code></dt>
+<dd>implements <code>gsl_cdf_laplace_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::laplace_Pinv"></a><code>gsl::cdf::laplace_Pinv p  a</code></dt>
+<dd>implements <code>gsl_cdf_laplace_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::laplace_Qinv"></a><code>gsl::cdf::laplace_Qinv q  a</code></dt>
+<dd>implements <code>gsl_cdf_laplace_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::exppow_P"></a><code>gsl::cdf::exppow_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_exppow_P</code>.
+</dd>
+<dt><a name="gsl::cdf::exppow_Q"></a><code>gsl::cdf::exppow_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_exppow_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::cauchy_P"></a><code>gsl::cdf::cauchy_P x  a</code></dt>
+<dd>implements <code>gsl_cdf_cauchy_P</code>.
+</dd>
+<dt><a name="gsl::cdf::cauchy_Q"></a><code>gsl::cdf::cauchy_Q x  a</code></dt>
+<dd>implements <code>gsl_cdf_cauchy_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::cauchy_Pinv"></a><code>gsl::cdf::cauchy_Pinv p  a</code></dt>
+<dd>implements <code>gsl_cdf_cauchy_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::cauchy_Qinv"></a><code>gsl::cdf::cauchy_Qinv q  a</code></dt>
+<dd>implements <code>gsl_cdf_cauchy_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::rayleigh_P"></a><code>gsl::cdf::rayleigh_P x  sigma</code></dt>
+<dd>implements <code>gsl_cdf_rayleigh_P</code>.
+</dd>
+<dt><a name="gsl::cdf::rayleigh_Q"></a><code>gsl::cdf::rayleigh_Q x  sigma</code></dt>
+<dd>implements <code>gsl_cdf_rayleigh_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::rayleigh_Pinv"></a><code>gsl::cdf::rayleigh_Pinv p  sigma</code></dt>
+<dd>implements <code>gsl_cdf_rayleigh_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::rayleigh_Qinv"></a><code>gsl::cdf::rayleigh_Qinv q  sigma</code></dt>
+<dd>implements <code>gsl_cdf_rayleigh_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gamma_P"></a><code>gsl::cdf::gamma_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gamma_P</code>.
+</dd>
+<dt><a name="gsl::cdf::gamma_Q"></a><code>gsl::cdf::gamma_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gamMa_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::gamma_Pinv"></a><code>gsl::cdf::gamma_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gamma_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gamma_Qinv"></a><code>gsl::cdf::gamma_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gamma_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::flat_P"></a><code>gsl::cdf::flat_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_flat_P</code>.
+</dd>
+<dt><a name="gsl::cdf::flat_Q"></a><code>gsl::cdf::flat_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_flat_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::flat_Pinv"></a><code>gsl::cdf::flat_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_flat_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::flat_Qinv"></a><code>gsl::cdf::flat_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_flat_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::lognormal_P"></a><code>gsl::cdf::lognormal_P x  zeta  sigma</code></dt>
+<dd>implements <code>gsl_cdf_lognormal_P</code>.
+</dd>
+<dt><a name="gsl::cdf::lognormal_Q"></a><code>gsl::cdf::lognormal_Q x  zeta  sigma</code></dt>
+<dd>implements <code>gsl_cdf_lognormal_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::lognormal_Pinv"></a><code>gsl::cdf::lognormal_Pinv p  zeta  sigma</code></dt>
+<dd>implements <code>gsl_cdf_lognormal_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::lognormal_Qinv"></a><code>gsl::cdf::lognormal_Qinv q  zeta  sigma</code></dt>
+<dd>implements <code>gsl_cdf_lognormal_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::chisq_P"></a><code>gsl::cdf::chisq_P x  nu</code></dt>
+<dd>implements <code>gsl_cdf_chisq_P</code>.
+</dd>
+<dt><a name="gsl::cdf::chisq_Q"></a><code>gsl::cdf::chisq_Q x  nu</code></dt>
+<dd>implements <code>gsl_cdf_chisq_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::chisq_Pinv"></a><code>gsl::cdf::chisq_Pinv p  nu</code></dt>
+<dd>implements <code>gsl_cdf_chisq_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::chisq_Qinv"></a><code>gsl::cdf::chisq_Qinv q  nu</code></dt>
+<dd>implements <code>gsl_cdf_chisq_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::fdist_P"></a><code>gsl::cdf::fdist_P x  nu1  nu2</code></dt>
+<dd>implements <code>gsl_cdf_fdist_P</code>.
+</dd>
+<dt><a name="gsl::cdf::fdist_Q"></a><code>gsl::cdf::fdist_Q x  nu1  nu2</code></dt>
+<dd>implements <code>gsl_cdf_fdist_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::fdist_Pinv"></a><code>gsl::cdf::fdist_Pinv p  nu1  nu2</code></dt>
+<dd>implements <code>gsl_cdf_fdist_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::fdist_Qinv"></a><code>gsl::cdf::fdist_Qinv q  nu1  nu2</code></dt>
+<dd>implements <code>gsl_cdf_fdist_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::tdist_P"></a><code>gsl::cdf::tdist_P x  nu</code></dt>
+<dd>implements <code>gsl_cdf_tdist_P</code>.
+</dd>
+<dt><a name="gsl::cdf::tdist_Q"></a><code>gsl::cdf::tdist_Q x  nu</code></dt>
+<dd>implements <code>gsl_cdf_tdist_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::tdist_Pinv"></a><code>gsl::cdf::tdist_Pinv p  nu</code></dt>
+<dd>implements <code>gsl_cdf_tdist_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::tdist_Qinv"></a><code>gsl::cdf::tdist_Qinv q  nu</code></dt>
+<dd>implements <code>gsl_cdf_tdist_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::beta_P"></a><code>gsl::cdf::beta_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_beta_P</code>.
+</dd>
+<dt><a name="gsl::cdf::beta_Q"></a><code>gsl::cdf::beta_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_beta_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::beta_Pinv"></a><code>gsl::cdf::beta_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_beta_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::beta_Qinv"></a><code>gsl::cdf::beta_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_beta_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::logistic_P"></a><code>gsl::cdf::logistic_P x  a</code></dt>
+<dd>implements <code>gsl_cdf_logistic_P</code>.
+</dd>
+<dt><a name="gsl::cdf::logistic_Q"></a><code>gsl::cdf::logistic_Q x  a</code></dt>
+<dd>implements <code>gsl_cdf_logistic_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::logistic_Pinv"></a><code>gsl::cdf::logistic_Pinv p  a</code></dt>
+<dd>implements <code>gsl_cdf_logistic_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::logistic_Qinv"></a><code>gsl::cdf::logistic_Qinv q  a</code></dt>
+<dd>implements <code>gsl_cdf_logistic_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::pareto_P"></a><code>gsl::cdf::pareto_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_pareto_P</code>.
+</dd>
+<dt><a name="gsl::cdf::pareto_Q"></a><code>gsl::cdf::pareto_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_pareto_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::pareto_Pinv"></a><code>gsl::cdf::pareto_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_pareto_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::pareto_Qinv"></a><code>gsl::cdf::pareto_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_pareto_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::weibull_P"></a><code>gsl::cdf::weibull_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_weibull_P</code>.
+</dd>
+<dt><a name="gsl::cdf::weibull_Q"></a><code>gsl::cdf::weibull_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_weibull_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::weibull_Pinv"></a><code>gsl::cdf::weibull_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_weibull_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::weibull_Qinv"></a><code>gsl::cdf::weibull_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_weibull_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel1_P"></a><code>gsl::cdf::gumbel1_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel1_P</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel1_Q"></a><code>gsl::cdf::gumbel1_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel1_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel1_Pinv"></a><code>gsl::cdf::gumbel1_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel1_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel1_Qinv"></a><code>gsl::cdf::gumbel1_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel1_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel2_P"></a><code>gsl::cdf::gumbel2_P x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel2_P</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel2_Q"></a><code>gsl::cdf::gumbel2_Q x  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel2_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel2_Pinv"></a><code>gsl::cdf::gumbel2_Pinv p  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel2_Pinv</code>.
+</dd>
+<dt><a name="gsl::cdf::gumbel2_Qinv"></a><code>gsl::cdf::gumbel2_Qinv q  a  b</code></dt>
+<dd>implements <code>gsl_cdf_gumbel2_Qinv</code>.
+</dd>
+<dt><a name="gsl::cdf::poisson_P"></a><code>gsl::cdf::poisson_P k::int  mu</code></dt>
+<dd>implements <code>gsl_cdf_poisson_P</code>.
+</dd>
+<dt><a name="gsl::cdf::poisson_Q"></a><code>gsl::cdf::poisson_Q k::int  mu</code></dt>
+<dd>implements <code>gsl_cdf_poisson_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::binomial_P"></a><code>gsl::cdf::binomial_P k::int  p  n::int</code></dt>
+<dd>implements <code>gsl_cdf_binomial_P</code>.
+</dd>
+<dt><a name="gsl::cdf::binomial_Q"></a><code>gsl::cdf::binomial_Q k::int  q  n::int</code></dt>
+<dd>implements <code>gsl_cdf_binomial_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::negative_binomial_P"></a><code>gsl::cdf::negative_binomial_P k::int  p  n</code></dt>
+<dd>implements <code>gsl_cdf_negative_binomial_P</code>.
+</dd>
+<dt><a name="gsl::cdf::negative_binomial_Q"></a><code>gsl::cdf::negative_binomial_Q k::int  p  n</code></dt>
+<dd>implements <code>gsl_cdf_negative_binomial_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::pascal_P"></a><code>gsl::cdf::pascal_P k::int  p  n::int</code></dt>
+<dd>implements <code>gsl_cdf_pascal_P</code>.
+</dd>
+<dt><a name="gsl::cdf::pascal_Q"></a><code>gsl::cdf::pascal_Q k::int  p  n::int</code></dt>
+<dd>implements <code>gsl_cdf_pascal_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::geometric_P"></a><code>gsl::cdf::geometric_P k::int  p</code></dt>
+<dd>implements <code>gsl_cdf_geometric_P</code>.
+</dd>
+<dt><a name="gsl::cdf::geometric_Q"></a><code>gsl::cdf::geometric_Q k::int  p</code></dt>
+<dd>implements <code>gsl_cdf_geometric_Q</code>.
+</dd>
+<dt><a name="gsl::cdf::hypergeometric_P"></a><code>gsl::cdf::hypergeometric_P k::int  n1::int  n2::int  t::int</code></dt>
+<dd>implements <code>gsl_cdf_hypergeometric_P</code>.
+</dd>
+<dt><a name="gsl::cdf::hypergeometric_Q"></a><code>gsl::cdf::hypergeometric_Q k::int  n1::int  n2::int  t::int</code></dt>
+<dd>implements <code>gsl_cdf_hypergeometric_Q</code>.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-12">Examples</h3>
+<p>The following illustrates the use of each function in the <code>randist</code> module. The pdf functions are illustrated first.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::stats;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::ran;
+&gt; ugaussian_pdf <span class="dv">1.2</span>;
+<span class="dv">0.194186054983213</span>
+&gt; gaussian_pdf (-<span class="dv">1.3</span>) <span class="dv">1.5</span>;
+<span class="dv">0.182690978264686</span>
+&gt; gaussian_tail_pdf <span class="dv">2.0</span> <span class="dv">1.0</span> <span class="dv">1.5</span>;
+<span class="dv">0.433042698395299</span>
+&gt; ugaussian_tail_pdf <span class="dv">2.0</span> <span class="dv">1.0</span>;
+<span class="dv">0.34030367841782</span>
+&gt; bivariate_gaussian_pdf <span class="dv">1.2</span> <span class="dv">0.9</span> <span class="dv">1.0</span> <span class="dv">1.0</span> <span class="dv">0.95</span>;
+<span class="dv">0.184646843689817</span>
+&gt; exponential_pdf <span class="dv">1.0</span> <span class="dv">0.5</span>;
+<span class="dv">0.270670566473225</span>
+&gt; laplace_pdf <span class="dv">1.5</span> <span class="dv">2.0</span>;
+<span class="dv">0.118091638185254</span>
+&gt; exppow_pdf <span class="dv">0.0</span> <span class="dv">1.0</span> <span class="dv">1.5</span>;
+<span class="dv">0.553866083716236</span>
+&gt; cauchy_pdf (-<span class="dv">1.0</span>) <span class="dv">1.0</span>;
+<span class="dv">0.159154943091895</span>
+&gt; rayleigh_pdf <span class="dv">2.5</span> <span class="dv">1.0</span>;
+<span class="dv">0.109842334058519</span>
+&gt; rayleigh_tail_pdf <span class="dv">1.5</span> <span class="dv">1.0</span> <span class="dv">1.0</span>;
+<span class="dv">0.802892142778485</span>
+&gt; landau_pdf <span class="dv">1.1</span>;
+<span class="dv">0.140968737919623</span>
+&gt; gamma_pdf <span class="dv">1.0</span> <span class="dv">1.0</span> <span class="dv">1.5</span>;
+<span class="dv">0.342278079355061</span>
+&gt; flat_pdf <span class="dv">1.0</span> <span class="dv">0.5</span> <span class="dv">2.5</span>;
+<span class="dv">0.5</span>
+&gt; lognormal_pdf <span class="dv">0.01</span> <span class="dv">0.0</span> <span class="dv">1.0</span>;
+<span class="dv">0.000990238664959182</span>
+&gt; chisq_pdf <span class="dv">1.0</span> <span class="dv">2.0</span>;
+<span class="dv">0.303265329856317</span>
+&gt; fdist_pdf <span class="dv">0.5</span> <span class="dv">3.0</span> <span class="dv">2.0</span>;
+<span class="dv">0.480970043785452</span>
+&gt; tdist_pdf <span class="dv">0.1</span> <span class="dv">10.0</span>;
+<span class="dv">0.386975225815181</span>
+&gt; beta_pdf <span class="dv">0.5</span> <span class="dv">4.0</span> <span class="dv">1.0</span>;
+<span class="dv">0.499999999999999</span>
+&gt; logistic_pdf (-<span class="dv">1.0</span>) <span class="dv">2.0</span>;
+<span class="dv">0.117501856100797</span>
+&gt; pareto_pdf <span class="dv">0.01</span> <span class="dv">3.0</span> <span class="dv">2.0</span>;
+<span class="dv">0.0</span>
+&gt; weibull_pdf  <span class="dv">0.01</span> <span class="dv">1.0</span> <span class="dv">1.0</span>;
+<span class="dv">0.990049833749168</span>
+&gt; gumbel1_pdf <span class="dv">0.01</span> <span class="dv">1.0</span> <span class="dv">1.0</span>;
+<span class="dv">0.367861108816436</span>
+&gt; gumbel2_pdf <span class="dv">0.01</span> <span class="dv">1.0</span> <span class="dv">1.0</span>;
+<span class="dv">3.72007597602084e-40</span>
+&gt; dirichlet_pdf {<span class="dv">0.1</span>,<span class="dv">0.2</span>,<span class="dv">0.8</span>} {<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>};
+<span class="dv">0.00501316294425874</span>
+&gt; dirichlet_lnpdf {<span class="dv">0.1</span>,<span class="dv">0.2</span>,<span class="dv">0.8</span>} {<span class="dv">2.0</span>,<span class="dv">2.0</span>,<span class="dv">2.0</span>};
+-<span class="dv">5.29568823688856</span>
+&gt; poisson_pdf <span class="dv">4</span> <span class="dv">0.4</span>;
+<span class="dv">0.000715008049104682</span>
+&gt; bernoulli_pdf <span class="dv">1</span> <span class="dv">0.7</span>;
+<span class="dv">0.7</span>
+&gt; binomial_pdf <span class="dv">3</span> <span class="dv">0.5</span> <span class="dv">9</span>;
+<span class="dv">0.1640625</span>
+&gt; multinomial_pdf {<span class="dv">0.1</span>,<span class="dv">0.2</span>,<span class="dv">0.7</span>} {<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>};
+<span class="dv">0.0</span>
+&gt; multinomial_lnpdf {<span class="dv">0.1</span>,<span class="dv">0.2</span>,<span class="dv">0.7</span>} {<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>};
+-<span class="dv">1728120799.71174</span>
+&gt; negative_binomial_pdf <span class="dv">10</span> <span class="dv">0.5</span> <span class="dv">3.5</span>;
+<span class="dv">0.0122430486923836</span>
+&gt; pascal_pdf <span class="dv">10</span> <span class="dv">0.5</span> <span class="dv">3</span>;
+<span class="dv">0.00805664062499999</span>
+&gt; geometric_pdf <span class="dv">5</span> <span class="dv">0.4</span>;
+<span class="dv">0.05184</span>
+&gt; hypergeometric_pdf <span class="dv">1</span> <span class="dv">5</span> <span class="dv">20</span> <span class="dv">3</span>;
+<span class="dv">0.413043478260872</span>
+&gt; logarithmic_pdf <span class="dv">10</span> <span class="dv">0.7</span>; 
+<span class="dv">0.00234619293712492</span>
+&gt; test_discrete
+&gt;   = v
+&gt;     <span class="kw">when</span>
+&gt;       px = discrete_preproc {<span class="dv">0.1</span>,<span class="dv">0.3</span>,<span class="dv">0.4</span>};
+&gt;       v = discrete_pdf <span class="dv">0</span> px +
+&gt;           discrete_pdf <span class="dv">1</span> px +
+&gt;           discrete_pdf <span class="dv">2</span> px;
+&gt;       _ = discrete_free px
+&gt;     <span class="kw">end</span>;
+&gt; test_discrete;
+<span class="dv">1.0</span></code></pre></div>
+<p>The cumulative distribution functions are shown.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl::cdf;
+&gt; ugaussian_P  (-<span class="dv">1.3</span>);
+<span class="dv">0.0968004845856103</span>
+&gt; ugaussian_Q  (-<span class="dv">1.3</span>);
+<span class="dv">0.90319951541439</span>
+&gt; ugaussian_Pinv  <span class="dv">0.84</span>;
+<span class="dv">0.994457883209753</span>
+&gt; ugaussian_Qinv  <span class="dv">0.84</span>;
+-<span class="dv">0.994457883209753</span>
+&gt; gaussian_P  (<span class="dv">1.3</span>)  <span class="dv">1.5</span>;
+<span class="dv">0.806937662858093</span>
+&gt; gaussian_Q  (<span class="dv">1.3</span>)  <span class="dv">1.5</span>;
+<span class="dv">0.193062337141907</span>
+&gt; gaussian_Pinv  <span class="dv">0.4</span>  <span class="dv">5.0</span>;
+-<span class="dv">1.266735515679</span>
+&gt; gaussian_Qinv  <span class="dv">0.4</span> <span class="dv">5.0</span>;
+<span class="dv">1.266735515679</span>
+&gt; exponential_P  <span class="dv">1.0</span>  <span class="dv">0.5</span>;
+<span class="dv">0.864664716763387</span>
+&gt; exponential_Q  <span class="dv">1.0</span>  <span class="dv">0.5</span>;
+<span class="dv">0.135335283236613</span>
+&gt; exponential_Pinv  <span class="dv">0.6</span>  <span class="dv">0.5</span>;
+<span class="dv">0.458145365937077</span>
+&gt; exponential_Qinv  <span class="dv">0.6</span>  <span class="dv">0.5</span>;
+<span class="dv">0.255412811882995</span>
+&gt; laplace_P  <span class="dv">1.5</span>  <span class="dv">2.0</span>;
+<span class="dv">0.763816723629493</span>
+&gt; laplace_Q  <span class="dv">1.5</span>  <span class="dv">2.0</span>;
+<span class="dv">0.236183276370507</span>
+&gt; laplace_Pinv  <span class="dv">0.6</span>  <span class="dv">2.0</span>;
+<span class="dv">0.446287102628419</span>
+&gt; laplace_Qinv  <span class="dv">0.4</span>  <span class="dv">2.0</span>;
+<span class="dv">0.446287102628419</span>
+&gt; exppow_P  <span class="dv">0.0</span>  <span class="dv">1.0</span>  <span class="dv">2.5</span>;
+<span class="dv">0.5</span>
+&gt; exppow_Q  <span class="dv">0.0</span>  <span class="dv">1.0</span>  <span class="dv">0.5</span>;
+<span class="dv">0.5</span>
+&gt; cauchy_P  (-<span class="dv">1.0</span>)  <span class="dv">1.0</span>;
+<span class="dv">0.25</span>
+&gt; cauchy_Q  (-<span class="dv">1.0</span>)  <span class="dv">1.0</span>;
+<span class="dv">0.75</span>
+&gt; cauchy_Pinv  <span class="dv">0.75</span>  <span class="dv">1.0</span>;
+<span class="dv">1.0</span>
+&gt; cauchy_Qinv  <span class="dv">0.25</span>  <span class="dv">1.0</span>;
+<span class="dv">1.0</span>
+&gt; rayleigh_P  <span class="dv">1.5</span>  <span class="dv">2.0</span>;
+<span class="dv">0.245160398010993</span>
+&gt; rayleigh_Q  <span class="dv">0.5</span>  <span class="dv">1.0</span>;
+<span class="dv">0.882496902584595</span>
+&gt; rayleigh_Pinv  <span class="dv">0.5</span>  <span class="dv">1.0</span>;
+<span class="dv">1.17741002251547</span>
+&gt; rayleigh_Qinv  <span class="dv">0.5</span>  <span class="dv">1.0</span>;
+<span class="dv">1.17741002251547</span>
+&gt; gamma_P  <span class="dv">1.0</span>  <span class="dv">1.0</span>  <span class="dv">3.0</span>;
+<span class="dv">0.283468689426211</span>
+&gt; gamma_Q  <span class="dv">1.0</span>  <span class="dv">1.0</span>  <span class="dv">3.0</span>;
+<span class="dv">0.716531310573789</span>
+&gt; gamma_Pinv  <span class="dv">0.5</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.693147180559945</span>
+&gt; gamma_Qinv  <span class="dv">0.5</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.693147180559945</span>
+&gt; flat_P  <span class="dv">2.0</span>  <span class="dv">1.2</span>  <span class="dv">4.8</span>;
+<span class="dv">0.222222222222222</span>
+&gt; flat_Q  <span class="dv">2.0</span>  <span class="dv">1.2</span>  <span class="dv">4.8</span>;
+<span class="dv">0.777777777777778</span>
+&gt; flat_Pinv  <span class="dv">0.2</span>  <span class="dv">0.5</span>  <span class="dv">2.5</span>;
+<span class="dv">0.9</span>
+&gt; flat_Qinv  <span class="dv">0.2</span>  <span class="dv">0.5</span>  <span class="dv">2.5</span>;
+<span class="dv">2.1</span>
+&gt; lognormal_P  <span class="dv">0.01</span>  <span class="dv">0.0</span>  <span class="dv">1.0</span>;
+<span class="dv">2.06064339597172e-06</span>
+&gt; lognormal_Q  <span class="dv">0.01</span>  <span class="dv">0.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.999997939356604</span>
+&gt; lognormal_Pinv  <span class="dv">0.1</span>  <span class="dv">0.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.27760624185201</span>
+&gt; lognormal_Qinv  <span class="dv">0.1</span>  <span class="dv">0.0</span>  <span class="dv">1.0</span>;
+<span class="dv">3.60222447927916</span>
+&gt; chisq_P  <span class="dv">1.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.393469340287367</span>
+&gt; chisq_Q  <span class="dv">1.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.606530659712633</span>
+&gt; chisq_Pinv  <span class="dv">0.5</span>  <span class="dv">2.0</span>;
+<span class="dv">0.221199216928595</span>
+&gt; chisq_Qinv  <span class="dv">0.5</span>  <span class="dv">2.0</span>;
+<span class="dv">1.38629436111989</span>
+&gt; fdist_P  <span class="dv">1.0</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.46475800154489</span>
+&gt; fdist_Q  <span class="dv">1.0</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.53524199845511</span>
+&gt; fdist_Pinv  <span class="dv">0.5</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">1.13494292261288</span>
+&gt; fdist_Qinv  <span class="dv">0.5</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">1.13494292261288</span>
+&gt; tdist_P  <span class="dv">2.1</span>  <span class="dv">10.0</span>;
+<span class="dv">0.968961377898891</span>
+&gt; tdist_Q  (-<span class="dv">2.1</span>)  <span class="dv">10.0</span>;
+<span class="dv">0.968961377898891</span>
+&gt; tdist_Pinv  <span class="dv">0.68</span>  <span class="dv">10.0</span>;
+<span class="dv">0.482264205919689</span>
+&gt; tdist_Qinv  <span class="dv">0.68</span>  <span class="dv">10.0</span>;
+-<span class="dv">0.482264205919689</span>
+&gt; beta_P  <span class="dv">0.75</span>  <span class="dv">2.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.84375</span>
+&gt; beta_Q  <span class="dv">0.75</span>  <span class="dv">2.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.15625</span>
+&gt; beta_Pinv  <span class="dv">0.75</span>  <span class="dv">2.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.673648177666931</span>
+&gt; beta_Qinv  <span class="dv">0.25</span>  <span class="dv">2.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.673648177666931</span>
+&gt; logistic_P  (-<span class="dv">1.0</span>)  <span class="dv">2.0</span>;
+<span class="dv">1</span>
+&gt; logistic_Q  (-<span class="dv">1.0</span>)  <span class="dv">2.0</span>;
+<span class="dv">0.622459331201855</span>
+&gt; logistic_Pinv  <span class="dv">0.75</span>  <span class="dv">1.0</span>;
+<span class="dv">1.09861228866811</span>
+&gt; logistic_Qinv  <span class="dv">0.25</span>  <span class="dv">1.0</span>;
+<span class="dv">1.09861228866811</span>
+&gt; pareto_P  <span class="dv">2.01</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.0148512406901899</span>
+&gt; pareto_Q  <span class="dv">2.01</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.98514875930981</span>
+&gt; pareto_Pinv  <span class="dv">0.1</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">2.07148833730257</span>
+&gt; pareto_Qinv  <span class="dv">0.1</span>  <span class="dv">3.0</span>  <span class="dv">2.0</span>;
+<span class="dv">4.30886938006377</span>
+&gt; weibull_P  <span class="dv">1.01</span>  <span class="dv">1.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.639441117518024</span>
+&gt; weibull_Q  <span class="dv">1.01</span>  <span class="dv">2.0</span>  <span class="dv">3.0</span>;
+<span class="dv">0.879160657465162</span>
+&gt; weibull_Pinv  <span class="dv">0.1</span>  <span class="dv">1.0</span>  <span class="dv">2.0</span>;
+<span class="dv">0.324592845974501</span>
+&gt; weibull_Qinv  <span class="dv">0.1</span>  <span class="dv">1.0</span>  <span class="dv">2.0</span>;
+<span class="dv">1.51742712938515</span>
+&gt; gumbel1_P  <span class="dv">1.01</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.694739044426344</span>
+&gt; gumbel1_Q  <span class="dv">1.01</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.305260955573656</span>
+&gt; gumbel1_Pinv  <span class="dv">0.1</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+-<span class="dv">0.834032445247956</span>
+&gt; gumbel1_Qinv  <span class="dv">0.1</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">2.25036732731245</span>
+&gt; gumbel2_P  <span class="dv">1.01</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.371539903071873</span>
+&gt; gumbel2_Q  <span class="dv">1.01</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.628460096928127</span>
+&gt; gumbel2_Pinv  <span class="dv">0.1</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">0.434294481903252</span>
+&gt; gumbel2_Qinv  <span class="dv">0.1</span>  <span class="dv">1.0</span>  <span class="dv">1.0</span>;
+<span class="dv">9.4912215810299</span>
+&gt; poisson_P  <span class="dv">4</span>  <span class="dv">0.4</span>;
+<span class="dv">0.999938756672898</span>
+&gt; poisson_Q  <span class="dv">4</span>  <span class="dv">0.6</span>;
+<span class="dv">0.000394486018340255</span>
+&gt; binomial_P  <span class="dv">3</span>  <span class="dv">0.5</span>  <span class="dv">10</span>;
+<span class="dv">0.171874999999999</span>
+&gt; binomial_Q  <span class="dv">3</span>  <span class="dv">0.5</span>  <span class="dv">10</span>;
+<span class="dv">0.828125000000001</span>
+&gt; negative_binomial_P  <span class="dv">10</span>  <span class="dv">0.5</span>  <span class="dv">3.0</span>;
+<span class="dv">0.98876953125</span>
+&gt; negative_binomial_Q  <span class="dv">10</span>  <span class="dv">0.5</span>  <span class="dv">3.0</span>;
+<span class="dv">0.01123046875</span>
+&gt; pascal_P  <span class="dv">10</span>  <span class="dv">0.5</span>  <span class="dv">3</span>;
+<span class="dv">0.98876953125</span>
+&gt; pascal_Q  <span class="dv">10</span>  <span class="dv">0.5</span>  <span class="dv">3</span>;
+<span class="dv">0.01123046875</span>
+&gt; geometric_P  <span class="dv">5</span>  <span class="dv">0.4</span>;
+<span class="dv">0.92224</span>
+&gt; geometric_Q  <span class="dv">5</span>  <span class="dv">0.6</span>;
+<span class="dv">0.01024</span>
+&gt; hypergeometric_P  <span class="dv">1</span>  <span class="dv">5</span>  <span class="dv">20</span>  <span class="dv">3</span>;
+<span class="dv">0.908695652173913</span>
+&gt; hypergeometric_Q  <span class="dv">1</span>  <span class="dv">5</span>  <span class="dv">20</span>  <span class="dv">3</span>;
+<span class="dv">0.0913043478260873</span></code></pre></div>
+<h2 id="sorting">Sorting</h2>
+<p><a name="module-gslsort"></a></p>
+<p>This module is loaded via the command <code>using gsl::sort</code> and provides Pure wrappers for the GSL sorting routines found in Chapter 11 of the GSL manual,</p>
+<p><a href="http://www.gnu.org/software/gsl/manual/html_node/Sorting.html" class="uri">http://www.gnu.org/software/gsl/manual/html_node/Sorting.html</a>.</p>
+<h3 id="routines-4">Routines</h3>
+<dl>
+<dt><a name="gsl::sort_vector"></a><code>gsl::sort_vector m::matrix</code></dt>
+<dd>implements <code>gsl_sort</code> and <code>gsl_sort_int</code> without <code>stride</code> and <code>n</code> parameters.
+</dd>
+<dt><a name="gsl::sort_vector_index"></a><code>gsl::sort_vector_index m::matrix</code></dt>
+<dd>implements <code>gsl_sort_index</code> and <code>gsl_sort_int_index</code> without <code>stride</code> and <code>n</code> parameters.
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-13">Examples</h3>
+<p>Usage of each library routine is illustrated below.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> gsl::sort;
+&gt; <span class="kw">using</span> <span class="kw">namespace</span> gsl;
+&gt; sort_vector {<span class="dv">0</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">5</span>};
+{<span class="dv">0</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>} 
+&gt; sort_vector_index {<span class="dv">0.0</span>,<span class="dv">1.0</span>,<span class="dv">5.0</span>,<span class="dv">2.0</span>,<span class="dv">8.0</span>,<span class="dv">0.0</span>};
+{<span class="dv">5</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">4</span>}</code></pre></div>
+</body>
+</html>

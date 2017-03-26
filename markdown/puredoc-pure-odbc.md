@@ -1,0 +1,494 @@
+<a name="doc-pure-odbc"></a>
+
+Pure-ODBC - ODBC interface for the Pure programming language
+============================================================
+
+<a name="module-odbc"></a>
+
+Version 0.10, March 06, 2017
+
+| Albert Graef &lt;<aggraef@gmail.com>&gt;
+| Jiri Spitz &lt;<jiri.spitz@bluetone.cz>&gt;
+
+This module provides a simple ODBC interface for the Pure programming
+language, which lets you access a large variety of open source and commercial
+database systems from Pure. ODBC a.k.a. "Open Database Connectivity" was
+originally developed by Microsoft for Windows, but is now available on many
+different platforms, and two open source implementations exist for Unix-like
+systems: iODBC (<http://www.iodbc.org>) and unixODBC
+(<http://www.unixodbc.org>).
+
+ODBC has become the industry standard for portable and vendor independent
+database access. Most modern relational databases provide an ODBC interface so
+that they can be used with this module. This includes the popular open source
+DBMSs MySQL (<http://www.mysql.com>) and PostgreSQL
+(<http://www.postgresql.org>). The module provides the necessary operations to
+connect to an ODBC data source and retrieve or modify data using SQL
+statements.
+
+To make this module work, you must have an ODBC installation on your system,
+as well as the driver backend for the DBMS you want to use (and, of course,
+the DBMS itself). You also have to configure the DBMS as a data source for the
+ODBC system. On Windows this is done with the ODBC applet in the system
+control panel. For iODBC and unixODBC you can either edit the corresponding
+configuration files (/etc/odbc.ini and/or \~/.odbc.ini) by hand, or use one of
+the available graphical setup tools. More information about the setup process
+can be found on the iODBC and unixODBC websites.
+
+Copying
+-------
+
+| Copyright (c) 2009 by Albert Graef &lt;<aggraef@gmail.com>&gt;.
+| Copyright (c) 2009 by Jiri Spitz &lt;<jiri.spitz@bluetone.cz>&gt;.
+
+pure-odbc is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+pure-odbc is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program. If not, see &lt;<http://www.gnu.org/licenses/>&gt;.
+
+Installation
+------------
+
+Get the latest source from
+<https://bitbucket.org/purelang/pure-lang/downloads/pure-odbc-0.10.tar.gz>.
+
+Run `make` to compile the module and `make install` (as root) to install it in
+the Pure library directory. This requires GNU make, and of course you need to
+have Pure installed. The only other dependency is the GNU Multiprecision
+Library (GMP).
+
+`make` tries to guess your Pure installation directory and platform-specific
+setup. If it gets this wrong, you can set some variables manually. In
+particular, `make install prefix=/usr` sets the installation prefix, and
+`make PIC=-fPIC` or some similar flag might be needed for compilation on 64
+bit systems. The variable `ODBCLIB` specifies the ODBC library to be linked
+with. The default value is `ODBCLIB=-lodbc`. Please see the Makefile for
+details.
+
+Opening and Closing a Data Source
+---------------------------------
+
+To open an ODBC connection, you have to specify a "connect string" which names
+the data source to be used with the `odbc::connect` function. A list of
+available data sources can be obtained with the `odbc::sources` function. For
+instance, on my Linux system running MySQL and PostgreSQL it shows the
+following:
+
+    > odbc::sources;
+    [("myodbc","MySQL ODBC 2.50"),("psqlodbc","PostgreSQL ODBC")]
+
+The first component in each entry of the list is the name of the data source,
+which can be used as the value of the `DSN` option in the connect string, the
+second component provides a short description of the data source.
+
+Likewise, the list of ODBC drivers available on your system can be obtained
+with the `odbc::drivers` function which returns a list of pairs of driver
+names and attributes. (Older ODBC implementations on Unix lacked this feature,
+but it seems to be properly supported in recent unixODBC implementations at
+least.) This function can be used to determine a legal value for the `DRIVER`
+attribute in the connect string, see below.
+
+The `odbc::connect` function is invoked with a single parameter, the connect
+string, which is used to describe the data source and various other parameters
+such as user id and password. For instance, on my system I can connect to the
+local `myodbc` data source from above as follows:
+
+    > let db = odbc::connect "DSN=myodbc";
+
+The `odbc::connect` function returns a pointer to an `ODBCHandle` object which
+is used to refer to the database connection in the other routines provided by
+this module. An `ODBCHandle` object is closed automatically when it is no
+longer accessible. You can also close it explicitly with a call to the
+`odbc::disconnect` function:
+
+    > odbc::disconnect db;
+
+After `odbc::disconnect` has been invoked on a handle, any further operations
+on it will fail.
+
+`odbc::connect` allows a number of attributes to be passed to the ODBC driver
+when opening the database connection. E.g., here's how to specify a username
+and password; note that the different attributes are separated with a
+semicolon:
+
+    > let db = odbc::connect "DSN=myodbc;UID=root;PWD=guess";
+
+The precise set of attributes in the connect string depends on your ODBC
+driver, but at least the following options should be available on most
+systems. (Case is insignificant in the attribute names, so e.g. the `DATABASE`
+attribute may be specified as either `DATABASE`, `Database` or `database`.)
+
+-   DSN=&lt;data source name&gt;
+-   DRIVER=&lt;driver name&gt;
+-   HOST=&lt;server host name&gt;
+-   DATABASE=&lt;database path&gt;
+-   UID=&lt;user name&gt;
+-   PWD=&lt;password&gt;
+
+The following attributes appear to be Windows-specific:
+
+-   FILEDSN=&lt;DSN file name&gt;
+-   DBQ=&lt;database file name&gt;
+
+Using the `FILEDSN` option you can establish a connection to a data source
+described in a .dsn file on Windows, as follows:
+
+    > odbc::connect "FILEDSN=test.dsn";
+
+Usually it is also possible to directly connect to a driver and name a
+database file as the data source. For instance, using the MS Access ODBC
+driver you can connect to a database file test.mdb as follows:
+
+    > odbc::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
+
+SQLite (<http://www.sqlite.org>) provides another way to get a database up and
+running quickly. For that you need the SQLite library and the SQLite ODBC
+driver available at <http://www.ch-werner.de/sqliteodbc>. Then you can open an
+SQLite database as follows (the database file is named with the `DATABASE`
+attribute and is created automatically if it doesn't exist):
+
+    > odbc::connect "DRIVER=SQLite3;Database=test.db";
+
+SQLite generally performs very well if you avoid some pitfalls (in particular,
+big batches of updates/inserts should be done within a transaction, otherwise
+they will take forever). It is certainly good enough for smaller databases and
+very easy to set up. Basically, after installing SQLite and its ODBC driver
+you're ready to go immediately. This makes it a very convenient alternative if
+you don't want to go through the tedium of setting up one of the big hulking
+DBMS.
+
+Getting Information about a Data Source
+---------------------------------------
+
+You can get general information about an open database connection with the
+`odbc::info` function. This function returns a tuple of strings with the
+following items (see the description of the SQLGetInfo() function in the ODBC
+API reference for more information):
+
+-   DATA\_SOURCE\_NAME: the data source name
+-   DATABASE\_NAME: the default database
+-   DBMS\_NAME: the host DBMS name
+-   DBMS\_VER: the host DBMS version
+-   DRIVER\_NAME: the name of the ODBC driver
+-   DRIVER\_VER: the version of the ODBC driver
+-   DRIVER\_ODBC\_VER: the ODBC version supported by the driver
+-   ODBC\_VER: the ODBC version of the driver manager
+
+E.g., here is what the connection to MySQL shows on my Linux system:
+
+    > odbc::info db;
+    "myodbc","test","MySQL","5.0.18","myodbc3.dll","03.51.12","03.51","03.52"
+
+The odbc module also provides a number of operations to retrieve a bunch of
+additional meta information about the given database connection. In
+particular, the `odbc::getinfo` function provides a direct interface to the
+SQLGetInfo() routine. The result of `odbc::getinfo` is a pointer which can be
+converted to an integer or string value, depending on the type of information
+requested. For instance:
+
+    > get_short $ odbc::getinfo db odbc::SQL_MAX_TABLES_IN_SELECT;
+    31
+
+    > cstring_dup $ odbc::getinfo db odbc::SQL_IDENTIFIER_QUOTE_CHAR;
+    "`"
+
+Information about supported SQL data types is available with the
+`odbc::typeinfo` routine (this returns a lot of data, see odbc.pure for an
+explanation):
+
+    > odbc::typeinfo db odbc::SQL_ALL_TYPES;
+
+Moreover, information about the tables in the current database, as well as the
+structure of the tables and their primary and foreign keys can be retrieved
+with the `odbc::tables`, `odbc::columns`, `odbc::primary_keys` and
+`odbc::foreign_keys` functions:
+
+    > odbc::tables db;
+    [("event","TABLE"),("pet","TABLE")]
+
+    > odbc::columns db "pet";
+    [("name","varchar","NO","''"),("owner","varchar","YES",odbc::SQLNULL),
+    ("species","varchar","YES",odbc::SQLNULL),("sex","char","YES",odbc::SQLNULL),
+    ("birth","date","YES",odbc::SQLNULL),("death","date","YES",odbc::SQLNULL)]
+
+    > odbc::primary_keys db "pet";
+    ["name"]
+
+    > odbc::foreign_keys db "event";
+    [("name","pet","name")]
+
+This often provides a convenient and portable means to retrieve basic
+information about table structures, at least on RDBMS which properly implement
+the corresponding ODBC calls. Also note that while this information is also
+available through special system catalogs in most databases, the details of
+accessing these vary a lot among implementations.
+
+Executing SQL Queries
+---------------------
+
+As soon as a database connection has been opened, you can execute SQL queries
+on it using the `sql` function which executes a query and collects the results
+in a list. Note that SQL queries generally come in two different flavours:
+queries returning data (so-called *result sets*), and statements modifying the
+data (which have as their result the number of affected rows). The `sql`
+function returns a nonempty list of lists (where the first list denotes the
+column titles, and each subsequent list corresponds to a single row of the
+result set) in the former, and the row count in the latter case.
+
+For instance, here is how you can select some entries from a table. (The
+following examples assume the sample "menagerie" tables from the MySQL
+documentation. The `initdb` function in the examples/menagerie.pure script can
+be used to create these tables in your default database.)
+
+    > odbc::sql db "select name,species from pet where owner='Harold'" [];
+    [["name","species"],["Fluffy","cat"],["Buffy","dog"]]
+
+Often the third parameter of `sql`, as above, is just the empty list,
+indicating a parameterless query. Queries involving marked input parameters
+can be executed by specifying the parameter values in the third argument of
+the `sql` call. For instance:
+
+    > odbc::sql db "select name,species from pet where owner=?" ["Harold"];
+    [["name","species"],["Fluffy","cat"],["Buffy","dog"]]
+
+Multiple parameters are specified as a list:
+
+    > odbc::sql db "select name,species from pet where owner=? and species=?"
+    > ["Harold","cat"];
+    [["name","species"],["Fluffy","cat"]]
+
+Parameterized queries are particularly useful for the purpose of inserting
+data into a table:
+
+    > odbc::sql db "insert into pet values (?,?,?,?,?,?)"
+    > ["Puffball","Diane","hamster","f","1999-03-30",odbc::SQLNULL];
+    1
+
+In this case we could also have hard-coded the data to be inserted right into
+the SQL statement, but a parameterized query like the one above can easily be
+applied to a whole collection of data rows, e.g., as follows:
+
+    > do (odbc::sql db "insert into pet values (?,?,?,?,?,?)") data;
+
+Parameterized queries also let you insert data which cannot be specified
+easily inside an SQL query, such as long strings or binary data.
+
+The following SQL types of result and parameter values are recognized and
+converted to/from the corresponding Pure types:
+
+  SQL value/type                                   Pure value/type
+  ------------------------------------------------ -----------------
+  SQL NULL (no value)                              `odbc::SQLNULL`
+  integer types (INTEGER and friends)              `int`
+  64-bit integers                                  `bigint`
+  floating point types (REAL, FLOAT and friends)   `double`
+  binary data (BINARY, BLOB, etc.)                 `(size, data)`
+  character strings (CHAR, VARCHAR, TEXT, etc.)    `string`
+
+Note the special constant (nonfix symbol) `odbc::SQLNULL` which is used to
+represent SQL NULL values.
+
+Also note that binary data is specified as a pair `(size, data)` consisting of
+an int or bigint `size` which denotes the size of the data in bytes, and a
+pointer `data` (which must not be a null pointer unless `size` is 0 as well)
+pointing to the binary data itself.
+
+All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented
+in Pure using its character representation, encoded as a Pure string.
+
+Some databases also allow special types of queries (e.g., "batch" queries
+consisting of multiple SQL statements) which may return multiple result sets
+and/or row counts. The `sql` function only returns the first result set, which
+is appropriate in most cases. If you need to determine all result sets
+returned by a query, the `msql` function must be used. This function is
+invoked in exactly the same way as the `sql` function, but returns a list with
+all the result sets and/or row counts of the query.
+
+Example:
+
+    > odbc::msql db "select * from pet; select * from event" [];
+
+This will return a list with two result sets, one for each query.
+
+Low-Level Operations
+--------------------
+
+The `sql` and `msql` operations are in fact just ordinary Pure functions which
+are implemented in terms of the low-level operations `sql_exec`, `sql_fetch`,
+`sql_more` and `sql_close`. You can also invoke these functions directly if
+necessary. The `sql_exec` function starts executing a query and returns either
+a row count or the column names of the first result set as a tuple of strings.
+After that you can use `sql_fetch` to obtain the results in the set one by
+one. When all rows have been delivered, `sql_fetch` fails. The `sql_more`
+function can then be used to check for additional result sets. If there are
+further results, `sql_more` returns either the next row count, or a tuple of
+column names, after which you can invoke `sql_fetch` again to obtain the data
+rows in the second set, etc. When the last result set has been processed,
+`sql_more` fails.
+
+Example:
+
+    > odbc::sql_exec db "select name,species from pet where owner='Harold'" [];
+    ["name","species"]
+    > odbc::sql_fetch db; // get the 1st row
+    ["Fluffy","cat"]
+    > odbc::sql_fetch db; // get the 2nd row
+    ["Buffy","dog"]
+    > odbc::sql_fetch db; // no more results
+    odbc::sql_fetch #<pointer 0x24753e0>
+    > odbc::sql_more db; // no more result sets
+    odbc::sql_more #<pointer 0x24753e0>
+
+Moreover, the `sql_close` function can be called at any time to terminate an
+SQL query, after which subsequent calls to `sql_fetch` and `sql_more` will
+fail:
+
+    > odbc::sql_close db; // terminate query
+    ()
+
+This is not strictly necessary (it will be done automatically as soon as the
+next SQL query is invoked), but it is useful in order to release all resources
+associated with the query, such as parameter values which have to be cached so
+that they remain accessible to the SQL server. Since these parameters in some
+cases may use a lot of memory it is better to call `sql_close` as soon as you
+are finished with a query. This is also done automatically by the `sql` and
+`msql` functions.
+
+Also note that only a single query can be in progress per database connection
+at any one time. That is, if you invoke `sql_exec` to initiate a new query, a
+previous query will be terminated automatically. (However, it is possible to
+execute multiple queries on the same database simultaneously, if you process
+them through different connections to that database.)
+
+The low-level operations are useful when you have to deal with large result
+sets where you want to avoid to build the complete list of results in main
+memory. Instead, these functions allow you to process the individual elements
+immediately as they are delivered by the `sql_fetch` function. (An alternative
+method which combines the space efficiency of immediate processing with the
+convenience of the list representation is discussed in the following section.)
+Using the low-level operations you can also build your own specialized query
+engines; take the definitions of `sql` or `msql` as a start and change them
+according to your needs.
+
+Lazy Processing
+---------------
+
+As an experimental feature, the odbc module also provides two operations
+`odbc::lsql` and `odbc::lmsql` which work like `odbc::sql` and `odbc::msql`
+(see [Executing SQL Queries](#executing-sql-queries) above), but return lazy
+lists (streams) instead. This offers the convenience of a list-based
+representation without the overhead of keeping entire result sets in memory,
+which can be prohibitive when working with large amounts of data.
+
+These functions are invoked just like `odbc::sql` and `odbc::msql`, but they
+return a lazy list of rows (or a lazy list of lazy lists of rows in the case
+of `lmsql`). For instance:
+
+    > odbc::lsql db "select * from pet" [];
+    ["name","owner","species","sex","birth","death"]:#<thunk 0x7ffbb9aa2eb8>
+
+Note that the tail of the result list is "thunked" and will only be produced
+on demand, as you traverse the list. As a simple example, suppose that we just
+want to print the `name` field of each data row:
+
+    > using system;
+    > do (\(name:_)->puts name) $ tail $ odbc::lsql db "select * from pet" [];
+    Fluffy
+    Claws
+    Buffy
+    Fang
+    Bowser
+    Chirpy
+    Whistler
+    Slim
+    ()
+
+Here only one row is in memory at any time while the `do` function is in
+progress. This keeps memory requirements much lower than when using the
+`odbc::sql` function which first loads the entire result set into memory.
+Another advantage is that only those data rows are fetched from the database
+which are actually needed in the course of the computation. This can speed up
+the processing significantly if only a part of the result set is needed. For
+instance, in the following example we only look at the first two data rows
+until the desired row is found, so the remaining rows are never fetched from
+the database:
+
+    > head [row | row@(name:_) = tail $ odbc::lsql db "select * from pet" [];
+    >             name == "Claws"];
+    ["Claws","Gwen","cat","m","1994-03-17",odbc::SQLNULL]
+
+On the other hand, `lsql`/`lmsql` will usually be somewhat slower than
+`sql`/`msql` if the entire result set is being processed. So you should always
+consider the time/space tradeoffs when deciding which functions to use in a
+given situation.
+
+Also note that when using `lsql`/`lmsql`, the query remains in progress as
+long as the result list is still being processed. (This is different from
+`sql`/`msql` which load the complete result set(s) at once after which the
+query is terminated immediately.) Since only one query can be executed per
+database connection, this means that only one lazy result set can be processed
+per database connection at any time. However, as with the lowlevel operations
+it is possible to do several lazy queries simultaneously if you assign them to
+different database connections.
+
+Error Handling
+--------------
+
+When one of the above operations fails because the SQL server reports an
+error, an error term of the form `odbc::error msg state` will be returned,
+which specifies an error message and the corresponding SQL state (i.e., error
+code). A detailed explanation of the state codes can be found in the ODBC
+documentation. For instance, a reference to a non-existent table will cause a
+report like the following:
+
+    > odbc::sql db "select * from pets" [];
+    odbc::error "[TCX][MyODBC]Table 'test.pets' doesn't exist" "S1000"
+
+You can check for such return values and take some appropriate action. By
+redefining odbc::error accordingly, you can also have it generate exceptions
+or print an error message. For instance:
+
+    odbc::error msg state = fprintf stderr "%s (%s)\n" (msg,state) $$ ();
+
+------------------------------------------------------------------------------
+
+> **Note:** When redefining `odbc::error` in this manner, you should be aware
+> that the return value of `odbc::error` is what will be returned by the other
+> operations of this module in case of an error condition. These return values
+> are checked by other functions such as `sql`. Thus the return value should
+> still indicate that an error has happened, and not be something that might
+> be interpreted as a legal return value, such as an integer or a nonempty
+> tuple. It is usually safe to have `odbc::error` return an empty tuple or
+> throw an exception, but other types of return values should be avoided.
+
+------------------------------------------------------------------------------
+
+Caveats and Bugs
+----------------
+
+Be warned that multiple result sets are not supported by all databases. I also
+found that some ODBC drivers do not properly implement this feature, even
+though the database supports it. So you better stay away from this if you want
+your application to be portable. You can easily implement batched queries
+using a sequence of single queries instead.
+
+Note that since the exact numeric SQL data types (NUMERIC, DECIMAL) are mapped
+to Pure double values (which are double precision floating point numbers),
+there might be a loss of precision in extreme cases. If this is a problem you
+should explicitly convert these values to strings in your query, which can be
+done using the SQL CAST function, as in `select cast(1234.56 as char)`.
+
+Further Information and Examples
+--------------------------------
+
+For further details about the operations provided by this module please see
+the odbc.pure file. A sample script illustrating the usage of the module can
+be found in the examples directory.

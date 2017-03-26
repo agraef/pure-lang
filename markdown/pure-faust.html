@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-faust"></a></p>
+<h1 id="pure-faust">pure-faust</h1>
+<p><a name="module-faust"></a></p>
+<p>Version 0.12, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>This module lets you load and run Faust-generated signal processing modules in <a href="http://purelang.bitbucket.org/">Pure</a>. <a href="http://faust.grame.fr/">Faust</a> (an acronym for Functional AUdio STreams) is a functional programming language for real-time sound processing and synthesis developed at <a href="http://www.grame.fr/">Grame</a> and distributed as GPL’ed software.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong></p>
+<p>As of Pure 0.45, there’s also built-in support for Faust interoperability in the Pure core, including the ability to inline Faust code in Pure programs; see <a href="pure.html#interfacing-to-faust">Interfacing to Faust</a> in the Pure manual. The built-in Faust interface requires <a href="https://bitbucket.org/purelang/pure-lang/wiki/Faust2">Faust2</a> which is still under development and available as a separate package in the Faust git repository. Both interfaces provide pretty much the same basic capabilities and should work equally well for most applications. In fact, as of version 0.5 pure-faust comes with a compatibility module which provides the pure-faust API on top of the built-in Faust interface, see the description of the <a href="#module-faust2">faust2</a> module below for details.</p>
+</blockquote>
+<hr />
+<h2 id="copying">Copying</h2>
+<p>Unless explicitly stated otherwise, this software is Copyright (c) 2009-2012 by Albert Graef. Please also see the source for the copyright and license notes pertaining to individual source files.</p>
+<p>pure-faust is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-faust is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-faust-0.12.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-faust-0.12.tar.gz</a>.</p>
+<p>Binary packages can be found at <a href="http://purelang.bitbucket.org/" class="uri">http://purelang.bitbucket.org/</a>. To install from source, run the usual <code>make &amp;&amp; sudo make install</code>. This requires Pure, of course (the present version will work with Pure 0.52 and later). The Makefile tries to guess the installation prefix under which Pure is installed. If it guesses wrong, you can tell it the right prefix with <code>make prefix=/some/path</code>. Or you can specify the exact path of the <code>lib/pure</code> directory with <code>make libdir=/some/path</code>; by default the Makefile assumes <code>$(prefix)/lib/pure</code>. The Makefile also tries to guess the host system type and set up some platform-specific things accordingly. If this doesn’t work for your system then you’ll have to edit the Makefile accordingly.</p>
+<p>The Faust compiler is not required to compile this module, but of course you’ll need it to build the examples in the <code>examples</code> subdirectory and to compile your own Faust sources. You’ll need Faust 0.9.46 or later.</p>
+<p>To compile Faust programs for use with this module, you’ll also need the <code>pure.cpp</code> architecture file. This should be included in recent Faust releases. If your Faust version doesn’t have it yet, you can find a suitable version of this file in the <code>examples</code> folder. Simply copy the file to your Faust library directory (usually something like <code>/usr/local/lib/faust</code>, <code>/usr/local/share/faust</code> with the latest Faust versions) or the directory holding the Faust sources to be compiled, and you should be set.</p>
+<h2 id="usage">Usage</h2>
+<p>Once Faust and this module have been installed as described above, you should be able to compile a Faust dsp to a shared module loadable by pure-faust as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">$ faust -a pure.cpp -o mydsp.cpp mydsp.dsp
+$ g++ -shared -o mydsp.so mydsp.cpp</code></pre></div>
+<p>Note that, by default, Faust generates code which does all internal computations with single precision. You can add the <code>-double</code> flag to the Faust command in order to use double precision instead. (In either case, all data will be represented as doubles on the Pure side.)</p>
+<p>Also note that the above compile command is for a Linux or BSD system using <code>gcc</code>. Add <code>-fPIC</code> for 64 bit compilation. For Windows compilation, the output filename should be <code>mydsp.dll</code> instead of <code>mydsp.so</code>; on Mac OSX, it should be <code>mydsp.dylib</code>. There’s a Makefile in the <code>examples</code> folder which automates this process.</p>
+<p>Once the module has been compiled, you can fire up the Pure interpreter and load the dsp as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> faust;
+&gt; <span class="kw">let</span> dsp = faust_init <span class="st">&quot;mydsp&quot;</span> <span class="dv">48000</span>;
+&gt; dsp;
+#&lt;<span class="dt">pointer</span> <span class="dv">0xf09220</span>&gt;</code></pre></div>
+<p>The <code>faust_init</code> function loads the <code>&quot;mydsp.so&quot;</code> module (the <code>.so</code> suffix is supplied automatically) and returns a pointer to the Faust dsp object which can then be used in subsequent operations.</p>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> <code>faust_init</code> only loads the dsp module if it hasn’t been loaded before. However, as of pure-faust 0.8, <code>faust_init</code> also checks the modification time of the module and reloads it if the module was recompiled since it was last loaded. (This is for compatibility with Pure’s built-in Faust interface which behaves in the same way.) If this happens, <em>all</em> existing dsp instances created with the old version of the module become invalid immediately (i.e., all subsequent operations on them will fail, except <code>faust_exit</code>) and must be recreated.</p>
+</blockquote>
+<hr />
+<p>The second parameter of <code>faust_init</code>, 48000 in this example, denotes the sample rate in Hz. This can be an arbitrary integer value which is available to the hosted dsp (it’s up to the dsp whether it actually uses this value in some way). The sample rate can also be changed on the fly with the <code>faust_reinit</code> function:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; faust_reinit dsp <span class="dv">44100</span>;</code></pre></div>
+<p>It is also possible to create copies of an existing dsp with the <code>faust_clone</code> function, which is quite handy if multiple copies of the same dsp are needed (a case which commonly arises when implementing polyphonic synthesizers):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> dsp2 = faust_clone dsp;</code></pre></div>
+<p>When you’re done with a dsp, you can invoke the <code>faust_exit</code> function to unload it (this also happens automatically when a dsp object is garbage-collected):</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; faust_exit dsp2;</code></pre></div>
+<p>Note that after invoking this operation the dsp pointer becomes invalid and must not be used any more.</p>
+<p>In the following, we use the following little Faust program as a running example:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">declare descr <span class="st">&quot;amplifier&quot;</span>;
+declare author <span class="st">&quot;Albert Graef&quot;</span>;
+declare version <span class="st">&quot;1.0&quot;</span>;
+
+gain = nentry(<span class="st">&quot;gain&quot;</span>, <span class="dv">1.0</span>, <span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">0.01</span>);
+process = *(gain);</code></pre></div>
+<p>The <code>faust_info</code> function can be used to determine the number of input/output channels as well as the “UI” (a data structure describing the available control variables) of the loaded dsp:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> n,m,ui = faust_info dsp;</code></pre></div>
+<p>Global metadata of the dsp is available as a list of <code>key=&gt;val</code> string pairs with the <code>faust_meta</code> function. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; faust_meta dsp;
+[<span class="st">&quot;descr&quot;</span>=&gt;<span class="st">&quot;amplifier&quot;</span>,<span class="st">&quot;author&quot;</span>=&gt;<span class="st">&quot;Albert Graef&quot;</span>,<span class="st">&quot;version&quot;</span>=&gt;<span class="st">&quot;1.0&quot;</span>]</code></pre></div>
+<p>To actually run the dsp, you’ll need two buffers capable of holding the required number of audio samples for input and output. For convenience, the <code>faust_compute</code> routine lets you specify these as Pure double matrices. <code>faust_compute</code> is invoked as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; faust_compute dsp in out;</code></pre></div>
+<p>Here, <code>in</code> and <code>out</code> must be double matrices which have at least <code>n</code> or <code>m</code> rows, respectively (corresponding to the number of input and output channels of the Faust dsp). The row size of these matrices determines the number of samples which will be processed (if one of the matrices has a larger row size than the other, the extra elements are ignored). The <code>out</code> matrix will be modified in-place and also returned as the result of the call.</p>
+<p>Some DSPs (e.g., synthesizers) only take control input without processing any audio input; others (e.g., pitch detectors) might produce just control output without any audio output. In such cases you can just specify an empty <code>in</code> or <code>out</code> matrix, respectively. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; faust_compute dsp {} out;</code></pre></div>
+<p>Most DSPs take additional control input. The control variables are listed in the “UI” component of the <code>faust_info</code> return value. For instance, suppose that there’s a <code>gain</code> parameter listed there, it might look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; controls ui!<span class="dv">0</span>;
+hslider #&lt;<span class="dt">pointer</span> <span class="dv">0x12780a4</span>&gt; [] (<span class="st">&quot;gain&quot;</span>,<span class="dv">1.0</span>,<span class="dv">0.0</span>,<span class="dv">10.0</span>,<span class="dv">0.1</span>)</code></pre></div>
+<p>The constructor itself denotes the type of control, which matches the name of the Faust builtin used to create the control (see the Faust documentation for more details on this). The <em>third</em> parameter is a tuple which indicates the arguments the control was created with in the Faust program. The <em>first</em> parameter is a C <code>double*</code> which points to the current value of the control variable. You can inspect and change this value with the <code>get_double</code> and <code>put_double</code> routines available in the Pure prelude. (Note that, for compatibility with the internal Faust interface which supports both single and double precision controls, you can also use the <code>get_control</code> and <code>put_control</code> functions instead.) Changes of control variables only take effect between different invocations of <code>faust_compute</code>. Example:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> gain = control_ref (controls ui!<span class="dv">0</span>);
+&gt; get_double gain;
+<span class="dv">1.0</span>
+&gt; put_double gain <span class="dv">2.0</span>;
+()
+&gt; faust_compute dsp in out;</code></pre></div>
+<p>Output controls such as <code>hbargraph</code> and <code>vbargraph</code> are handled in a similar fashion, only that the Faust dsp updates these values for each call to <code>faust_compute</code> and Pure scripts can then read the values with <code>get_double</code> or <code>get_control</code>.</p>
+<p>The <em>second</em> parameter of a control description is a list holding the Faust metadata of the control. This list will be empty if the control does not have any metadata. Otherwise you will find some of <code>key=&gt;val</code> string pairs in this list. It is completely up to the application how to interpret the metadata, which may consist, e.g., of GUI layout hints or various kinds of controller definitions. For instance, a MIDI controller assignment might look as follows in the Faust source:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">gain = nentry(<span class="st">&quot;gain[midi:ctrl 7]&quot;</span>, <span class="dv">1.0</span>, <span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">0.01</span>);</code></pre></div>
+<p>In Pure this information will then be available as:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; control_meta (controls ui!<span class="dv">0</span>);
+[<span class="st">&quot;midi&quot;</span>=&gt;<span class="st">&quot;ctrl 7&quot;</span>]</code></pre></div>
+<p>Let’s finally have a closer look at the contents of the UI data structure. You will find that it is actually a tree, similar to the directory tree of a hierarchical file system, which reflects the layout of the controls in the Faust program. For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; ui;
+vgroup [] (<span class="st">&quot;mydsp&quot;</span>,[nentry #&lt;<span class="dt">pointer</span> <span class="dv">0x12780a4</span>&gt; [] (<span class="st">&quot;gain&quot;</span>,<span class="dv">1.0</span>,<span class="dv">0.0</span>,<span class="dv">10.0</span>,<span class="dv">0.01</span>)])</code></pre></div>
+<p>The leaves of the tree are the actual controls, while its interior nodes are so-called “control groups”, starting from a root node which represents the entire dsp. There are different kinds of control groups such as <code>vgroup</code> and <code>hgroup</code>; please check the Faust documentation for details. Control groups have a name and metadata just like individual controls, but there is no <code>control_ref</code> component and the data stored at the node is the list of controls and subgroups contained in the control group. The <code>controls</code> function returns a flat representation of the controls in the UI tree as a list, omitting the group nodes of the tree:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; controls ui;
+[hslider #&lt;<span class="dt">pointer</span> <span class="dv">0x12780a4</span>&gt; [] (<span class="st">&quot;gain&quot;</span>,<span class="dv">1.0</span>,<span class="dv">0.0</span>,<span class="dv">10.0</span>,<span class="dv">0.1</span>)]</code></pre></div>
+<p>We’ve already employed this function above to extract the <code>gain</code> control of our example dsp. There’s a variation of this function which yields the full “pathnames” of controls in the UI tree:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; pcontrols ui;
+[hslider #&lt;<span class="dt">pointer</span> <span class="dv">0x12780a4</span>&gt; [] (<span class="st">&quot;mydsp/gain&quot;</span>,<span class="dv">1.0</span>,<span class="dv">0.0</span>,<span class="dv">10.0</span>,<span class="dv">0.1</span>)]</code></pre></div>
+<p>This is sometimes necessary to distinguish controls with identical names in different control groups. There are two additional convenience functions which work with this flat representation of the UI data structure:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> ctrls = ans;
+&gt; control_map ctrls;
+{<span class="st">&quot;mydsp/gain&quot;</span>=&gt;#&lt;<span class="dt">pointer</span> <span class="dv">0x12780a4</span>&gt;}
+&gt; control_metamap ctrls;
+{<span class="st">&quot;mydsp/gain&quot;</span>=&gt;[]}</code></pre></div>
+<p>The results are Pure records which provide convenient access to the pointers and metadata of the controls by their name.</p>
+<p>Please note that, as of Pure 0.45, the UI access functions described above are actually provided by the <a href="#module-faustui">faustui</a> standard library module which gets included by the <a href="#module-faust">faust</a> module.</p>
+<p>Further examples can be found in the examples subdirectory.</p>
+<h2 id="faust2-compatibility">Faust2 Compatibility</h2>
+<p><a name="module-faust2"></a></p>
+<p>As of version 0.5, pure-faust includes a Faust2 compatibility module which lets you use the pure-faust API on top of Pure’s new Faust bitcode interface, using the same operations as described under <a href="#usage">Usage</a> above. This module is invoked with the following import clause:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> faust2;</code></pre></div>
+<p>To instantiate a Faust dsp using the <a href="#module-faust2">faust2</a> interface, you’ll have to compile the Faust program to LLVM bitcode format. The examples directory includes a <code>pure.c</code> Faust architecture file to help with this. Please see the <a href="pure.html#interfacing-to-faust">Interfacing to Faust</a> section in the Pure manual for details.</p>
+<p>Note that only one of the <a href="#module-faust">faust</a> and <a href="#module-faust2">faust2</a> modules may be imported into a program; trying to use both modules in the same program will <em>not</em> work. Also note that the <a href="#module-faust2">faust2</a> module requires <a href="https://bitbucket.org/purelang/pure-lang/wiki/Faust2">Faust2</a> and a fairly recent Pure version to work, whereas the <a href="#module-faust">faust</a> module works with both Faust2 and the mainline Faust version and doesn’t rely on the Faust bitcode loader (only the <code>pure.cpp</code> architecture is needed).</p>
+<h2 id="acknowledgements">Acknowledgements</h2>
+<p>Many thanks to Yann Orlarey at Grame, the principal author of Faust!</p>
+</body>
+</html>

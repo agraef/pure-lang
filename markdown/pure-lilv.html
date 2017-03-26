@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-lilv"></a></p>
+<h1 id="pure-lilv-pure-lilv-interface">pure-lilv: Pure Lilv Interface</h1>
+<p><a name="module-lilv"></a></p>
+<p>Version 0.4, March 06, 2017</p>
+<p>Albert Gräf &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<h2 id="copying">Copying</h2>
+<p>pure-lilv is Copyright (c) 2014 by Albert Gräf. It is distributed under a 3-clause BSD license, please check the COPYING file included in the distribution for details.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-lilv-0.4.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-lilv-0.4.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the module and <code>sudo make install</code> to install it in the Pure library directory. To uninstall the module, use <code>sudo make uninstall</code>. There are a number of other targets (mostly for maintainers), please see the Makefile for details.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix.</p>
+<h2 id="description">Description</h2>
+<p>This package provides a Pure module for David Robillard’s <a href="http://drobilla.net/software/lilv/">Lilv</a>, a library for LV2 plugin host writers. <a href="http://lv2plug.in/">LV2</a> is the new Linux audio plugin standard (LADSPA successor) which aims to be portable and extensible. Lilv makes it possible to load LV2 plugins in audio and other multimedia software. It is provided as a comprehensive and well-tested reference implementation for LV2 plugin hosts, so that authors of multimedia software don’t have to craft their own (and often incomplete or bug-ridden) implementations of the LV2 plugin API.</p>
+<p>This module is still under development, but we already offer operations to retrieve information about the LV2 plugins installed on a system, and to instantiate and run most basic plugins. Support for MIDI input and output and handling LV2 presets and plugin state is also available. More work is still needed in order to support more exotic event types such as transport state and tempo changes, and any other extensions which may be required to run more advanced plugins. We’re still trying to figure these out, so if you notice anything that’s missing in the current implementation then please submit a feature request.</p>
+<p>Documentation still needs to be written. For the time being, please refer to the lilv.pure script for a description of the programming interface, and to the scripts in the examples folder for examples showing how to use the operations provided by this module. Specifically, have a look at the lilv_examp.pure script which illustrates most the API functions and how they are used in a Pure script. There’s also a fairly complete software synthesizer example, synth.pure, which shows how to run instrument and effect plugins in a synth/effects chain in order to synthesize audio from MIDI input. Another complete example is the lv2plugin~ host for Pd which is written entirely in Pure; you can find this at <a href="https://bitbucket.org/agraef/pd-lv2plugin" class="uri">https://bitbucket.org/agraef/pd-lv2plugin</a>.</p>
+<p>Here’s a brief excerpt from lilv_examp.pure which shows the necessary steps involved in running an LV2 audio plugin with Pure:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="co">// Import the module.</span>
+<span class="kw">using</span> lilv;
+<span class="co">// Load the LV2 world state.</span>
+<span class="kw">let</span> world = lilv::world;
+
+<span class="co">// Instantiate a plugin.</span>
+<span class="kw">let</span> p = lilv::plugin world <span class="st">&quot;http://faust-lv2.googlecode.com/amp&quot;</span> <span class="dv">44100</span> <span class="dv">64</span>;
+
+<span class="co">// Get some information about the plugin (number of audio inputs and</span>
+<span class="co">// outputs, port descriptions).</span>
+<span class="kw">let</span> n,m = lilv::num_audio_inputs p, lilv::num_audio_outputs p;
+<span class="kw">let</span> ports = [i, lilv::port_info p i | i = <span class="dv">0</span>..lilv::num_ports p-<span class="dv">1</span>];
+
+<span class="co">// Create some audio buffers for input and output.</span>
+<span class="kw">let</span> in = <span class="dt">dmatrix</span> {<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,-<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>,-<span class="dv">1</span>,<span class="dv">0</span>;<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,-<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>,-<span class="dv">1</span>,<span class="dv">0</span>};
+<span class="kw">let</span> out = <span class="dt">dmatrix</span> (<span class="dv">2</span>,<span class="dv">8</span>);
+
+<span class="co">// Activate the plugin.</span>
+lilv::activate p;
+
+<span class="co">// Run some samples through the plugin.</span>
+lilv::run p in out;
+
+<span class="co">// Set a control value.</span>
+lilv::set_control p <span class="dv">2</span> <span class="dv">10</span>;
+<span class="co">// Compute some more samples.</span>
+lilv::run p in out;
+<span class="co">// Get the values of some output controls.</span>
+map (lilv::get_control p) [<span class="dv">4</span>,<span class="dv">5</span>];
+
+<span class="co">// Send a MIDI message.</span>
+lilv::set_midi p <span class="dv">10</span> [{<span class="dv">0xb0</span>, <span class="dv">7</span>, <span class="dv">127</span>}];
+<span class="co">// Compute some more samples.</span>
+lilv::run p in out;</code></pre></div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<a name="doc-pure-fastcgi"></a>
+
+pure-fastcgi: FastCGI module for Pure
+=====================================
+
+<a name="module-fastcgi"></a>
+
+Version 0.6, March 06, 2017
+
+Albert Gräf &lt;<aggraef@gmail.com>&gt;
+
+This module lets you write [FastCGI](http://www.fastcgi.com) scripts with
+Pure, to be run by web servers like [Apache](http://www.apache.org/). Compared
+to normal CGI scripts, this has the advantage that the script keeps running
+and may process as many requests from the web server as you like, in order to
+reduce startup times and enable caching techniques. Most ordinary CGI scripts
+can be converted to use FastCGI with minimal changes.
+
+Copying
+-------
+
+Copyright (c) 2009 by Albert Graef. pure-fastcgi is distributed under a
+3-clause BSD-style license, please see the included COPYING file for details.
+
+Installation
+------------
+
+Besides Pure, you'll need to have the [FastCGI](http://www.fastcgi.com)
+library installed to compile this module. Also, to run FastCGI scripts, your
+web server must be configured accordingly; see the documentation of FastCGI
+and your web server for details.
+
+Get the latest source from
+<https://bitbucket.org/purelang/pure-lang/downloads/pure-fastcgi-0.6.tar.gz>.
+
+Running `make` compiles the module, `make install` installs it in your Pure
+library directory. You might have to adjust the path to the fcgi\_stdio.h
+header file in fastcgi.c and/or the option to link in the FastCGI library in
+the Makefile.
+
+The Makefile tries to guess the host system type and Pure version, and set up
+some platform-specific things accordingly. If this doesn't work for your
+system then you'll have to edit the Makefile accordingly.
+
+Usage
+-----
+
+pure-fastcgi provides the `accept` function with which you tell the FastCGI
+server that your script is ready to accept another request.
+
+<a name="accept"></a>`accept`
+:   Accept a FastCGI request.
+
+<!-- -->
+The module also overrides a number of standard I/O functions so that they talk
+to the server instead. These routines are all in the `fastcgi` namespace. In
+your Pure script, you can set up a simple loop to process requests as follows:
+
+    #!/usr/local/bin/pure -x
+
+    using fastcgi;
+    using namespace fastcgi;
+
+    extern char *getenv(char*);
+
+    main count = main count when
+      count = count+1;
+      printf "Content-type: text/html\n\n\
+    <title>FastCGI Hello! (Pure, fcgi_stdio library)</title>\
+    <h1>FastCGI Hello! (Pure, fcgi_stdio library)</h1>\
+    Request number %d running on host <i>%s</i>\n"
+      (count,getenv "SERVER_NAME");
+    end if accept >= 0;
+
+    main 0;
+
+(You might have to adjust the "shebang" in the first line above, so that the
+shell finds the Pure interpreter. Also, remember to make the script
+executable. If you're worried about startup times, or if your operating system
+doesn't support shebangs, then you can also use the Pure interpreter to
+compile the script to a native executable instead.)
+
+This script keeps running until [`accept`](#fastcgi::accept) returns `-1` to
+indicate that the script should exit. Each call to
+[`accept`](#fastcgi::accept) blocks until either a request is available or the
+FastCGI server detects an error or other kind of termination condition. As
+with ordinary CGI, additional information about the request is available
+through various environment variables. A list of commonly supported
+environment variables and their meaning can be found in [The Common Gateway
+Interface](http://hoohoo.ncsa.uiuc.edu/cgi/) specification.
+
+A number of other routines are provided to deal with data filters, finish a
+request and set an exit status for a request. These correspond to operations
+provided by the FastCGI library, see the FastCGI documentation and the
+FCGI\_Accept(3), FCGI\_StartFilterData(3), FCGI\_Finish(3) and
+FCGI\_SetExitStatus(3) manpages for details. An interface to the FCGI\_ToFILE
+macro is also available. Note that in Pure these functions are called
+`accept`, `start_filter_data`, `finish`, `set_exit_status` and `to_file`,
+respectively, and are all declared in the `fastcgi` namespace. A detailed
+listing of all routines can be found in the fastcgi.pure module.
+
+Please see the examples subdirectory in the pure-fastcgi sources for some more
+elaborate examples.
+
+Note that to run your FastCGI scripts in a browser, your web server must have
+the FastCGI module loaded and must also be set up to execute the scripts.
+E.g., when using Apache, the following configuration file entry will set up a
+directory for FastCGI scripts:
+
+    ScriptAlias /fastcgi-bin/ "/srv/www/fastcgi-bin/"
+    <Location /fastcgi-bin/>
+        Options ExecCGI 
+        SetHandler fastcgi-script
+        Order allow,deny
+        Allow from all
+    </Location>
+
+(Replace `fastcgi-script` with `fcgid-script` if you're running `mod_fcgid`
+rather than `mod_fastcgi`.)
+
+Put this entry into http.conf or a similar file provided by your Apache
+installation (usually under /etc/apache2), and restart Apache. After that you
+can just throw your scripts into the `fastcgi-bin` directory to have them
+executed via an URL like `http://localhost/fastcgi-bin/myscript`.
+
+You can also set up a handler for the `.pure` filename extension as follows:
+
+    <IfModule mod_fastcgi.c>
+    <FilesMatch "\.pure$">
+        AddHandler fastcgi-script .pure
+        Options +ExecCGI
+    </FilesMatch>
+    </IfModule>
+
+(Again, you'll have to adjust the `IfModule` statement and replace
+`fastcgi-script` with `fcgid-script` if you're running `mod_fcgid`.) After
+that you should be able to execute scripts with the proper extension anywhere
+under your server's document root.

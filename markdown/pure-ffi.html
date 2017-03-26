@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-ffi"></a></p>
+<h1 id="pure-ffi">pure-ffi</h1>
+<p><a name="module-ffi"></a></p>
+<p>Version 0.14, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>The libffi library provides a portable, high level programming interface to various calling conventions. This allows a programmer to call any function specified by a call interface description at run time. libffi should be present on most gcc-based systems, but it is also available as a standalone package at <a href="http://sourceware.org/libffi/" class="uri">http://sourceware.org/libffi/</a>.</p>
+<p>This module provides an interface to libffi which enables you to call C functions from Pure and vice versa. It goes beyond Pure’s built-in C interface in that it also handles C structs and makes Pure functions callable from C. Moreover, depending on the libffi implementation, it may also be possible to call foreign languages other than C.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2008, 2009 by Albert Graef.</p>
+<p>pure-ffi is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-ffi is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-ffi-0.14.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-ffi-0.14.tar.gz</a>.</p>
+<p>Run <code>make</code> to compile the module and <code>make install</code> (as root) to install it in the Pure library directory. This requires GNU make, and of course you need to have Pure and libffi installed.</p>
+<p><code>make</code> tries to guess your Pure installation directory and platform-specific setup. If it gets this wrong, you can set some variables manually. In particular, <code>make install prefix=/usr</code> sets the installation prefix, and <code>make PIC=-fPIC</code> or some similar flag might be needed for compilation on 64 bit systems. Please see the Makefile for details.</p>
+<p>NOTE: This module requires libffi 3.x (3.0.8 has been tested). Old libffi versions (2.x) do not appear to work (closures are broken). Patches are welcome.</p>
+<h2 id="usage">Usage</h2>
+<p>The module exposes a simplified interface to libffi tailored to the Pure language. Call interfaces are described using the desired ABI, return type and tuple of argument types. The ABI is specified using one of the <code>FFI_*</code> constants defined by the module; for most purposes, <code>FFI_DEFAULT_ABI</code> is all that’s needed. C types are specified using special descriptors <code>void_t</code>, <code>uint_t</code> etc., see ffi.pure for details. You can also get a list of these values using <code>show -g FFI_* *_t</code> after importing the ffi module.</p>
+<p>The primary interface for calling C from Pure and vice versa is as follows:</p>
+<dl>
+<dt><a name="fcall"></a><code>fcall name abi rtype atypes</code></dt>
+<dd>Creates a Pure function from a C function with the given name, specified as a string. This makes the C function callable in Pure, no matter whether it is already declared as an <code>extern</code> or not. But note that if the function resides in a shared library, you still have to import that library using a Pure <code>using</code> declaration, see the Pure manual for details.
+</dd>
+<dt><a name="fclos"></a><code>fclos fn abi rtype atypes</code></dt>
+<dd>Creates a pointer to a C function from the given Pure function <code>fn</code>. The resulting pointer can then be passed to other C functions expecting functions as arguments. This allows you to create C callbacks from Pure functions without writing a single line of C code. (This functionality might not be available on some platforms.)
+</dd>
+</dl>
+<!-- -->
+<p>Note that in difference to <a href="#extern"><code>extern</code></a> functions, arguments to functions created with libffi are always passed in uncurried form, as a Pure tuple. E.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> ffi;
+&gt; <span class="kw">let</span> fmod = fcall <span class="st">&quot;fmod&quot;</span> FFI_DEFAULT_ABI double_t (double_t,double_t);
+&gt; fmod (<span class="dv">5.3</span>,<span class="dv">0.7</span>);
+<span class="dv">0.4</span></code></pre></div>
+<p>C structs are fully supported and are passed in a type-safe manner, see ffi.pure for details. Note that these are to be used for passing structs by value. (When passing a pointer to a struct, you must use <code>pointer_t</code> instead.) For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> complex_t = struct_t (double_t,double_t);
+&gt; <span class="kw">let</span> cexp = fcall <span class="st">&quot;cexp&quot;</span> FFI_DEFAULT_ABI complex_t (complex_t);
+&gt; members (cexp (struct complex_t (<span class="dv">0.0</span>,<span class="dv">1.0</span>)));
+<span class="dv">0.54030230586814</span>,<span class="dv">0.841470984807897</span></code></pre></div>
+<p>See the examples folder in the sources for more examples.</p>
+<h2 id="todo">TODO</h2>
+<p>The API isn’t perfect yet. In particular, one might consider to implement type descriptors as structs instead of raw pointers, and support for typed pointers would be useful. Contributions and suggestions are welcome.</p>
+</body>
+</html>

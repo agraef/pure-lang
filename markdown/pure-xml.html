@@ -1,0 +1,405 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-xml"></a></p>
+<h1 id="pure-xml---xmlxslt-interface">Pure-XML - XML/XSLT interface</h1>
+<p><a name="module-xml"></a></p>
+<p>Version 0.7, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p><a href="http://www.w3.org/TR/xml">XML</a>, the Extensible Markup Language, facilitates the exchange of complex structured data between applications and systems. <a href="http://www.w3.org/TR/xslt">XSLT</a> allows you to transform XML documents to other XML-based formats such as HTML. Together, XML and XSLT let you create dynamic web content with ease. Both XML and XSLT are open standards by the W3C consortium (<a href="http://www.w3.org" class="uri">http://www.w3.org</a>).</p>
+<p>Pure’s XML interface is based on the libxml2 and libxslt libraries from the GNOME project. If you have a Linux system then you most likely have these libraries, otherwise you can get them from <a href="http://xmlsoft.org" class="uri">http://xmlsoft.org</a>. For Windows users, the required dlls are available from the GnuWin32 project (<a href="http://gnuwin32.sourceforge.net" class="uri">http://gnuwin32.sourceforge.net</a>) and are already included in the Pure MSI package.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2009 by Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;.</p>
+<p>pure-xml is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-xml is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-xml-0.7.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-xml-0.7.tar.gz</a>.</p>
+<p>Run <code>make</code> and then <code>sudo make install</code> to compile and install this module. This requires libxml2, libxslt and Pure.</p>
+<h2 id="usage">Usage</h2>
+<p>Use the following declaration to make the operations of this module available in your programs:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> xml;</code></pre></div>
+<p>The module defines two namespaces <code>xml</code> and <code>xslt</code> for the XML and the XSLT operations, respectively. For convenience, you can open these in your program as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> <span class="kw">namespace</span> xml, xslt;</code></pre></div>
+<p>A number of complete examples illustrating the use of this module can be found in the examples directory in the source distribution.</p>
+<h2 id="data-structure">Data Structure</h2>
+<p>This module represents XML documents using pointers to the <code>xmlDoc</code> and <code>xmlNode</code> structures provided by the libxml2 library. Similarly, stylesheets are simply pointers to the xmlStylesheet structure from libxslt (cf. <a href="#transformations">Transformations</a>). This makes it possible to use these objects directly with the operations of the libxml2 and libsxslt libraries (via Pure’s C interface) if necessary. Note, however, that these are all “cooked” pointers which take care of freeing themselves automatically when they are no longer needed, therefore you shouldn’t free them manually.</p>
+<p>You can also check for these types of pointers using the following predicates:</p>
+<dl>
+<dt><a name="xml::docp"></a><code>xml::docp x</code></dt>
+<dd>checks whether <code>x</code> is an XML document pointer.
+</dd>
+<dt><a name="xml::nodep"></a><code>xml::nodep x</code></dt>
+<dd>checks whether <code>x</code> is a pointer to a node in an XML document.
+</dd>
+<dt><a name="xslt::stylesheetp"></a><code>xslt::stylesheetp x</code></dt>
+<dd>checks whether <code>x</code> is an XSLT stylesheet pointer.
+</dd>
+</dl>
+<!-- -->
+<h3 id="the-document-tree">The Document Tree</h3>
+<p>An XML document is a rooted tree which can be created, traversed and manipulated using the operations of this module. There are different types of nodes in the tree, each carrying their own type of data. In Pure land, the node data is described using the following “node info” constructors.</p>
+<p><a name="node-info"></a></p>
+<dl>
+<dt><a name="xml::element"></a><code>xml::element tag ns attrs</code></dt>
+<dd>An XML element with given (possibly qualified) name <code>tag</code>, a (possibly empty) list of namespace declarations <code>ns</code> and a (possibly empty) list of attributes <code>attrs</code>. Namespace declarations normally take the form of a pair of strings <code>(prefix,href)</code>, where <code>prefix</code> is the prefix associated with the namespace and <code>href</code> the corresponding URI (the name of the namespace), but they can also be just a string <code>href</code> if the namespace prefix is missing. Attributes are encoded as <code>key=&gt;value</code> pairs, where <code>key</code> is the attribute name and <code>value</code> the associated value; both <code>key</code> and <code>value</code> are strings.
+</dd>
+<dt><a name="xml::element_text"></a><code>xml::element_text tag ns attrs content</code></dt>
+<dd>A convenience function which denotes a combination of an element node with a text child. This is only used when creating a new node, and indicates that a text node child is to be added to the node automatically.
+</dd>
+<dt><a name="xml::attr"></a><code>xml::attr key val</code></dt>
+<dd>An attribute node. These only occur as results of the <a href="#select"><code>select</code></a> and <a href="#attrs"><code>attrs</code></a> functions, and cannot be inserted directly into a document.
+</dd>
+<dt><a name="xml::text"></a><code>xml::text content</code></dt>
+<dd>A text node with the given content (a string).
+</dd>
+<dt><a name="xml::cdata"></a><code>xml::cdata content</code></dt>
+<dd>Like <a href="#xml::text"><code>xml::text</code></a>, but contains unparsed character data.
+</dd>
+<dt><a name="xml::comment"></a><code>xml::comment content</code></dt>
+<dd>A comment.
+</dd>
+<dt><a name="xml::entity_ref"></a><code>xml::entity_ref name</code></dt>
+<dd>An entity reference (<code>&amp;name;</code>).
+</dd>
+<dt><a name="xml::pi"></a><code>xml::pi name content</code></dt>
+<dd>Processing instructions. <code>name</code> is the application name, <code>content</code> the text of the processing instructions.
+</dd>
+</dl>
+<!-- -->
+<h3 id="document-types">Document Types</h3>
+<p><a name="dtd"></a></p>
+<p>Besides the node types described above, there are some additional node types used in the <a href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> (DTD), which can be extracted from a document using the <a href="#int_subset"><code>int_subset</code></a> and <a href="#ext_subset"><code>ext_subset</code></a> functions. These are for inspection purposes only; it is not possible to change the DTD of a document in-place. (However, you can create a new document and attach a DTD to it, using the <a href="#new_doc"><code>new_doc</code></a> function.)</p>
+<dl>
+<dt><a name="xml::doctype"></a><code>xml::doctype name extid</code></dt>
+<dd>DTDs are represented using this special type of node, where <code>name</code> is the name of the root element, and <code>extid</code> is a pair consisting of the external identifier and the URI of the DTD (or just the URI if there is no external identifier). The <a href="#xml::doctype"><code>xml::doctype</code></a> node has as its children zero or more of the following kinds of DTD declaration nodes (these are just straightforward abstract syntax for the !ELEMENT, !ATTLIST and !ENTITY declarations inside a DTD declaration; see the XML specification for details).
+</dd>
+</dl>
+<!-- -->
+<p><a name="element-declaration"></a></p>
+<p><em>Element declarations:</em> Here, <code>name</code> is the element tag and <code>content</code> the definition of the element structure, see <a href="#element-content">element content</a> below. XML supports various kinds of element types, please refer to <a href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> in the XML specification for details.</p>
+<dl>
+<dt><a name="xml::undefined_element"></a><code>xml::undefined_element name</code></dt>
+<dd>An undefined element. This is in libxml2, but not in the XML specification, you shouldn’t see this in normal operation.
+</dd>
+<dt><a name="xml::empty_element"></a><code>xml::empty_element name</code></dt>
+<dd>An element without any content.
+</dd>
+<dt><a name="xml::any_element"></a><code>xml::any_element name</code></dt>
+<dd>An element with unrestricted content.
+</dd>
+<dt><a name="xml::mixed_element"></a><code>xml::mixed_element name content</code></dt>
+<dd>A “mixed” element which can contain character data, optionally interspersed with child elements, as given in the <code>content</code> specification.
+</dd>
+<dt><a name="xml::std_element"></a><code>xml::std_element name content</code></dt>
+<dd>A standard element consisting <em>only</em> of child elements, as given in the <code>content</code> specification.
+</dd>
+</dl>
+<!-- -->
+<p><a name="attribute-declaration"></a></p>
+<p><em>Attribute declarations:</em> These are used to declare the attributes of an element. <code>elem_name</code> is the name of an element which describes the attribute type, <code>name</code> is the name of the attribute itself, and <code>default</code> specifies the default value of the attribute, see <a href="#attribute-defaults">attribute defaults</a> below. XML supports a bunch of different attribute types, please refer to <a href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> in the XML specification for details.</p>
+<dl>
+<dt><a name="xml::cdata_attr"></a><code>xml::cdata_attr elem_name name default</code>, <a name="xml::id_attr"></a><code>xml::id_attr elem_name name default</code>, <a name="xml::idref_attr"></a><code>xml::idref_attr elem_name name default</code>, <a name="xml::idrefs_attr"></a><code>xml::idrefs_attr elem_name name default</code>, <a name="xml::entity_attr"></a><code>xml::entity_attr elem_name name default</code></dt>
+<dd>
+</dd>
+<dt><a name="xml::entities_attr"></a><code>xml::entities_attr elem_name name default</code>, <a name="xml::nmtoken_attr"></a><code>xml::nmtoken_attr elem_name name default</code>, <a name="xml::nmtokens_attr"></a><code>xml::nmtokens_attr elem_name name default</code>, <a name="xml::enum_attr"></a><code>xml::enum_attr elem_name name vals default</code></dt>
+<dd>
+</dd>
+<dt><a name="xml::notation_attr"></a><code>xml::notation_attr elem_name name vals default</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p><a name="entity-declaration"></a></p>
+<p><em>Entity declarations:</em> These are used for internal and external entity declarations. <code>name</code> is the entity name and <code>content</code> its definition. External entities also have an <code>extid</code> (external identifier/URI pair) identifying the entity.</p>
+<dl>
+<dt><a name="xml::int_entity"></a><code>xml::int_entity name content</code>, <a name="xml::int_param_entity"></a><code>xml::int_param_entity name content</code>, <a name="xml::ext_entity"></a><code>xml::ext_entity name extid content</code>, <a name="xml::ext_param_entity"></a><code>xml::ext_param_entity name extid content</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p><a name="element-content"></a></p>
+<p>The element content type (<code>content</code> argument of the <a href="#element-declaration">element declaration</a> nodes) is a kind of regular expression formed with tags (specified as strings) and the following constructors:</p>
+<dl>
+<dt><a name="xml::pcdata"></a><code>xml::pcdata</code></dt>
+<dd>text data (<code>#PCDATA</code>)
+</dd>
+<dt><a name="xml::sequence"></a><code>xml::sequence xs</code></dt>
+<dd>concatenation (<code>x,y,z</code>)
+</dd>
+<dt><a name="xml::union"></a><code>xml::union xs</code></dt>
+<dd>alternatives (<code>x|y|z</code>)
+</dd>
+<dt><a name="xml::opt"></a><code>xml::opt x</code></dt>
+<dd>optional element (<code>x?</code>)
+</dd>
+<dt><a name="xml::mult"></a><code>xml::mult x</code></dt>
+<dd>repeated element (<code>x*</code>)
+</dd>
+<dt><a name="xml::plus"></a><code>xml::plus x</code></dt>
+<dd>non-optional repeated element (<code>x+</code>)
+</dd>
+</dl>
+<!-- -->
+<p><a name="attribute-defaults"></a></p>
+<p>Attribute defaults (the <code>default</code> argument of <a href="#attribute-declaration">attribute declaration</a> nodes) are represented using the following constructor symbols:</p>
+<dl>
+<dt><a name="xml::required"></a><code>xml::required</code></dt>
+<dd>a required attribute, i.e., the user must specify this
+</dd>
+<dt><a name="xml::implied"></a><code>xml::implied</code></dt>
+<dd>an implied attribute, i.e., the user does not have to specify this
+</dd>
+<dt><a name="xml::default"></a><code>xml::default val</code></dt>
+<dd>an attribute with the given default value <code>val</code>
+</dd>
+<dt><a name="xml::fixed"></a><code>xml::fixed val</code></dt>
+<dd>an attribute with the given fixed value <code>val</code>
+</dd>
+</dl>
+<!-- -->
+<h2 id="operations">Operations</h2>
+<p>This module provides all operations necessary to create, inspect and manipulate XML documents residing either in memory or on disk. Operations for formatting XML documents using XSLT stylesheets are also available.</p>
+<h3 id="document-operations">Document Operations</h3>
+<p>The following functions allow you to create new XML documents, load them from or save them to a file or a string, and provide general information about a document.</p>
+<dl>
+<dt><a name="xml::new_doc"></a><code>xml::new_doc version dtd info</code></dt>
+<dd><p>This function creates an XML document. It returns a pointer to the new document. <code>version</code> is a string denoting the XML version (or <code>&quot;&quot;</code> to indicate the default). <code>info</code> is the <a href="#node-info">node info</a> of the root node (which should denote an element node). <code>dtd</code> denotes the document type which can be <code>()</code> to denote an empty DTD, a string (the URI/filename of the DTD), or a pair <code>(pubid,sysid)</code> where <code>pubid</code> denotes the public identifier of the DTD and <code>sysid</code> its system identifier (URI).</p>
+<p>Note that only simple kinds of documents with an internal DTD can be created this way. Use the <a href="#load_file"><code>load_file</code></a> or <a href="#load_string"><code>load_string</code></a> function below to create a skeleton document if a more elaborate prolog is required.</p>
+</dd>
+<dt><a name="xml::load_file"></a><code>xml::load_file name flags</code>, <a name="xml::load_string"></a><code>xml::load_string s flags</code></dt>
+<dd><p>Load an XML document from a file <code>name</code> or a string <code>s</code>. <code>flags</code> denotes the parser flags, a bitwise disjunction of any of the following constants, or 0 for the default:</p>
+<ul>
+<li><code>xml::DTDLOAD</code>: load DTD</li>
+<li><code>xml::DTDVALID</code>: validate</li>
+<li><code>xml::PEDANTIC</code>: pedantic parse</li>
+<li><code>xml::SUBENT</code>: substitute entities</li>
+<li><code>xml::NOBLANKS</code>: suppress blank nodes</li>
+</ul>
+<p>The return value is the document pointer. These operations may also fail if there is a fatal error parsing the document.</p>
+</dd>
+<dt><a name="xml::save_file"></a><code>xml::save_file name doc encoding compression</code>, <a name="xml::save_string"></a><code>xml::save_string doc</code></dt>
+<dd>Save an XML document <code>doc</code> to a file or a string. When saving to a file, <code>encoding</code> denotes the desired encoding (or <code>&quot;&quot;</code> for the default), <code>compression</code> the desired level of zlib compression (0 means none, 9 is maximum, -1 indicates the default). Note that with <a href="#xml::save_string"><code>xml::save_string</code></a>, the result is always encoded as UTF-8.
+</dd>
+<dt><a name="xml::doc_info"></a><code>xml::doc_info doc</code></dt>
+<dd>Retrieve general information about a document. Returns a tuple <code>(version,encoding,url,compression,standalone)</code>, where <code>version</code> is the XML version of the document, <code>encoding</code> the external encoding (if any), <code>url</code> the name/location of the document (if any), <code>compression</code> the level of zlib compression, and <code>standalone</code> is a flag indicating whether the document contains any external markup declarations “which affect the information passed from the XML processor to the application”, see the section on the <a href="http://www.w3.org/TR/REC-xml/#sec-rmd">standalone document declaration</a> in the XML spec for details. (Apparently, in libxml2 <code>standalone</code> is either a truth value or one of the special values -1, indicating that there’s no XML declaration in the prolog, or -2, indicating that there’s an XML declaration but no <code>standalone</code> attribute.)
+</dd>
+</dl>
+<!-- -->
+<dl>
+<dt><a name="xml::int_subset"></a><code>xml::int_subset doc</code>, <a name="xml::ext_subset"></a><code>xml::ext_subset doc</code></dt>
+<dd>Retrieve the internal and external DTD subset of a document. Returns a <code>doctype</code> node (fails if there’s no corresponding DTD).
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example</strong></p>
+<p>Read the sample.xml document distributed with the sources (ignoring blank nodes) and retrieve the document info:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> xml;
+&gt; <span class="kw">let</span> sample = xml::load_file <span class="st">&quot;sample.xml&quot;</span> xml::NOBLANKS;
+&gt; xml::doc_info sample;
+<span class="st">&quot;1.0&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;sample.xml&quot;</span>,<span class="dv">0</span>,-<span class="dv">2</span></code></pre></div>
+<h3 id="traversing-documents">Traversing Documents</h3>
+<p>These operations are used to traverse the document tree, i.e., the nodes of the document. They take either a document pointer <code>doc</code> or a node pointer <code>node</code> as argument, and yield a corresponding node pointer (or a document pointer, in the case of <a href="#xml::doc"><code>xml::doc</code></a>). The node pointers can then be used with the <a href="#node-information">Node Information</a> and <a href="#node-manipulation">Node Manipulation</a> operations described below.</p>
+<dl>
+<dt><a name="xml::root"></a><code>xml::root doc</code></dt>
+<dd>the root node of <code>doc</code>
+</dd>
+<dt><a name="xml::doc"></a><code>xml::doc node</code></dt>
+<dd>the document <code>node</code> belongs to
+</dd>
+<dt><a name="xml::parent"></a><code>xml::parent node</code></dt>
+<dd>the parent of <code>node</code>
+</dd>
+<dt><a name="xml::first"></a><code>xml::first node</code>, <a name="xml::last"></a><code>xml::last node</code></dt>
+<dd>first and last child node
+</dd>
+<dt><a name="xml::next"></a><code>xml::next node</code>, <a name="xml::prev"></a><code>xml::prev node</code></dt>
+<dd>next and previous sibling
+</dd>
+<dt><a name="xml::first_attr"></a><code>xml::first_attr node</code>, <a name="xml::last_attr"></a><code>xml::last_attr node</code></dt>
+<dd>first and last attribute node
+</dd>
+</dl>
+<!-- -->
+<p>All these operations fail if the corresponding target node does not exist, or if the type of the given node is not supported by this implementation.</p>
+<p>There are also two convenience functions to retrieve the children and attribute nodes of a node:</p>
+<dl>
+<dt><a name="xml::children"></a><code>xml::children node</code></dt>
+<dd>returns the list of all child nodes of <code>node</code>
+</dd>
+<dt><a name="xml::attrs"></a><code>xml::attrs node</code></dt>
+<dd>returns the list of all attribute nodes of <code>node</code>
+</dd>
+</dl>
+<!-- -->
+<p>Moreover, given a node pointer <code>node</code>, <code>node!i</code> can be used to retrieve the <code>i</code>th child of <code>node</code>.</p>
+<p><strong>Example</strong></p>
+<p>Peek at the root node of the sample document and its children:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> r = xml::root sample; r;
+#&lt;<span class="dt">pointer</span> <span class="dv">0xe15e10</span>&gt;
+&gt; xml::node_info r;
+xml::element <span class="st">&quot;story&quot;</span> [] []
+&gt; #xml::children r;
+<span class="dv">5</span>
+&gt; xml::node_info (r!<span class="dv">0</span>);
+xml::cdata <span class="st">&quot;&lt;greeting&gt;Hello, world!&lt;/greeting&gt;&quot;</span></code></pre></div>
+<h3 id="node-information">Node Information</h3>
+<p>These operations retrieve information about the nodes of an XML document.</p>
+<dl>
+<dt><a name="xml::select"></a><code>xml::select doc xpath</code>, <a name="xml::select"></a><code>xml::select doc (xpath,ns)</code></dt>
+<dd><p>Retrieve nodes using an <a href="http://www.w3.org/TR/xpath">XPath</a> specification. Given an XPath (a string) <code>xpath</code>, this operation returns the list of all matching nodes in the given document <code>doc</code>. You can also specify a node as the first argument, in which case the document of the given node is searched and paths are interpreted relative to the given node (rather than the root node of the document).</p>
+<p>Moreover, instead of just an XPath you can also specify a pair <code>(xpath,ns)</code> consisting of an XPath <code>xpath</code> and a list <code>ns</code> of <code>prefix=&gt;uri</code> string pairs which describe the namespaces to be recognized in the XPath expression. This is necessary to select nodes by qualified tag or attribute names. Note that only the namespace URIs must match up with those used in the queried document; the corresponding namespace prefixes can be chosen freely, so you can use whatever prefixes are convenient to formulate the XPath query. However, for each namespace prefix used in the XPath expression (not the document!), there <em>must</em> be a corresponding binding in the <code>ns</code> list. Otherwise the underlying libxml2 function will complain about an undefined namespace prefix and <a href="#xml::select"><code>xml::select</code></a> will fail.</p>
+</dd>
+<dt><a name="xml::node_info"></a><code>xml::node_info node</code></dt>
+<dd>Retrieve the node data from <code>node</code>. Returns a <a href="#node-info">node info</a> value, as described in <a href="#data-structure">Data Structure</a> above. Fails if the node does not belong to one of the supported node types.
+</dd>
+<dt><a name="xml::is_blank_node"></a><code>xml::is_blank_node</code></dt>
+<dd>Checks whether a node is a blank node (empty or whitespace only) and thus possibly ignorable.
+</dd>
+<dt><a name="xml::node_base"></a><code>xml::node_base node</code></dt>
+<dd>Returns the base URI of the given node.
+</dd>
+<dt><a name="xml::node_path"></a><code>xml::node_path node</code></dt>
+<dd>Returns the path of a node in the document, in the format accepted by <a href="#select"><code>select</code></a>.
+</dd>
+<dt><a name="xml::node_content"></a><code>xml::node_content node</code></dt>
+<dd>Returns the text carried by the node, if any (after entity substitution).
+</dd>
+</dl>
+<!-- -->
+<p>In addition, you can retrieve and change attributes of element nodes with the following operations:</p>
+<dl>
+<dt><a name="xml::node_attr"></a><code>xml::node_attr node name</code></dt>
+<dd>Retrieves the value of the attribute with the given <code>name</code> (after entity substitution).
+</dd>
+<dt><a name="xml::set_node_attr"></a><code>xml::set_node_attr node name value</code>, <a name="xml::unset_node_attr"></a><code>xml::unset_node_attr node name</code></dt>
+<dd>Sets or unsets an attribute value.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Examples</strong></p>
+<p>Set and unset a node attribute:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; xml::set_node_attr r <span class="st">&quot;foo&quot;</span> <span class="st">&quot;4711&quot;</span>;
+()
+&gt; xml::node_info r;
+xml::element <span class="st">&quot;story&quot;</span> [] [<span class="st">&quot;foo&quot;</span>=&gt;<span class="st">&quot;4711&quot;</span>]
+&gt; xml::node_attr r <span class="st">&quot;foo&quot;</span>;
+<span class="st">&quot;4711&quot;</span>
+&gt; xml::unset_node_attr r <span class="st">&quot;foo&quot;</span>;
+()
+&gt; xml::node_info r;
+xml::element <span class="st">&quot;story&quot;</span> [] []</code></pre></div>
+<p>The <a href="#select"><code>select</code></a> function is <em>very</em> powerful, and probably the single most important operation of this module if you want to extract information from an existing XML document without traversing the entire structure. Here is a very simple example of its use:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; [xml::node_content n, xml::node_path n | n = xml::select sample <span class="st">&quot;//author&quot;</span>];
+[(<span class="st">&quot;John Fleck&quot;</span>,<span class="st">&quot;/story/storyinfo/author&quot;</span>)]</code></pre></div>
+<p>Note that if the XPath expression contains qualified names, the corresponding namespace prefixes and their URIs must be given in the second argument along with the XPath, as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">xml::select doc (<span class="st">&quot;//foo:bar&quot;</span>, [<span class="st">&quot;foo&quot;</span>=&gt;<span class="st">&quot;http://www.foo.org&quot;</span>]);</code></pre></div>
+<h3 id="node-manipulation">Node Manipulation</h3>
+<p>These operations enable you to manipulate the document structure by adding a new node to the document tree (specified through its <a href="#node-info">node info</a>), and by removing (unlinking) existing nodes from the tree.</p>
+<dl>
+<dt><a name="xml::replace"></a><code>xml::replace node info</code></dt>
+<dd>Add the new node specified by <code>info</code> in place of the given node <code>node</code>.
+</dd>
+<dt><a name="xml::add_first"></a><code>xml::add_first node info</code>, <a name="xml::add_last"></a><code>xml::add_last node info</code></dt>
+<dd>Add the new node as the first or last child of <code>node</code>, respectively.
+</dd>
+<dt><a name="xml::add_next"></a><code>xml::add_next node info</code>, <a name="xml::add_prev"></a><code>xml::add_prev node info</code></dt>
+<dd>Add the new node as the next or previous sibling of <code>node</code>, respectively.
+</dd>
+</dl>
+<!-- -->
+<p>The operations above all return a pointer to the new XML node object.</p>
+<dl>
+<dt><a name="xml::unlink"></a><code>xml::unlink node</code></dt>
+<dd>Deletes an existing node from the document tree. Returns <code>()</code>.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Examples</strong></p>
+<p>Replace the first child of the root node in the sample document:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; xml::node_info (r!<span class="dv">0</span>);
+xml::cdata <span class="st">&quot;&lt;greeting&gt;Hello, world!&lt;/greeting&gt;&quot;</span>
+&gt; xml::replace (r!<span class="dv">0</span>) (xml::text <span class="st">&quot;bla bla&quot;</span>);
+#&lt;<span class="dt">pointer</span> <span class="dv">0xd40d80</span>&gt;
+&gt; xml::node_info (r!<span class="dv">0</span>);
+xml::text <span class="st">&quot;bla bla&quot;</span></code></pre></div>
+<p>Delete that node:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; xml::unlink (r!<span class="dv">0</span>);
+()
+&gt; xml::node_info (r!<span class="dv">0</span>);
+xml::comment <span class="st">&quot;This is a sample document for testing the xml interface.&quot;</span></code></pre></div>
+<h3 id="transformations">Transformations</h3>
+<p>The following operations provide basic XSLT support. As already mentioned, stylesheets are represented as pointers to the xsltStylesheet structure provided by libxslt. Note that, in difference to XML document pointers, this is an opaque type, i.e., there is no direct means to inspect and manipulate parsed stylesheets in memory using the operations of this module. However, a stylesheet is just a special kind of XML document and thus can be manipulated after reading the stylesheet as an ordinary XML document. The <a href="#xslt::load_stylesheet"><code>load_stylesheet</code></a> function then allows you to convert the document pointer to an XSLT Stylesheet object.</p>
+<p>Applying a stylesheet to an XML document generally involves the following steps:</p>
+<ol style="list-style-type: decimal">
+<li>Load and parse the stylesheet using <a href="#xslt::load_stylesheet"><code>load_stylesheet</code></a>. The parameter to <a href="#xslt::load_stylesheet"><code>load_stylesheet</code></a> can be either the name of a stylesheet file or a corresponding document pointer. The function returns a pointer to the stylesheet object which is used in the subsequent processing.</li>
+<li>Invoke <a href="#xslt::apply_stylesheet"><code>apply_stylesheet</code></a> on the stylesheet and the target document. This returns a new document containing the transformed XML document.</li>
+<li>Run <a href="#xslt::save_result_file"><code>save_result_file</code></a> or <a href="#xslt::save_result_string"><code>save_result_string</code></a> on the result and the stylesheet to save the transformed document in a file or a string.</li>
+</ol>
+<p>Here is a brief summary of the XSLT operations. Please check the <a href="http://www.w3.org/TR/xslt">XSLT</a> documentation for details of the transformation process.</p>
+<dl>
+<dt><a name="xslt::load_stylesheet"></a><code>xslt::load_stylesheet x</code></dt>
+<dd>Load a stylesheet. <code>x</code> can be either an XML document pointer, or a string denoting the desired <code>.xsl</code> file.
+</dd>
+<dt><a name="xslt::apply_stylesheet"></a><code>xslt::apply_stylesheet style doc params</code></dt>
+<dd>Apply the stylesheet <code>style</code> to the given document <code>doc</code> with the given parameters <code>params</code>. The third argument is a (possibly empty) list of <code>key=&gt;value</code> string pairs which allows you to pass additional parameters to the stylesheet.
+</dd>
+<dt><a name="xslt::save_result_file"></a><code>xslt::save_result_file name doc style compression</code>, <a name="xslt::save_result_string"></a><code>xslt::save_result_string doc style</code></dt>
+<dd>Save the transformation result <code>doc</code> obtained with the stylesheet <code>style</code> to a file or a string. This works pretty much like <a href="#xslt::save_file"><code>save_file</code></a> or <a href="#xslt::save_string"><code>save_string</code></a>, but also keeps track of some output-related information contained in the stylesheet.
+</dd>
+</dl>
+<!-- -->
+<p><strong>Example</strong></p>
+<p>Load the recipes.xml document and the recipes.xsl stylesheet distributed with the sources:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> recipes = xml::load_file <span class="st">&quot;recipes.xml&quot;</span> xml::DTDVALID;
+&gt; <span class="kw">let</span> style = xslt::load_stylesheet <span class="st">&quot;recipes.xsl&quot;</span>;</code></pre></div>
+<p>Apply the stylesheet to the document and save the result in a html file:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> res = xslt::apply_stylesheet style recipes [];
+&gt; xslt::save_result_file <span class="st">&quot;recipes.html&quot;</span> res style <span class="dv">0</span>;
+()</code></pre></div>
+<p>That’s all. You can now have a look at recipes.html in your favourite web browser.</p>
+</body>
+</html>

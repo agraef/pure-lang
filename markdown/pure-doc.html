@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-doc"></a></p>
+<h1 id="pure-doc">pure-doc</h1>
+<p>Version 0.7, March 06, 2017</p>
+<p>Albert Graef &lt;<a href="mailto:aggraef@gmail.com">aggraef@gmail.com</a>&gt;</p>
+<p>pure-doc is a simple utility for literate programming and documenting source code written in the Pure programming language. It is designed to be used with the excellent <a href="http://docutils.sourceforge.net">docutils</a> tools and the gentle markup format supported by these, called <a href="#rst">RST</a> a.k.a. “reStructuredText”, usually pronounced “rest”.</p>
+<p>The basic idea is that you just comment your code as usual, but using RST markup instead of plain text. In addition, you can also designate literate programming fragments in your code, which will be translated to RST literal blocks automatically. You then run pure-doc on your source files to extract all marked up comments and the literate code blocks. The resulting RST source can then be processed with the docutils utilities like rst2html.py and rst2latex.py to create the documentation in a variety of formats.</p>
+<h2 id="copying">Copying</h2>
+<p>Copyright (c) 2009-2010 by Albert Graef.</p>
+<p>pure-doc is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p>
+<p>pure-doc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License along with this program. If not, see &lt;<a href="http://www.gnu.org/licenses/" class="uri">http://www.gnu.org/licenses/</a>&gt;.</p>
+<h2 id="installation">Installation</h2>
+<p>Get the latest source from <a href="https://bitbucket.org/purelang/pure-lang/downloads/pure-doc-0.7.tar.gz" class="uri">https://bitbucket.org/purelang/pure-lang/downloads/pure-doc-0.7.tar.gz</a>.</p>
+<p>Unpack and do the customary <code>make &amp;&amp; sudo make install</code>. This only needs flex and a standards-compliant C++ compiler.</p>
+<h2 id="usage">Usage</h2>
+<p>First, see the description of the <a href="#rst">RST</a> format. RST is a very simple markup format, almost like plain text (in fact, you’re looking at RST right now, this document is written in it!). You can learn enough of it to start marking up your source in about five minutes.</p>
+<p>Second, you’ll have to mark up your source comments. pure-doc recognizes comments in RST format by looking at the first non-empty line of the comment. A comment (either <code>/* ... */</code> or a contiguous sequence of <code>//</code> line comments) is assumed to contain RST format if the first non-empty line starts with <code>:</code>, <code>..</code> or <code>__</code>. Other comments are taken to be plain text and are ignored by pure-doc.</p>
+<p>Notes:</p>
+<ul>
+<li>pure-doc makes no other assumption about the contents of marked up comments, so you can include whatever you want: titles, section headers, fields, admonitions, plain text, whatever. Just make sure that the comment starts with one of the special tokens listed above. (You can always put just <code>..</code> at the beginning of the comment to force it to be recognized, this will be treated as a comment by the docutils tools.)</li>
+<li>Also, pure-doc makes very few assumptions about the source; in fact, any source files with a C/C++-like comment and string syntax should work. So you could also use it to document your C/C++ programs, or even plain text files like this one, as long as they adhere to these standards.</li>
+<li>Indentation in extracted comments is preserved (assuming tabs = 8 spaces by default, you can change this with the <code>-t</code> option). This is important because indentation conveys document structure in RST.</li>
+</ul>
+<p>For instance, here is a sample RST-formatted comment:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="co">/* :Name: ``rand`` - compute random numbers</span>
+<span class="co">   :Synopsis: ``rand``</span>
+<span class="co">   :Description: Computes a (pseudo) random number. Takes no parameters.</span>
+<span class="co">   :Example: Here is how you can call ``rand`` in Pure:</span>
+<span class="co">     ::</span>
+
+<span class="co">       &gt; extern int rand();</span>
+<span class="co">       &gt; rand;</span>
+<span class="co">       1804289383</span>
+
+<span class="co">   :See Also: rand(3) */</span></code></pre></div>
+<p>This will be rendered as follows:</p>
+<blockquote>
+<dl>
+<dt>Name</dt>
+<dd><p><code>rand</code> - compute random numbers</p>
+</dd>
+<dt>Synopsis</dt>
+<dd><p><code>rand</code></p>
+</dd>
+<dt>Description</dt>
+<dd><p>Computes a (pseudo) random number. Takes no parameters.</p>
+</dd>
+<dt>Example</dt>
+<dd><p>Here is how you can call <code>rand</code> in Pure:</p>
+</dd>
+</dl>
+<blockquote>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">extern</span> <span class="dt">int</span> rand();
+&gt; rand;
+<span class="dv">1804289383</span></code></pre></div>
+</blockquote>
+<dl>
+<dt>See Also</dt>
+<dd><p>rand(3)</p>
+</dd>
+</dl>
+<p>Finally, to extract the documentation you run pure-doc on your source files as follows:</p>
+</blockquote>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure-doc source-files ...</code></pre></div>
+<p>If no input files are specfied then the source is read from standard input. Otherwise all input files are read and processed in the indicated order. The output is written to stdout, so that you can directly pipe it into one of the docutils programs:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure-doc source-files ... | rst2html.py</code></pre></div>
+<p>If you prefer to write the output to a file, you can do that as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure-doc source-files ... &gt; rst-file</code></pre></div>
+<p>pure-doc also understands the following options. These must come before any file arguments.</p>
+<dl>
+<dt><code>-h</code></dt>
+<dd>Print a short help message.
+</dd>
+<dt><code>-i</code></dt>
+<dd>Automatic index creation (see below).
+</dd>
+<dt><code>-s</code></dt>
+<dd>Generate Sphinx-compatible output (see below).
+</dd>
+<dt><code>-twidth</code></dt>
+<dd>Set the tab width to the given number of spaces.
+</dd>
+</dl>
+<p>There are no other options. By its design pure-doc is just a plain simple “docstring scraping” utility with no formatting knowledge of its own. All actual formatting is handled by the docutils programs which offer plenty of options to change the appearance of the generated output; please refer to the <a href="http://docutils.sourceforge.net">docutils</a> documentation for details.</p>
+<p>Note that since Pure 0.46, all Pure documentation is usually formatted using <a href="http://sphinx.pocoo.org">Sphinx</a>, the RST formatter used by the Python project which provides cross-document indexing and referencing, and even more elaborate formatting options and prettier output than docutils. pure-doc versions since 0.6 support this by adding the <code>-s</code> option which makes its output compatible with Sphinx. (At present this option actually has any effect only when combined with the <code>-i</code> index generation option, see <a href="#hyperlink-targets-and-index-generation">Hyperlink Targets and Index Generation</a> below.)</p>
+<h2 id="literate-programming">Literate Programming</h2>
+<p>pure-doc also recognizes literate code delimited by comments which, besides the comment delimiters and whitespace, contain nothing but the special start and end “tags” <code>&gt;&gt;&gt;</code> and <code>&lt;&lt;&lt;</code>. Code between these delimiters (including all comments) is extracted from the source and output as a RST literal code block.</p>
+<p>For instance:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="co">/* ..</span>
+
+<span class="co">   pure-doc supports literate programming, too. */</span>
+
+<span class="co">// &gt;&gt;&gt;</span>
+
+<span class="co">// This is a literate comment.</span>
+<span class="co">/* .. This too! */</span>
+
+<span class="kw">extern</span> <span class="dt">int</span> rand();
+rand;
+
+<span class="co">// &lt;&lt;&lt;</span></code></pre></div>
+<p>This will be rendered as follows:</p>
+<blockquote>
+<p>pure-doc supports literate programming, too.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="co">// This is a literate comment.</span>
+<span class="co">/* .. This too! */</span>
+
+<span class="kw">extern</span> <span class="dt">int</span> rand();
+rand;</code></pre></div>
+</blockquote>
+<p>Try it now! You can scrape all the sample “documentation” from this file and format it as html, as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">pure-doc README | rst2html.py --no-doc-title --no-doc-info &gt; test.html</code></pre></div>
+<h2 id="hyperlink-targets-and-index-generation">Hyperlink Targets and Index Generation</h2>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> This feature is now largely obsolete as Pure uses Sphinx for formatting its documentation these days. Thus, as of version 0.6, the indexing feature must be enabled explicitly with the <code>-i</code> option.</p>
+</blockquote>
+<hr />
+<p>When run with the <code>-i</code> option, pure-doc supplements the normal hyperlink target processing by the docutils tools, by recognizing explicit hyperlink targets of the form <code>.. _target:</code> and automatically creating raw html targets (<code>&lt;a name=...&gt;</code>) for them. This works around the docutils name mangling (which is undesirable if you’re indexing, say, function names). It also resolves a quirk with some w3m versions which don’t pick up all <code>id</code> attributes in the docutils-generated html source.</p>
+<p>In addition, you can also have pure-doc generate an index from all explicit targets. To these ends, just add the following special directive at the place where you want the index to appear:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">.. makeindex::</code></pre></div>
+<p>The directive will be replaced with a list of references to all targets collected <em>up to that point</em>, sorted alphabetically. This also resets the list of collected targets, so that you can have multiple smaller indices in your document instead of one big one.</p>
+<p>It goes without saying that this facility is rather simplistic, but it may be useful when you are working with plain docutils which does not provide its own indexing facility. Note, however, that docutils doesn’t allow multiple explicit targets with the same name, so you should take that into consideration when devising your index terms.</p>
+<p>Also note that in Sphinx compatibility mode (<code>-s</code>), pure-doc will generate the appropriate Sphinx markup for index entries (<code>index::</code>) instead, and the <code>makeindex::</code> directive will be ignored. You should then use Sphinx to generate the index.</p>
+<p>Finally, if the <code>-i</code> option isn’t specified, then all this special processing is disabled and the <code>makeindex::</code> directive won’t be recognized at all. This is the recommended way to process Pure documentation files which have been fully converted to Sphinx.</p>
+<h2 id="generating-and-installing-local-documentation">Generating and Installing Local Documentation</h2>
+<hr />
+<blockquote>
+<p><strong>Note:</strong> This section only applies to 3rd party packages with their own bundled documentation which isn’t part of the “official” Pure documentation. In this case it is possible to use docutils or some other RST formatting software to generate additional documentation files for use with the Pure interpreter. Please note that the method sketched out in this section doesn’t provide full integration with the rest of Pure’s documentation, but at least it makes it possible to read the local documentation in the interpreter.</p>
+</blockquote>
+<hr />
+<p>If you’re generating some library documentation for which you have to process a bigger collection of source files, then it is often convenient to have a few Makefile rules to automatize the process. To these ends, simply add rules similar to the following to your Makefile (the following assumes GNU make and that you’re using docutils to format the documentation):</p>
+<pre class="sourceCode make"><code># The sources. Order matters here. The generated documentation will have the
+# comments from each source file in the indicated order.
+sources = foo.pure bar.pure
+
+# The basename of the documentation files to be generated.
+target = foo
+
+.PHONY: html tex pdf
+
+html: $(target).html
+tex: $(target).tex
+pdf: $(target).pdf
+
+$(target).txt: $(sources)
+        pure-doc $(sources) &gt; $@
+
+# This requires that you have docutils installed.
+
+%.html: %.txt
+        rst2html.py $&lt; $@
+
+%.tex: %.txt
+        rst2latex.py $&lt; $@
+
+# This also requires that you have TeX installed.
+
+%.pdf: %.tex
+        pdflatex $&lt;
+        rm -f *.aux *.log *.out
+
+clean:
+        rm -f *.html *.tex *.pdf</code></pre>
+<p>You might want to add <code>-i</code> to the pure-doc command line if you want to enable the indexing feature described in the previous section. If you want to use some other RST formatting software, please check the corresponding documentation for information on how to format your documents and adjust the above rules for the html, tex and pdf targets accordingly.</p>
+<p>Now you can just type <code>make html</code> to generate the documentation in html format, and <code>make tex</code> or <code>make pdf</code> to generate the other formats. The <code>clean</code> target removes the generated files.</p>
+<p>Having generated the documentation files in html format, you can install them in the docs subdirectory of the Pure library directory to make it known to the Pure interpreter, so that you can read your documentation with the <code>help</code> command of the interpreter. (When doing this, name your documentation files in such a manner that you don’t overwrite any of the Pure documentation files there.) The following Makefile rule automatizes this process. Add this to the Makefile in the previous section:</p>
+<pre class="sourceCode make"><code># Try to guess the installation prefix (this needs GNU make):
+prefix = $(patsubst %/bin/pure,%,$(shell which pure 2&gt;/dev/null))
+ifeq ($(strip $(prefix)),)
+# Fall back to /usr/local.
+prefix = /usr/local
+endif
+
+libdir = $(prefix)/lib
+docsdir = $(libdir)/pure/docs
+
+install:
+        test -d &quot;$(DESTDIR)$(docsdir)&quot; || mkdir -p &quot;$(DESTDIR)$(docsdir)&quot;
+        cp $(target).html &quot;$(DESTDIR)$(docsdir)&quot;</code></pre>
+<p>After a <code>make install</code> your documentation should now end up in the appropriate place in the Pure library directory and you can read it in the Pure interpreter using a command like the following:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; help foo#</code></pre></div>
+<p>Note the hash character. This tells the <code>help</code> command that this is an auxiliary documentation file, rather than a search term to be looked up in the Pure documentation. You can also look up a specific section in your manual as follows:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; help foo#section-name</code></pre></div>
+<p>Please also refer to <a href="pure.html">The Pure Manual</a> for more information on how to use the interpreter’s online help.</p>
+<h2 id="formatting-tips">Formatting Tips</h2>
+<p>If you’re generating documentation in pdf format using plain docutils, you might have to fiddle with the formatting to get results suitable for publication purposes. Newer versions of the rts2latex.py program provide some options which let you adjust the formatting of various document elements. Here are the options that the author found particularly helpful:</p>
+<ul>
+<li>The table of contents that RST produces isn’t all that useful in printed documentation, since it lacks page numbers. As a remedy, you can invoke rst2latex with <code>--use-latex-toc</code> to have LaTeX handle the formatting of the table of contents, which looks much nicer.</li>
+<li>Similarly, <code>--use-latex-docinfo</code> can be used to tell rst2latex that you want the title information (author and date) to be formatted the LaTeX way.</li>
+<li>If you need specific LaTeX document options, these can be specified with <code>--documentoptions</code>, e.g.: <code>--documentoptions=&quot;11pt&quot;</code>.</li>
+<li>For more comprehensive formatting changes which require special LaTeX code and/or packages, you can use the <code>--stylesheet</code> option. E.g., <code>--stylesheet=preamble.tex</code> will cause a preamble.tex file with your own definitions to be included in the preamble of the generated document.</li>
+<li>To format literal code blocks using an alternative environment instead of the default verbatim environment, use the <code>--literal-block-env</code> option. E.g., <code>--literal-block-env=lstlisting</code> will use the highlighted code environment from the listings package. (Note that in this case you’ll also need a preamble which loads the corresponding package.).</li>
+</ul>
+<p>To learn more about this, please consult the rts2latex.py documentation at the docutils website.</p>
+<p>In addition, the pure-doc package contains a little GNU awk script called fixdoc, which attempts to improve the LaTeX output produced by older svn versions of rst2latex in various ways. (This isn’t necessary for the latest rst2latex versions, or if you use Sphinx.)</p>
+</body>
+</html>

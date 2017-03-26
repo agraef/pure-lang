@@ -1,0 +1,822 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="modern.css" type="text/css" />
+</head>
+<body>
+<p><a name="doc-pure-stlvec"></a></p>
+<h1 id="pure-stlvec">pure-stlvec</h1>
+<p><a name="module-stlvec"></a></p>
+<p><a name="module-stlvecalgorithms"></a></p>
+<p>Version 0.4, March 06, 2017</p>
+<div style="white-space: pre-line;">Peter Summerland &lt;<a href="mailto:p.summerland@gmail.com">p.summerland@gmail.com</a>&gt;</div>
+<p>Pure’s interface to C++ vectors, specialized to hold pointers to arbitrary Pure expressions, and the C++ Standard Template Library algorithms that act on them.</p>
+<h2 id="copying">Copying</h2>
+<div style="white-space: pre-line;">Copyright (c) 2011 by Peter Summerland &lt;<a href="mailto:p.summerland@gmail.com">p.summerland@gmail.com</a>&gt;.</div>
+<p>All rights reserved.</p>
+<p>pure-stlvec is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>
+<p>pure-stlvec is distributed under a BSD-style license, see the COPYING file for details.</p>
+<h2 id="installation">Installation</h2>
+<p>pure-stlvec-0.4 is included in the “umbrella” addon, <a href="pure-stllib.html">pure-stllib</a>, which is available at <a href="https://bitbucket.org/purelang/pure-lang/downloads" class="uri">https://bitbucket.org/purelang/pure-lang/downloads</a>. After you have downloaded and installed <a href="pure-stllib.html">pure-stllib</a>, you will be able to use pure-stlvec (and <a href="pure-stlmap.html">pure-stlmap</a>, as well).</p>
+<h2 id="overview">Overview</h2>
+<p>The C++ Standard Template Library (“STL”) is a library of generic containers (data structures designed for storing other objects) and a rich set of generic algorithms that operate on them. pure-stlvec provides an interface to one of its most useful containers, “vector”, adopted to hold pointers to Pure expressions. The interface provides Pure programmers with a mutable container “stlvec”, that, like the STL’s vector, holds a sequence of objects that can be accessed in constant time according to their position in the sequence.</p>
+<h3 id="modules">Modules</h3>
+<p>The usual operations for creating, accessing and modifying stlvecs are provided by the stlvec module. Most of the operations are similar in name and function to those provided by the Pure Library for other containers. As is the case for their Pure Library counterparts, these operations are in the global namespace. There are a few operations that have been placed in the stl namespace usually because they do not have Pure Library counterparts.</p>
+<p>In addition to the stlvec module, pure-stlvec provides a group of modules, stlvec::modifying, stlvec::nonmodifying, stlvec::sort, stlvec::merge, stlvec::heap, stlvec::minmax and stlvec::numeric, that are straight wrappers the STL algorithms (specialized to work with STL vectors of pointers to Pure expressions). This grouping of the STL algorithms follows that found at <a href="http://www.cplusplus.com/reference/algorithm/" class="uri">http://www.cplusplus.com/reference/algorithm/</a>. This web page contains a table that summarizes of all of the algorithms in one place.</p>
+<p>pure-stlvec provides an “umbrella” module, <a href="#module-stlvec::algorithms">stlvec::algorithms</a>, that pulls in all of the STL algorithm interface modules in one go. The STL algorithm wrapper functions reside in the stl namespace and have the same names as their counterparts in the STL.</p>
+<h3 id="simple-examples">Simple Examples</h3>
+<p>Here are some examples that use the basic operations provided by the stlvec module.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlvec;
+
+&gt; <span class="kw">let</span> sv1 = stlvec (<span class="dv">0</span>..<span class="dv">4</span>); members sv1;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>]
+
+&gt; insert (sv1,stl::svend) (<span class="dv">5</span>..<span class="dv">7</span>); members sv1;
+STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0xaf4d2c0</span>&gt;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
+
+&gt; sv1!<span class="dv">3</span>;
+<span class="dv">3</span>
+
+&gt; sv1!![<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">6</span>];
+[<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">6</span>]
+
+&gt; replace sv1 <span class="dv">3</span> <span class="dv">33</span>; members sv1;
+STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0xaf4d2c0</span>&gt;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">33</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
+
+&gt; stl::erase (sv1,<span class="dv">2</span>,<span class="dv">5</span>); members sv1;
+STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0xaf4d2c0</span>&gt;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
+
+&gt; insert (sv1,<span class="dv">2</span>) [<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>];  members sv1;
+STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0xaf4d2c0</span>&gt;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>]
+
+&gt; <span class="kw">let</span> pure_vector = stl::vector (sv1,<span class="dv">1</span>,<span class="dv">5</span>); pure_vector;
+{<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>}
+
+&gt; stlvec pure_vector;
+STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0x9145a38</span>&gt;
+
+&gt; members ans;
+[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>]
+
+ &gt; map (+<span class="dv">10</span>) sv1;
+[<span class="dv">10</span>,<span class="dv">11</span>,<span class="dv">12</span>,<span class="dv">13</span>,<span class="dv">14</span>,<span class="dv">15</span>,<span class="dv">16</span>,<span class="dv">17</span>]
+
+&gt; map (+<span class="dv">10</span>) (sv1,<span class="dv">2</span>,<span class="dv">5</span>);
+[<span class="dv">12</span>,<span class="dv">13</span>,<span class="dv">14</span>]
+
+&gt; foldl (+) <span class="dv">0</span> sv1;
+<span class="dv">28</span>
+
+&gt; [x+<span class="dv">10</span> | x = sv1; x mod <span class="dv">2</span>];
+[<span class="dv">11</span>,<span class="dv">13</span>,<span class="dv">15</span>,<span class="dv">17</span>]
+
+&gt; {x+<span class="dv">10</span> | x = (sv1,<span class="dv">2</span>,<span class="dv">6</span>); x mod <span class="dv">2</span>};
+{<span class="dv">13</span>,<span class="dv">15</span>}</code></pre></div>
+<p>Here are some examples that use STL algorithms.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlvec::algorithms;
+
+&gt; stl::reverse (sv1,<span class="dv">2</span>,<span class="dv">6</span>); members sv1;
+()
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">6</span>,<span class="dv">7</span>]
+
+&gt; stl::stable_sort sv1 (&gt;); members sv1;
+()
+[<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">0</span>]
+
+&gt; stl::random_shuffle sv1; members sv1 <span class="dv">1</span>;
+()
+[<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">0</span>,<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">2</span>]
+
+&gt; stl::partition sv1 (&lt;<span class="dv">3</span>); members (sv1,<span class="dv">0</span>,ans); members sv1;
+<span class="dv">3</span>
+[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">0</span>]
+[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">0</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">3</span>]
+
+&gt; stl::transform sv1 (sv1,<span class="dv">0</span>) (*<span class="dv">2</span>); members sv1;
+-<span class="dv">1</span>
+[<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">0</span>,<span class="dv">8</span>,<span class="dv">10</span>,<span class="dv">14</span>,<span class="dv">12</span>,<span class="dv">6</span>]
+
+&gt; <span class="kw">let</span> sv2 = emptystlvec;
+
+&gt; stl::transform sv1 (sv2,stl::svback) (div <span class="dv">2</span>); members sv2;
+-<span class="dv">1</span>
+[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">0</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">3</span>]</code></pre></div>
+<p>Many more examples can be found in the pure-stlvec/ut directory.</p>
+<h3 id="members-and-sequences-of-members">Members and Sequences of Members</h3>
+<p>Throughout the documentation for pure-stlvec, the member of a stlvec that is at the nth position in the sequence of expressions stored in the stlvec is referred to as its nth member or nth element. The nth member of a stlvec, sv, is sometimes denoted by sv!n. The sequence of members of sv starting at position i up to but not including j is denoted by sv[i,j). There is a “past-the-end” symbol, stl::svend, that denotes the position after that occupied by the last member contained by a stlvec.</p>
+<p>For example, if sv contains the sequence “a”, “b”, “c” “d” and “e”, sv!0 is “a”, sv[1,3) is the sequence consisting of “b” followed by “c” and v[3,stl::svend) denotes the sequence consisting of “d” followed by “e”.</p>
+<h3 id="stl-iterators-and-value-semantics">STL Iterators and Value Semantics</h3>
+<p>In C++ a programmer accesses a STL container’s elements by means of “iterators”, which can be thought of as pointers to the container’s elements. A single iterator can be used to access a specific element, and a pair of iterators can be used to access a “range” of elements. By convention, such a range includes the member pointed to by the first iterator and all succeeding members up to but not including the member pointed to by the second iterator. Each container has a past-the-end iterator that can be used to specifiy ranges that include the container’s last member.</p>
+<p>In the case of vectors there is an obvious correspondence between an iterator that points to an element and the element’s position (starting at zero) in the vector. pure-stlvec uses this correspondence to designate a stlvec’s members in a way that makes it relatively easy to see how pure-stlvec’s functions are acting on the stlvec’s underlying STL vector by referencing the STL’s documentation. Thus, if sv is a stlvec, and j is an int, “replace sv j x” uses the STL to replace the element pointed to by the iterator for position j of sv’s underlying STL vector. If, in addition, k is an int, stl::sort (sv,j,k) (&lt;) uses the STL to sort the elements in the range designated by the “jth” and “kth” iterators for sv’s underlying STL vector. This range, written as sv[j,k), is the subsequence of sv that begins with the element at position j and ends with the element at position (k-1).</p>
+<p>Besides iterators, another cornerstone of the STL is its “value semantics”, i.e., all of the STL containers are mutable and if a container is copied, all of its elements are copied. pure-stlvec deals with the STL’s value semantics by introducing mutable and nonmutable stlvecs, and by storing smart pointers to objects (which have cheap copies) rather than the actual objects.</p>
+<h3 id="iterator-tuples">Iterator Tuples</h3>
+<p>As mentioned in the previous section, in C++ ranges are specified by a pair of STL iterators.</p>
+<p>In pure-stlvec ranges of elements in a stlvec are specified by “iterator tuples” rather than, say, actual pointers to STL iterators. Iterator tuples consist of the name of a stlvec followed by one of more ints that indicate positions (starting from zero) of the stlvec’s elements.</p>
+<p>To illustrate how iterator tuples are used, consider the STL stable_sort function, which sorts objects in the range [first, last) in the order imposed by comp. Its C++ signature looks like this:</p>
+<blockquote>
+<p>void stable_sort ( RandomAccessIterator first, RandomAccessIterator last, Compare comp )</p>
+</blockquote>
+<p>The corresponding pure-stlvec function, from the stlvec::sort module, looks like this:</p>
+<blockquote>
+<p>stable_sort (msv, first, last) comp</p>
+</blockquote>
+<p>where msv is a mutable stlvec, and first and last are ints. The first thing that the Pure stable_sort does is create a pair of C++ iterators that point to the elements in msv’s underlying STL vector that occupy the positions designated by first and last. Next it wraps the Pure comp function in a C++ function object that, along with the two iterators, is passed to the C++ stable_sort function.</p>
+<p>For convenience, (sv,stl::svbeg, stl::svend) can be written simply as sv. Thus, if first were stl::svbeg (or 0), and last were stl::svend (or #msv, the number of elements in msv), the last Pure call could be written:</p>
+<blockquote>
+<p>stable_sort msv comp</p>
+</blockquote>
+<p>It should be noted that often the STL library provides a default version of its functions, which like stable_sort, use a comparator or other callback function provided by the caller. E.g., the C++ stable_sort has a default version that assumes the “&lt;” operator can be used on the elements held by the container in question:</p>
+<blockquote>
+<p>void stable_sort ( RandomAccessIterator first, RandomAccessIterator last)</p>
+</blockquote>
+<p>The corresponding functions provided by the pure-stlvec modules rarely, if ever, supply a default version. A typical example is stlvec::sort’s stable_sort which must be called with a comparator callback function:</p>
+<blockquote>
+<p>stable_sort msv (&lt;);</p>
+</blockquote>
+<p>Note also that the comparator (e.g., (&lt;)), or other function being passed to a pure-stlvec algorithm wrapper is almost always the last parameter. This is the opposite of what is required for similar Pure functions, but is consistent with the STL calling conventions.</p>
+<h3 id="predefined-iterator-tuple-indexes">Predefined Iterator Tuple Indexes</h3>
+<p>The following integer constants are defined in the stl namespace for use in iterator tuples.</p>
+<dl>
+<dt><a name="stl::svbeg"></a><em>constant</em> <code>stl::svbeg = 0</code>, <a name="stl::svend"></a><code>stl::svend = -1</code>, <a name="stl::svback"></a><code>stl::svback = -2</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<p>These three symbols are declared as nonfix. <code>svend</code> corresponds to STL’s past-end iterator for STL vectors. It makes it possible to specify ranges that include the last element of an stlvec. I.e., the iterator tuple (sv,stl::svbeg,stl::svend) would specify sv[0,n), where n is the number of elements in sv. In order to understand the purpose of <code>svback</code>, it is necessary to understand a bit about STL’s “back insert iterators.”</p>
+<h3 id="back-insert-iterators">Back Insert Iterators</h3>
+<p>Many of the STL algorithms insert members into a target range designated by an iterator that points to the first member of the target range. Consistent with raw C usage, it is ok to copy over existing elements the target stlvec. E.g.,:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlvec::modifying;
+
+&gt; <span class="kw">let</span> v1 = stlvec (<span class="dv">0</span>..<span class="dv">2</span>);
+
+&gt; <span class="kw">let</span> v2 = stlvec (<span class="st">&quot;a&quot;</span>..<span class="st">&quot;g&quot;</span>);
+
+&gt; stl::copy v1 (v2,<span class="dv">2</span>) $$ members v2;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="st">&quot;f&quot;</span>,<span class="st">&quot;g&quot;</span>]</code></pre></div>
+<p>This is great for C++ programmers, but for Pure programmers it is almost always preferable to append the copied items to the end of a target stlvec, rather than overwriting all or part or part of it. This can be accomplished using stl::svback. E.g.,:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; stl::copy v1 (v2,stl::svback) $$ members v2;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="st">&quot;f&quot;</span>,<span class="st">&quot;g&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>]</code></pre></div>
+<p>In short, when a pure-stlvec function detects “stl::svback” in a target iterator tuple, it constructs a STL “back inserter iterator” and passes it on to the corresponding wrapped STL function.</p>
+<h3 id="data-structure">Data Structure</h3>
+<p>Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where STLVEC AND CONST_STLVEC are defined as nonfix symbols in the global namespace and x is a pointer to the underlying STL vector. The stlvec module defines corresponding type tags, stlvec and const_stlvec, so the programmer never needs to worry about the underlying representaton.</p>
+<p>This representation may change in the future, and must not be relied upon by client modules. In particular, one must never attempt to use the embedded pointer directly.</p>
+<p>As the names suggest, stlvecs are mutable and const_stlvecs are immutable. Functions that modify a stlvec will simply fail unless the stlvec is mutable.</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> v = const_stlvec $ stlvec (<span class="dv">0</span>..<span class="dv">3</span>); v2;
+CONST_STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0x8c1dbf0</span>&gt;
+
+&gt; replace v <span class="dv">0</span> <span class="dv">100</span>; <span class="co">// fails</span>
+replace (CONST_STLVEC #&lt;<span class="dt">pointer</span> <span class="dv">0x9f07690</span>&gt; <span class="dv">0</span> <span class="dv">100</span></code></pre></div>
+<h3 id="types">Types</h3>
+<p>pure-stlvec introduces six type tags, all of which are in the global namespace:</p>
+<dl>
+<dt><a name="mutable_stlvec/type"></a><em>type</em> <code>mutable_stlvec</code></dt>
+<dd>The type for a mutable stlvec.
+</dd>
+<dt><a name="const_stlvec/type"></a><em>type</em> <code>const_stlvec</code></dt>
+<dd>The type for an immutable stlvec.
+</dd>
+<dt><a name="stlvec/type"></a><em>type</em> <code>stlvec</code></dt>
+<dd>The type for a stlvec, mutable or immutable.
+</dd>
+<dt><a name="mutable_svit/type"></a><em>type</em> <code>mutable_svit</code></dt>
+<dd>The type for an iterator tuple whose underlying stlvec is mutable.
+</dd>
+<dt><a name="const_svit/type"></a><em>type</em> <code>const_svit</code></dt>
+<dd>The type for an iterator tuple whose underlying stlvec is immutable.
+</dd>
+<dt><a name="svit/type"></a><em>type</em> <code>svit</code></dt>
+<dd>The type for an iterator tuple. The underlying stlvec can be mutable or immutable.
+</dd>
+</dl>
+<!-- -->
+<h3 id="copy-on-write-semantics">Copy-On-Write Semantics</h3>
+<p>The pure-stlvec module functions do not implement automatic copy-on-write semantics. Functions that modify stlvec parameters will simply fail if they are passed a const_stlvec when they expect a mutable_stlvec.</p>
+<p>For those that prefer immutable data structures, stlvecs can be converted to const_stlvecs (usually after they have been created and modified within a function) by the <code>const_stlvec</code> function. This function converts a mutable stlvec to an immutable stlvec without changing the underlying STL vector.</p>
+<p>Typically, a “pure” function that “modifies” a stlvec passed to it as an argument will first copy the input stlvec to a new locally scoped (mutable) stlvec using the stlvec function. It will then modify the new stlvec and use const_stlvec to make the new stlvec immutable before it is returned. It should be noted that several of the STL algorithms have “copy” versions which place their results directly into a new stlvec, which can eliminate the need to copy the input stlvec. E.g.:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> sv1 = stlvec (<span class="st">&quot;a&quot;</span>..<span class="st">&quot;e&quot;</span>);
+
+&gt; <span class="kw">let</span> sv2 = emptystlvec;
+
+&gt; stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
+[<span class="st">&quot;e&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;a&quot;</span>]</code></pre></div>
+<p>Without reverse_copy, one would have had to copy sv1 into sv2 and then reverse sv2.</p>
+<p>If desired, in Pure it is easy to write functions that have automatic copy-on-write semantics. E.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; my_replace csv::const_stlvec i x = my_replace (stlvec csv) i x;
+&gt; my_replace sv::stlvec i x = replace sv i x;</code></pre></div>
+<h3 id="documentation">Documentation</h3>
+<p>The pure-stllib/doc directory includes a rudimentary cheatsheet, pure-stllib-cheatsheet.pdf, that shows the signatures of all of the functions provided by pure-stlvec (and by <a href="pure-stlmap.html">pure-stlmap</a> as well).</p>
+<p>The documentation of the functions provided by the stlvec module are reasonably complete. In contrast, the descriptions of functions provided by the STL algorithm modules are purposely simplified (and may not, therefore, be technically accurate). This reflects that fact that the functions provided by pure-stlvec have an obvious correspondence to the functions provided by the STL, and the STL is extremely well documented. Furthermore, using the Pure interpreter, it is very easy to simply play around with with any of the pure-stlvec functions if there are doubts, especially with respect to “corner cases.” Often this leads to a deeper understanding compared to reading a precise technical description.</p>
+<p>A good book on the STL is STL Tutorial and Reference Guide, Second Edition, by David R. Musser, Gillmer J. Derge and Atul Saini. A summary of all of the STL algorithms can be found at <a href="http://www.cplusplus.com/reference/stl/" class="uri">http://www.cplusplus.com/reference/stl/</a>.</p>
+<h3 id="parameter-names">Parameter Names</h3>
+<p>In the descriptions of functions that follow, parameter names used in function descriptions represent specific types of Pure objects:</p>
+<dl>
+<dt>sv</dt>
+<dd><p>stlvec (mutable or immutable)</p>
+</dd>
+<dt>csv</dt>
+<dd><p>const (i.e., immutable) stlvec</p>
+</dd>
+<dt>msv</dt>
+<dd><p>mutable stlvec</p>
+</dd>
+<dt>x</dt>
+<dd><p>an arbitrary Pure expression</p>
+</dd>
+<dt>xs</dt>
+<dd><p>a list of arbitrary Pure expressions</p>
+</dd>
+<dt>count, sz, n</dt>
+<dd><p>whole numbers to indicate a number of elements, size of a vector, etc</p>
+</dd>
+<dt>i,j</dt>
+<dd><p>whole numbers used to designate indexes into a stlvec</p>
+</dd>
+<dt>f,m,l</dt>
+<dd><p>whole numbers (or stl::beg or stl::svend) designating the “first”, “middle” or “last” iterators in a stlvec iterator tuple</p>
+</dd>
+<dt>p</dt>
+<dd><p>a whole number (or other iterator constant such as stl::svend or stl::svback) used in a two element iterator tuple (e.g., (sv,p))</p>
+</dd>
+<dt>(sv,p)</dt>
+<dd><p>an iterator tuple that will be mapped to an iterator that points to the pth position of sv’s underlying STL vector, v, (or to a back iterator on v if p is stl::svback)</p>
+</dd>
+<dt>(sv,f,l)</dt>
+<dd><p>an iterator tuple that will be mapped to the pair of iterators that are designated by (sv,f) and (sv,l)</p>
+</dd>
+<dt>(sv,f,m,l)</dt>
+<dd><p>an iterator tuple that will be mapped to the iterators that are designated by (sv,f), (sv,m) and (sv,l)</p>
+</dd>
+<dt>sv[f,l)</dt>
+<dd><p>the range of members beginning with that at (sv,f) up to but not including that at (con,l)</p>
+</dd>
+<dt>comp</dt>
+<dd><p>a function that accepts two objects and returns true if the first argument is less than the second (in the strict weak ordering defined by comp), and false otherwise</p>
+</dd>
+<dt>unary_pred</dt>
+<dd><p>a function that accepts one object and returns true or false</p>
+</dd>
+<dt>bin_pred</dt>
+<dd><p>a function that accepts two objects and returns true or false</p>
+</dd>
+<dt>unary_fun</dt>
+<dd><p>a function that accepts one objects and returns another</p>
+</dd>
+<dt>bin_fun</dt>
+<dd><p>a function that accepts two objects and returns another</p>
+</dd>
+<dt>gen_fun</dt>
+<dd><p>a function of one parameter that produces a sequence of objects, one for each call</p>
+</dd>
+</dl>
+<p>For readability, and to correspond with the STL documentation, the words “first”, “middle”, and “last”, or variants such as “first1” are often used instead of f,m,l.</p>
+<h2 id="error-handling">Error Handling</h2>
+<p>The functions provided this module handle errors by throwing exceptions.</p>
+<h3 id="exception-symbols">Exception Symbols</h3>
+<dl>
+<dt><a name="bad_argument/stlvec"></a><code>bad_argument</code></dt>
+<dd>This exception is thrown when a function is passed an unexpected value. A subtle error to watch for is a malformed iterator tuple (e.g., one with the wrong number of elements).
+</dd>
+<dt><a name="bad_function/stlvec"></a><code>bad_function</code></dt>
+<dd>This exception is thrown when a purported Pure call-back function is not even callable.
+</dd>
+<dt><a name="failed_cond/stlvec"></a><code>failed_cond</code></dt>
+<dd>This exception is thrown when a Pure call-back predicate returns a value that is not an int.
+</dd>
+<dt><a name="out_of_bounds/stlvec"></a><code>out_of_bounds</code></dt>
+<dd>This exception is thrown if the specified index is out of bounds.
+</dd>
+<dt><a name="range_overflow/stlvec"></a><code>range_overflow</code></dt>
+<dd>This exception is thrown by functions that write over part of a target stlvec (e.g., copy) when the target range too small to accommodate the result.
+</dd>
+<dt><a name="range_overlap/stlvec"></a><code>range_overlap</code></dt>
+<dd>This exception is thrown by algorithm functions that write over part of a target stlvec when the target and source ranges overlap in a way that is not allowed.
+</dd>
+</dl>
+<!-- -->
+<p>In addition, any exception thrown by a Pure callback function passed to a pure-stlvec function will be caught and be rethrown by the pure-stlvec function.</p>
+<h3 id="examples">Examples</h3>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">using</span> stlvec, stlvec::modifying;
+
+&gt; <span class="kw">let</span> sv1 = stlvec (<span class="dv">0</span>..<span class="dv">4</span>); members sv1;
+[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>]
+
+&gt; <span class="kw">let</span> sv2 = stlvec (<span class="st">&quot;a&quot;</span>..<span class="st">&quot;e&quot;</span>); members sv2;
+[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>]
+
+&gt; sv1!<span class="dv">10</span>;
+&lt;stdin&gt;, line <span class="dv">25</span>: unhandled exception &#39;out_of_bounds&#39; ...
+
+&gt; stl::copy sv1 (sv2,<span class="dv">10</span>);
+&lt;stdin&gt;, line <span class="dv">26</span>: unhandled exception &#39;out_of_bounds&#39; ...
+
+&gt; stl::copy sv1 (sv2,<span class="dv">2</span>,<span class="dv">3</span>); <span class="co">// sb (sv2,pos)</span>
+&lt;stdin&gt;, line <span class="dv">22</span>: unhandled exception &#39;bad_argument&#39; ...
+
+&gt; stl::copy sv1 (sv2,<span class="dv">2</span>);
+&lt;stdin&gt;, line <span class="dv">23</span>: unhandled exception &#39;range_overflow&#39; ...
+
+&gt; stl::copy sv2 (sv2,<span class="dv">2</span>);
+&lt;stdin&gt;, line <span class="dv">24</span>: unhandled exception &#39;range_overlap&#39; ...
+
+&gt; stl::copy (sv1,<span class="dv">1</span>,<span class="dv">3</span>) (sv2,<span class="dv">0</span>); members sv2; <span class="co">// ok</span>
+<span class="dv">2</span>
+[<span class="dv">1</span>,<span class="dv">2</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>]
+
+&gt; stl::sort sv2 (&gt;); <span class="co">// apples and oranges </span>
+&lt;stdin&gt;, line <span class="dv">31</span>: unhandled exception &#39;failed_cond&#39;
+
+&gt; listmap (\x-&gt;<span class="fu">throw</span> DOA) sv1; <span class="co">// callback function throws exception</span>
+&lt;stdin&gt;, line <span class="dv">34</span>: unhandled exception &#39;DOA&#39; ...</code></pre></div>
+<h2 id="operations-included-in-the-stlvec-module">Operations Included in the stlvec Module</h2>
+<p>The stlvec module provides functions for creating, accessing and modifying stlvecs. In general, operations that have the same name as a corresponding function in the Pure standard library are in the global namespace. The remaining functions, which are usually specific to stlvecs, are in the stl namespace.</p>
+<p>Please note that “stlvec to stlvec” functions are provided by the pure-stl algorithm modules. Thus, for example, the stlvec module does not provide a function that maps one stlvec onto a new stlvec. That functionality, and more, is provided by stl::transform, which can be found in the stlvec::modifying module.</p>
+<h3 id="imports">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec;</code></pre></div>
+<h3 id="operations-in-the-global-namespace">Operations in the Global Namespace</h3>
+<p>When reading the function descriptions that follow, please bear in mind that whenever a function is passed an iterator tuple of the form (sv,first, last), first and last can be dropped, leaving (sv), or simply sv. The function will treat the “unary” iterator tuple (sv) as (sv, stl::svbeg, stl::svend).</p>
+<dl>
+<dt><a name="emptystlvec/stlvec"></a><code>emptystlvec</code></dt>
+<dd>return an empty stlvec
+</dd>
+<dt><a name="stlvec"></a><code>stlvec source /stlvec</code></dt>
+<dd>create a new stlvec that contains the elements of source; source can be a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e., a matrix consisting of a single row or column). The underlying STL vector is always a new STL vector. I.e., if source is a stlvec the new stlvec does not share source’s underlying STL vector.
+</dd>
+<dt><a name="mkstlvec/stlvec"></a><code>mkstlvec x count</code></dt>
+<dd>create a new stlvec consisting of count x’s.
+</dd>
+<dt><a name="const_stlvec/stlvec"></a><code>const_stlvec source</code></dt>
+<dd>create a new const_stlvec that contains the elements of source; source can be a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e., a matrix consisting of a single row or column). If source is a stlvec (mutable or const), the new const_stlvec shares source’s underlying STL vector.
+</dd>
+<dt><a name="#/stlvec"></a><code># sv</code></dt>
+<dd>return the number of elements in sv.
+</dd>
+</dl>
+<!-- -->
+<p>Note that # applied to an iterator tuple like (sv,b,e) will just return the number of elements in the tuple. Use stl::bounds if you need to know the number of elements in the range denoted by an iterator tuple.</p>
+<dl>
+<dt><a name="!/stlvec"></a><code>sv ! i</code></dt>
+<dd>return the ith member of sv
+</dd>
+</dl>
+<!-- -->
+<p>Note that !k applied to an iterator tuple like (sv,b,e) will just return the kth element of the tuple. In addition, in stlvec, integers used to denote postions (as in !k) or in iterators, <em>always</em>, are relative to the beginning of the underlying vector. So it makes no sense to apply ! to an iterator tuple.</p>
+<dl>
+<dt><a name="first/stlvec"></a><code>first sv</code>, <a name="last/stlvec"></a><code>last sv</code></dt>
+<dd>first and last member of sv
+</dd>
+<dt><a name="members/stlvec"></a><code>members (sv, first, last)</code></dt>
+<dd>return a list of values stored in sv[first,last)
+</dd>
+<dt><a name="replace/stlvec"></a><code>replace msv i x</code></dt>
+<dd>replace the ith member of msv by x and return x; throws out_of_bounds if i is less than 0 or great or equal to the number of elements in msv
+</dd>
+<dt><a name="update/stlvec"></a><code>update msv i x</code></dt>
+<dd>the same as replace except that update returns msv instead of x. This function is DEPRECATED.
+</dd>
+<dt><a name="append/stlvec"></a><code>append sv x</code></dt>
+<dd>append x to the end of sv
+</dd>
+<dt><a name="insert/stlvec"></a><code>insert (msv,p) xs</code>, <a name="insert/stlvec"></a><code>insert (msv,p) (sv,first,last)</code></dt>
+<dd>insert members of the list xs or the range sv[first, last) into msv, all preceding the pth member of msv. Members are shifted to make room for the inserted members
+</dd>
+<dt><a name="rmfirst/stlvec"></a><code>rmfirst msv</code>, <a name="rmlast/stlvec"></a><code>rmlast msv</code></dt>
+<dd>remove the first or last member from msv
+</dd>
+<dt><a name="erase/stlvec"></a><code>erase (msv,first,last)</code>, <a name="erase/stlvec"></a><code>erase (msv,p)</code>, <a name="erase/stlvec"></a><code>erase msv</code></dt>
+<dd>remove msv[first,last) from msv, remove msv!p from msv, or make msv empty. Members are shifted to occupy vacated slots
+</dd>
+<dt><a name="==/stlvec"></a><code>sv1 == sv2</code>, <a name="~=/stlvec"></a><code>sv1 ~= sv2</code></dt>
+<dd>(x == y) is the same as stl::allpairs (==) x y and x ~= y is simply ~(allpairs (==) x y)
+</dd>
+</dl>
+<!-- -->
+<p>Note that <code>==</code> and <code>~==</code> are not defined for iterator tuples (the rules would never be executed because == is defined on tuples in the Prelude).</p>
+<p>The stlvec module provides convenience functions that apply map, catmap, foldl, etc, to directly access Pure expressions stored in a stlvec.</p>
+<dl>
+<dt><a name="map/stlvec"></a><code>map unary_fun (sv, first, last)</code></dt>
+<dd>one pass equivalent of map unary_fun $ members (sv, first, last)
+</dd>
+<dt><a name="listmap/stlvec"></a><code>listmap unary_fun (sv, first, last)</code></dt>
+<dd>same as map, used in list comprehensions
+</dd>
+<dt><a name="catmap/stlvec"></a><code>catmap unary_fun (sv, first, last)</code></dt>
+<dd>one pass equivalent of catmap unary_fun $ members (sv, first, last)
+</dd>
+<dt><a name="do/stlvec"></a><code>do unary_fun (sv, first, last)</code></dt>
+<dd>one pass equivalent of do unary_fun $ members (sv, first, last)
+</dd>
+<dt><a name="foldl/stlvec"></a><code>foldl bin_fun x (sv, first, last)</code></dt>
+<dd>one pass equivalent of foldl bin_fun x $ members (sv, first, last)
+</dd>
+<dt><a name="foldl1/stlvec"></a><code>foldl1 bin_fun (sv, first, last)</code></dt>
+<dd>one pass equivalent of foldl1 bin_fun $ members (sv, first, last)
+</dd>
+<dt><a name="filter/stlvec"></a><code>filter unary_pred (sv, first, last)</code></dt>
+<dd>one pass equivalent of filter unary_pred $ members (sv, first, last)
+</dd>
+</dl>
+<!-- -->
+<p>The following four functions map (or catmap) stlvecs onto row and col matrixes, primarily for use in matrix comprehensions.</p>
+<dl>
+<dt><a name="rowmap/stlvec"></a><code>rowmap unary_fun (sv, first, last)</code>, <a name="rowcatmap/stlvec"></a><code>rowcatmap unary_fun (sv, first, last)</code>, <a name="colmap/stlvec"></a><code>colmap unary_fun (sv, first, last)</code>, <a name="colcatmap/stlvec"></a><code>colcatmap unary_fun (sv, first, last)</code></dt>
+<dd><!-- -->
+</dd>
+</dl>
+<h3 id="operations-in-the-stl-namespace">Operations in the stl Namespace</h3>
+<dl>
+<dt><a name="stl::empty/stlvec"></a><code>stl::empty sv</code></dt>
+<dd>test whether sv is empty
+</dd>
+<dt><a name="stl::vector/stlvec"></a><code>stl::vector (sv,first,last)</code></dt>
+<dd>create a Pure vector that contains the members of sv[first,last)
+</dd>
+<dt><a name="stl::allpairs/stlvec"></a><code>stl::allpairs bin_pred (sv1, first1, last1) (sv2, first2, last2)</code></dt>
+<dd>returns true if bin_pred is true for all corresponding members of sv1[first1, last1) and sv2[first2, last2)
+</dd>
+<dt><a name="stl::bounds/stlvec"></a><code>stl::bounds (sv,first,last)</code></dt>
+<dd>throws out-of-bounds if first or last is out of bounds. returns the tuple (sv,first,last) except that if first is stl::begin it will be replaced by 0 and if last is stl::svend it will be replaced by the number of elements in sv.
+</dd>
+<dt><a name="stl::reserve/stlvec"></a><code>stl::reserve msv count</code></dt>
+<dd>modify the underlying STL vector to have at least count slots, useful for packing data into a fixed size vector and possibly to speed up the addition of new members
+</dd>
+<dt><a name="stl::capacity/stlvec"></a><code>stl::capacity sv</code></dt>
+<dd>return the number of slots (as opposed to the number of elements) held by the underlying STL vector
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-1">Examples</h3>
+<p>See ut_stlvec.pure and ut_global_stlvec.pure in the pure-stlvec/ut directory.</p>
+<h2 id="stl-nonmodifying-algorithms">STL Nonmodifying Algorithms</h2>
+<p>The stlvec::nonmodifying module provides an interface to the STL’s non-modifying sequence operations.</p>
+<h3 id="imports-1">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::nonmodifying;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations">Operations</h3>
+<dl>
+<dt><a name="stl::for_each/stlvec"></a><code>stl::for_each (sv, first, last) unary_fun</code></dt>
+<dd>applies unary_fun to each of the elements in sv[first,last)
+</dd>
+<dt><a name="stl::find/stlvec"></a><code>stl::find (sv, first, last) x</code></dt>
+<dd>returns the position of the first element in sv[first,last) for which (==x) is true (or stl::svend if not found)
+</dd>
+<dt><a name="stl::find_if/stlvec"></a><code>stl::find_if (sv, first, last) unary_pred</code></dt>
+<dd>returns the position of the first element in sv[first,last) for which unary_pred is true (or stl::svend if not found)
+</dd>
+<dt><a name="stl::find_first_of/stlvec"></a><code>stl::find_first_of (sv1, first1, last1) (sv2, first2, last2) bin_pred</code></dt>
+<dd>Returns the position of the first element, x, in sv1[first1,last1) for which there exists y in sv2[first2,last2) and (bin_pred x y) is true (or stl::svend if no such x exists).
+</dd>
+<dt><a name="stl::adjacent_find/stlvec"></a><code>stl::adjacent_find (sv, first, last) bin_pred</code></dt>
+<dd>search sv[first,last) for the first occurrence of two consecutive elements (x,y) for which (bin_pred x y) is true. Returns the position of x, if found, or stl::svend if not found)
+</dd>
+<dt><a name="stl::count/stlvec"></a><code>stl::count (sv, first, last) x</code></dt>
+<dd>returns the number of elements in the range sv[first,last) for which (x==) is true
+</dd>
+<dt><a name="stl::count_if/stlvec"></a><code>stl::count_if (sv, first, last) unary_pred</code></dt>
+<dd>returns the number of elements in the range sv[first,last) for which unary_pred is true
+</dd>
+<dt><a name="stl::mismatch/stlvec"></a><code>stl::mismatch (sv1, first1, last1) (sv2, first2) bin_pred</code></dt>
+<dd>applies bin_pred pairwise to the elements of sv1[first1,last1) and (sv2,first2,first2 + n), with n equal to last1-first1 until it finds i and j such that bin_pred (sv1!i) (sv2!j) is false and returns (i,j). If bin_pred is true for all of the pairs of elements, i will be stl::svend and j will be first2 + n (or stl::svend)
+</dd>
+<dt><a name="stl::equal/stlvec"></a><code>stl::equal (sv1, first1, last1) (sv2, first2) bin_pred</code></dt>
+<dd>applies bin_pred pairwise to the elements of sv1[first1,last1) and (sv2,first2,first2 + n), with n equal to last1-first1, and returns true if bin_pred is true for each pair
+</dd>
+<dt><a name="stl::search/stlvec"></a><code>stl::search (sv1, first1, last1) (sv2, first2) bin_pred</code></dt>
+<dd>using bin_pred to determine equality of the elements, searches sv1[first1,last1) for the first occurrence of the sequence defined by sv2[first2,last2), and returns the position in sv1 of its first element (or stl::svend if not found)
+</dd>
+<dt><a name="stl::search_n/stlvec"></a><code>stl::search_n (sv, first, last) count x bin_pred</code></dt>
+<dd>using bin_pred to determine equality of the elements, searches sv[first,last) for a sequence of count elements that equal x. If such a sequence is found, it returns the position of the first of its elements, otherwise it returns stl::svend
+</dd>
+<dt><a name="stl::find_end/stlvec"></a><code>stl::find_end (sv1, first1, last1) (sv2, first2, last2) bin_pred</code></dt>
+<dd>using bin_pred to determine equality of the elements, searches sv1[first1,last1) for the last occurrence of sv2[first2,last2). Returns the position of the first element in sv1 of the occurrence (or stl::svend if not found).
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-2">Examples</h3>
+<p>See ut_nonmodifying.pure in the pure-stlvec/ut directory.</p>
+<h2 id="stl-modifying-algorithms">STL Modifying Algorithms</h2>
+<p>The stlvec::modifying module provides an interface to the STL’s modifying algorithms.</p>
+<h3 id="imports-2">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::modifying;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations-1">Operations</h3>
+<dl>
+<dt><a name="stl::copy/stlvec"></a><code>stl::copy (sv, first1, last1) (msv, first2)</code></dt>
+<dd>copies the elements in sv[first1,last1) into the range whose first element is (msv,first2)
+</dd>
+<dt><a name="stl::copy_backward/stlvec"></a><code>stl::copy_backward (sv,first1,last1) (msv,last2)</code></dt>
+<dd>copies the elements in sv[first1,last1), moving backward from (last1), into the range msv[first2,last2) where first2 is last2 minus the number of elements in sv[first1,last1)
+</dd>
+<dt><a name="stl::swap_ranges/stlvec"></a><code>stl::swap_ranges (sv,first,last) (msv, p)</code></dt>
+<dd>exchanges the elements in sv[first, last) with those in msv[p, p+n) where n is last - first
+</dd>
+<dt><a name="stl::transform/stlvec"></a><code>stl::transform (sv,first,last) (msv, p) unary_fun</code></dt>
+<dd>applies unary_fun to the elements of sv[first,last) and places the resulting sequence in msv[p, p+n) where n is last - first. If sv is mutable, msv and sv can be the same stlvec. Returns (msv,p+n)
+</dd>
+<dt><a name="stl::transform_2/stlvec"></a><code>stl::transform_2 (sv1,first1,last1) (sv2,first2) (msv, p) bin_fun</code></dt>
+<dd>applies bin_fun to corresponding pairs of elements of sv1[first1,last1) sv2[first2,n) and and places the resulting sequence in msv[p, p+n) where n is last1 -first1. Returns (msv,p+n)
+</dd>
+<dt><a name="stl::replace_if/stlvec"></a><code>stl::replace_if (msv,first,last) unary_pred x</code></dt>
+<dd>replace the elements of msv[first,last) that satistfy unary_pred with x
+</dd>
+<dt><a name="stl::replace_copy/stlvec"></a><code>stl::replace_copy (sv,first,last) (msv,p) x y</code></dt>
+<dd>same as <a href="#stl::replace/stlvec"><code>replace</code></a> (msv,first,last) x y except that the modified sequence is placed in msv[p,p+last-first)
+</dd>
+<dt><a name="stl::replace_copy_if/stlvec"></a><code>stl::replace_copy_if (sv,first,last) (msv,p) unary_pred x</code></dt>
+<dd>same as <a href="#stl::replace_if/stlvec"><code>replace_if</code></a> except that the modified sequence is placed in msv[p,p+last-first)
+</dd>
+<dt><a name="stl::fill/stlvec"></a><code>stl::fill (msv,first,last) x</code></dt>
+<dd>replace all elements in msv[first,last) with x
+</dd>
+<dt><a name="stl::fill_n/stlvec"></a><code>stl::fill_n (msv,first) n x</code></dt>
+<dd>replace the elements of msv[first,first+n) with x
+</dd>
+<dt><a name="stl::generate/stlvec"></a><code>stl::generate (msv,first,last) gen_fun</code></dt>
+<dd><p>replace the elements in msv[first,last) with the sequence generated by successive calls to gen_fun (), e.g.,</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure">&gt; <span class="kw">let</span> count = ref <span class="dv">0</span>;
+
+&gt; g _ = n <span class="kw">when</span> n = get count + <span class="dv">1</span>; put count n; <span class="kw">end</span>;
+
+&gt; <span class="kw">let</span> sv = mkstlvec <span class="dv">0</span> <span class="dv">10</span>;
+
+&gt; stl::generate sv g $$ members sv;
+[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>,<span class="dv">9</span>,<span class="dv">10</span>]</code></pre></div>
+</dd>
+<dt><a name="stl::generate_n/stlvec"></a><code>stl::generate_n (msv,first) n gen_fun</code></dt>
+<dd>replace all elements in msv[first,first+n) with the sequence generated by successive calls to gen_fen
+</dd>
+<dt><a name="stl::remove/stlvec"></a><code>stl::remove (msv,first,last) x</code></dt>
+<dd>same as <a href="#stl::remove_if/stlvec"><code>remove_if</code></a> (msv,first,last) (==x).
+</dd>
+<dt><a name="stl::remove_if/stlvec"></a><code>stl::remove_if (msv,first,last) unary_pred</code></dt>
+<dd>remove elements in msv[first,last) that satisfy unary_pred. If n elements do not satisfy unary_pred, they are moved to msv[first,first+n), preserving their relative order. The content of msv[first+n,svend) is undefined. Returns first+n, or stl::svend if first+n is greater than the number of elements in msv
+</dd>
+<dt><a name="stl::remove_copy/stlvec"></a><code>stl::remove_copy (sv,first,last) (msv,first) x</code></dt>
+<dd>same as <a href="#stl::remove/stlvec"><code>remove</code></a> except that the purged sequence is copied to (msv,first) and sv[first,last) is not changed
+</dd>
+<dt><a name="stl::remove_copy_if/stlvec"></a><code>stl::remove_copy_if (sv,first,last) (msv,first) unary_pred</code></dt>
+<dd>same as <a href="#stl::remove_if/stlvec"><code>remove_if</code></a> except that the purged sequence is copied to (msv,first) and sv[first,last) is not changed
+</dd>
+<dt><a name="stl::unique/stlvec"></a><code>stl::unique (msv,first,last) bin_pred</code></dt>
+<dd>eliminates consecutive duplicates from sv[first,last), using bin_pred to test for equality. The purged sequence is moved to sv[first,first+n) preserving their relative order, where n is the size of the purged sequence. Returns first+n or stl::svend if first+n is greater than the number of elements in msv
+</dd>
+<dt><a name="stl::unique_copy/stlvec"></a><code>stl::unique_copy (sv,first,last) (msv,first) bin_pred</code></dt>
+<dd>same as <a href="#stl::unique/stlvec"><code>unique</code></a> except that the purged sequence is copied to (msv,first) and sv[first,last) is not changed
+</dd>
+<dt><a name="stl::reverse/stlvec"></a><code>stl::reverse (msv,first,last)</code></dt>
+<dd>Reverses the order of the elements in sv[first,last).
+</dd>
+<dt><a name="stl::reverse_copy/stlvec"></a><code>stl::reverse_copy (sv,first,last) (msv,first)</code></dt>
+<dd>same as <a href="#stl::reverse/stlvec"><code>reverse</code></a> except that the reversed sequence is copied to (msv,first) and sv[first,last) is not changed.
+</dd>
+<dt><a name="stl::rotate/stlvec"></a><code>stl::rotate (msv,first,middle,last)</code></dt>
+<dd>rotates the elements of msv[first,middle,last] so that middle becomes the first element of msv[first,last].
+</dd>
+<dt><a name="stl::rotate_copy/stlvec"></a><code>stl::rotate_copy (msv,first,middle,last) (msv,first)</code></dt>
+<dd>same as rotate except that the rotated sequence is copied to (msv,first) and sv[first,last) is not changed.
+</dd>
+<dt><a name="stl::random_shuffle/stlvec"></a><code>stl::random_shuffle (msv,first,last) int::seed</code></dt>
+<dd>randomly reorders the elements in msv[first,last)
+</dd>
+<dt><a name="stl::partition/stlvec"></a><code>stl::partition (msv,first,last) unary_pred</code></dt>
+<dd>places the elements in msv[first,last) that satisfy unary_pred before those that don’t. Returns middle, where msv [first,middle) contains all of the elements that satisfy unary_pre, and msv [middle, last) contains those that do not
+</dd>
+<dt><a name="stl::stable_partition/stlvec"></a><code>stl::stable_partition (msv,first,last) unary_pred</code></dt>
+<dd>same as partition except that the relative positions of the elements in each group are preserved
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-3">Examples</h3>
+<p>See ut_modifying.pure in the pure-stlvec/ut directory.</p>
+<h2 id="stl-sort-algorithms">STL Sort Algorithms</h2>
+<p>The stlvec::sort module provides an interface to the STL’s sorting and binary search algorithms.</p>
+<h3 id="imports-3">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::sort;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations-2">Operations</h3>
+<p>All of the functions in this module require the caller to supply an ordering function, comp. The functions (&lt;) and (&gt;) are commonly passed as comp.</p>
+<dl>
+<dt><a name="stl::sort/stlvec"></a><code>stl::sort (msv, first, last) comp</code></dt>
+<dd>sorts msv[first, last)
+</dd>
+<dt><a name="stl::stable_sort/stlvec"></a><code>stl::stable_sort (msv, first, last) comp</code></dt>
+<dd>sorts msv[first, last), preserving the relative order of equal members
+</dd>
+<dt><a name="stl::partial_sort/stlvec"></a><code>stl::partial_sort (msv, first, middle, last) comp</code></dt>
+<dd>fills msv[first, middle) with the elements of msv[first,last) that would appear there if msv[first,last) were sorted using comp and fills msv[middle,last) with the remaining elements in unspecified order
+</dd>
+<dt><a name="stl::partial_sort_copy/stlvec"></a><code>stl::partial_sort_copy (sv, first1, last1) (msv, first2, last2) comp</code></dt>
+<dd>let n be the number of elements in sv[first1, last1) and r be the number of elements in msv[first2, last2). If r &lt; n, <a href="#stl::partial_sort_copy/stlvec"><code>partial_sort_copy</code></a> fills msv[first2, last2) with the first r elements of what sv[first1, last1) would be if it had been sorted. If r &gt;= n, it fills msv[first2, first2+n) with the elements of sv[first1, last1) in sorted order. sv[first1,last1) is unchanged
+</dd>
+<dt><a name="stl::nth_element/stlvec"></a><code>stl::nth_element (msv, first, middle, last) comp</code></dt>
+<dd>rearranges the elements of msv[first, last) as follows. Let n be middle -first, and let x be the nth smallest element of msv[first, last). After the function is called, sv!middle will be x. All of the elements of msv[first, middle) will be less than x and all of the elements of msv[middle+1, last) will be greater than x
+</dd>
+</dl>
+<!-- -->
+<p>The next four functions assume that sv[first, last) is ordered by comp.</p>
+<dl>
+<dt><a name="stl::lower_bound/stlvec"></a><code>stl::lower_bound (sv, first, last) x comp</code></dt>
+<dd>returns an int designating the first position into which x can be inserted into sv[first, last) while maintaining the sorted ordering
+</dd>
+<dt><a name="stl::upper_bound/stlvec"></a><code>stl::upper_bound (sv, first, last) x comp</code></dt>
+<dd>returns an int designating the last position into which x can be inserted into sv[first, last) while maintaining the sorted ordering
+</dd>
+<dt><a name="stl::equal_range/stlvec"></a><code>stl::equal_range (sv, first, last) x comp</code></dt>
+<dd>returns a pair of ints, (lower, upper) where lower and upper would have been returned by separate calls to lower_bound and upper_bound.
+</dd>
+<dt><a name="stl::binary_search/stlvec"></a><code>stl::binary_search (sv, first, last) x comp</code></dt>
+<dd>returns true if x is an element of sv[first, last)
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-4">Examples</h3>
+<p>See ut_sort.pure in the pure-stlvec/ut directory.</p>
+<h2 id="stl-merge-algorithms">STL Merge Algorithms</h2>
+<p>The stlvec::merge module provides an interface to the STL’s merge algorithms. These algorithms operate on sorted ranges.</p>
+<h3 id="imports-4">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::merge;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations-3">Operations</h3>
+<p>All of the functions in this module require the caller to supply an ordering function, comp (as for the Pure library sort function). They only work properly on input ranges that have been previously sorted using comp. The set operations generally do not check for range overflow because it is not generally possible to determine the length of the result of a set operation until after it is completed. In most cases you will get a nasty segmentation fault if the result is bigger than the target range. The best way to avoid this possibility it to use a back iterator to specifify the target range.</p>
+<p>See parameter naming conventions at ..</p>
+<dl>
+<dt><a name="stl::merge/stlvec"></a><code>stl::merge (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp</code></dt>
+<dd>merges the two sorted ranges into the sorted range msv[p,p+n) where n is the total length of the merged sequence
+</dd>
+<dt><a name="stl::inplace_merge/stlvec"></a><code>stl::inplace_merge (msv,first, middle, last) comp</code></dt>
+<dd>merges msv[first,middle) and msv[middle,last) into the sorted range msv[first,last)
+</dd>
+<dt><a name="stl::includes/stlvec"></a><code>stl::includes (sv1,first1,last1) (sv2,first2,last2) comp</code></dt>
+<dd>returns true if every element of sv2[first2,last2) is an element of sv1[first1,last1)
+</dd>
+<dt><a name="stl::set_union/stlvec"></a><code>stl::set_union (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp</code></dt>
+<dd>places the sorted union of sv1[first1,last1) and sv2[first2,last2) into msv[p,p+n) where n is the number of elements in the sorted union, and returns the past-the-end position of the sorted union
+</dd>
+<dt><a name="stl::set_intersection/stlvec"></a><code>stl::set_intersection (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp</code></dt>
+<dd>places the sorted intersection of sv1[first1,last1) and sv2[first2,last2) into msv[p,p+n) where n is the number of elements in the sorted intersection, and returns p+n (or stl::svend, if applicable)
+</dd>
+<dt><a name="stl::set_difference/stlvec"></a><code>stl::set_difference (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp</code></dt>
+<dd>places the sorted difference of sv1[first1,last1) and sv2[first2,last2) into msv[p,p+n) where n is the number of elements in the sorted difference, and returns p+n (or stl::svend, if applicable)
+</dd>
+<dt><a name="stl::set_symmetric_difference/stlvec"></a><code>stl::set_symmetric_difference (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp</code></dt>
+<dd>places the sorted symmetric_difference of sv1[first1,last1) and sv2[first2,last2) into msv[p,p+n) where n is the number of elements in the sorted symmetric_difference, and returns returns p+n (or stl::svend, if applicable)
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-5">Examples</h3>
+<p>See ut_merge.pure in the pure-stlvec/ut directory.</p>
+<h2 id="stl-heap-algorithms">STL Heap Algorithms</h2>
+<p>The stlvec::heap module provides an interface to the STL’s heap operations.</p>
+<h3 id="imports-5">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::heap;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations-4">Operations</h3>
+<p>All of the functions in this module require the caller to supply an ordering function, comp (as for the Pure library sort function). The functions (&lt;) and (&gt;) are commonly passed as comp.</p>
+<dl>
+<dt><a name="stl::make_heap/stlvec"></a><code>stl::make_heap (msv,first,last) comp</code></dt>
+<dd>rearranges the elements of msv[first,last) so that they are a heap, i.e., after this msv!first will be the largest element in msv[first,last), and push_heap and pop_heap will work properly
+</dd>
+<dt><a name="stl::push_heap/stlvec"></a><code>stl::push_heap (msv,first,last) comp</code></dt>
+<dd>makes msv[first,last) a heap (assuming that msv[first,last-1) was a heap)
+</dd>
+<dt><a name="stl::pop_heap/stlvec"></a><code>stl::pop_heap (msv,first,last) comp</code></dt>
+<dd>swaps msv!first with msv!(last-1), and makes msv[first,last-1) a heap (assuming that msv[first,last) was a heap)
+</dd>
+<dt><a name="stl::sort_heap/stlvec"></a><code>stl::sort_heap (msv,first,last) comp</code></dt>
+<dd>sorts the elements in msv[first,last)
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-6">Examples</h3>
+<p>See ut_heap.pure in the pure-stlvec/ut directory.</p>
+<h2 id="minmax-stl-algorithms">Min/Max STL Algorithms</h2>
+<p>The stlvec::minmax module provides an interface to a few additional STL algorithms.</p>
+<h3 id="imports-6">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::minmax;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations-5">Operations</h3>
+<p>All of the functions in this module require the caller to supply an ordering function, comp (as for the Pure library sort function). The functions (&lt;) and (&gt;) are commonly passed as comp.</p>
+<dl>
+<dt><a name="stl::min_element/stlvec"></a><code>stl::min_element (sv,first,last) comp</code></dt>
+<dd>returns the position of the minimal element of sv[first,last) under the ordering defined by comp
+</dd>
+<dt><a name="stl::max_element/stlvec"></a><code>stl::max_element (sv,first,last) comp</code></dt>
+<dd>returns the position of the maximal element of sv[first,last) under the ordering defined by comp
+</dd>
+<dt><a name="stl::lexicographical_compare/stlvec"></a><code>stl::lexicographical_compare (sv1,first1,last1) (sv2,first2,last2) comp</code></dt>
+<dd>compares sv1[first1,last1) and sv2[first2,last2) element by element according to the ordering defined by comp, and returns true if the first sequence is less than the second
+</dd>
+</dl>
+<!-- -->
+<p>Algorithms are provided for stepping through all the permutations the elements of a stlvec. For these purposes, the first permutation has the elements of msv[first,last) sorted in ascending order and the last has the elements sorted in descending order.</p>
+<dl>
+<dt><a name="stl::next_permutation/stlvec"></a><code>stl::next_permutation (msv,first,last) comp</code></dt>
+<dd>rearranges msv[first,last) to produce the next permutation, in the ordering imposed by comp. If the elements of the next permutation is ordered (ascending or decending) by comp, return false. Otherwise return true.
+</dd>
+<dt><a name="stl::prev_permutation/stlvec"></a><code>stl::prev_permutation (msv,first,last) comp</code></dt>
+<dd>next_permutation in reverse
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-7">Examples</h3>
+<p>See ut_minmax.pure in the pure-stlvec/ut directory.</p>
+<h2 id="stl-numeric-algorithms">STL Numeric Algorithms</h2>
+<p>The stlvec::numeric module provides an interface to the STL’s numeric algorithms.</p>
+<h3 id="imports-7">Imports</h3>
+<p>To use the operations of this module, add the following import declaration to your program:</p>
+<div class="sourceCode"><pre class="sourceCode pure"><code class="sourceCode pure"><span class="kw">using</span> stlvec::numeric;</code></pre></div>
+<p>All of the functions are in the stl namespace.</p>
+<h3 id="operations-6">Operations</h3>
+<dl>
+<dt><a name="stl::accumulate/stlvec"></a><code>stl::accumulate (sv,first,last) x bin_fun</code></dt>
+<dd>accumulate bin_fun over x and the members of sv[first,last), like foldl
+</dd>
+<dt><a name="stl::inner_product/stlvec"></a><code>stl::inner_product (sv1,first1,last1) (sv2,first2,last2) x bin_fun1 bin_fun2</code></dt>
+<dd>initialize ret with x. Traverse pairs of elements of sv1[first1,last1) and sv2[first2,last2), denoted by (e1, e2), replacing ret with (bin_fun1 ret $ bin_fun2 e1 e2). The number pairs traversed is equal to the size of sv1[first1,last1)
+</dd>
+<dt><a name="stl::partial_sum/stlvec"></a><code>stl::partial_sum (sv,first,last) (msv, p) bin_fun</code></dt>
+<dd>accumulate bin_fun f over the elements of sv1[first1,last1), placing itermediate results in msv[p,p+n), where n is last - first, and returns q where m is q - n and msv[m,q) is the intermediate sequence
+</dd>
+<dt><a name="stl::adjacent_difference/stlvec"></a><code>stl::adjacent_difference (sv,first,last) (msv, p) bin_fun</code></dt>
+<dd>produce a sequence of new elements by applying bin_fun to adjacent elements of sv[first,last), placing the new elements in msv[p,p+n), where n is last - first, with the intermediate results, and returns q where m is q - n and msv[m,q) is the new sequence
+</dd>
+</dl>
+<!-- -->
+<h3 id="examples-8">Examples</h3>
+<p>See ut_numeric.pure in the pure-stlvec/ut directory.</p>
+<h2 id="reference-counting">Reference Counting</h2>
+<p>The following function, also in the stl namespace, is available if you want to observe how pure-stlvec maintains reference counts for items in its containers.</p>
+<dl>
+<dt><a name="stl::refc/stlvec"></a><code>stl::refc x</code></dt>
+<dd>returns the x’s reference count (maintained by the Pure runtime for garbage collection purposes)
+</dd>
+</dl>
+<!-- -->
+<h2 id="backward-compatibilty">Backward Compatibilty</h2>
+<p>This section documents changes in pure-stlvec that might have introduced backward compatiblity issues.</p>
+<h3 id="pure-stlvec-0.2">pure-stlvec-0.2</h3>
+<p>Bug fixes.</p>
+<h3 id="pure-stlvec-0.3">pure-stlvec-0.3</h3>
+<p>Version 0.3 reflects some changes made to make <a href="pure-stlvec.html">pure-stlvec</a> consistent with its sister package, <a href="pure-stlmap.html">pure-stlmap</a>.</p>
+<p>The <a href="#update/stlvec"><code>update</code></a> function was deprecated. Please use <a href="#replace/stlvec"><code>replace</code></a> instead.</p>
+<p>The <a href="#replace/stlvec"><code>replace</code></a> function was added to the stlvec module. This function is the same as <a href="#update/stlvec"><code>update</code></a> except that “<a href="#replace/stlvec"><code>replace</code></a> sv i x” returns x instead of sv.</p>
+<p>The <a href="#stl::replace/stlvec"><code>stl::replace</code></a> function was removed from the stlvec/modifying module. You can use “<a href="#stl::replace_if/stlvec"><code>stl::replace_if</code></a> (sv,first,last) (x==) y” instead of “<a href="#stl::replace/stlvec"><code>stl::replace</code></a> (sv,first,last) x y” to replace all instances of x in the specified range.</p>
+<p>The function <a href="#null/stlvec"><code>null</code></a> was removed and <a href="#stl::empty/stlvec"><code>stl::empty</code></a> was added to replace it.</p>
+<p>The function <a href="#list/stlvec"><code>list</code></a> was removed. You can use <a href="#members/stlvec"><code>members</code></a> instead.</p>
+<p>The function <a href="#stl::random_shuffle/stlvec"><code>stl::random_shuffle</code></a> was changed to take a seed as a second parameter.</p>
+<p>All of the tracing functions were removed.</p>
+<h3 id="pure-stlvec-0.4">pure-stlvec-0.4</h3>
+<p>Fixed (&gt;) predicate operating on plain old data when passed to STL algorithms.</p>
+</body>
+</html>

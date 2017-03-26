@@ -1,0 +1,679 @@
+<a name="doc-pd-faust"></a>
+
+pd-faust
+========
+
+Version 0.14, March 06, 2017
+
+Albert Graef &lt;<aggraef@gmail.com>&gt;
+
+pd-faust is a dynamic environment for running Faust dsps in Pd. It is based on
+the author's [faust2pd](#faust2pd-pd-patch-generator-for-faust) script, but
+offers many small improvements and some major additional features:
+
+-   Faust dsps are implemented using two Pd objects, `fsynth~` and `fdsp~`,
+    which provide the necessary infrastructure to run Faust synthesizer and
+    effect units in Pd, respectively. As of pd-faust 0.10, there's also a
+    `faust~` convenience object which unifies `fsynth~` and `fdsp~` and
+    provides reasonable defaults for most creation arguments.
+-   In contrast to faust2pd, the Pd GUI of Faust units is generated
+    dynamically, inside Pd. While pd-faust supports the same global GUI layout
+    options as faust2pd, it also provides various options to adjust the layout
+    of individual control items.
+-   pd-faust recognizes the `midi` and `osc` controller attributes in the
+    Faust source and automatically provides corresponding MIDI and OSC
+    controller mappings. OSC-based controller automation is also available.
+-   Perhaps most importantly, Faust dsps can be reloaded at any time (even
+    while the Pd patch is running), in which case the GUI and the controller
+    mappings are regenerated automatically and on the fly as needed.
+
+Copying
+-------
+
+Copyright (c) 2011-2017 by Albert Graef
+
+pd-faust is distributed under the GNU LGPL v3+. Please see the included
+COPYING and COPYING.LESSER files for details.
+
+This package also includes the faust-stk instruments which are distributed
+under an MIT-style license, please check the examples/dsp/README-STK file and
+the dsp files for authorship information and licensing details pertaining to
+these. The original faust-stk sources can be found in the Faust distribution,
+cf. <http://faust.grame.fr/>.
+
+Installation
+------------
+
+You'll need [Faust](http://faust.grame.fr/) and [Pd](http://puredata.info/),
+obviously. Faust versions &gt;= 0.9.46 and 2.0.a3 and Pd version &gt;= 0.43.1
+have been tested and are known to work. Note that the examples still use the
+"old" a.k.a. "legacy" Faust library modules, so they should work out of the
+box with both "old" Faust versions (up to 0.9.85) and later ones featuring the
+"new" Faust library (anything after 0.9.85, including current git sources).
+
+The pd-faust objects are written in the [Pure](http://purelang.bitbucket.org/)
+programming language, so you'll also need an installation of the Pure
+interpreter (0.51 or later), along with the following packages (minimum
+required versions are given in parentheses):
+[pd-pure](#pd-pure-pd-loader-for-pure-scripts) (0.15),
+[pure-faust](#pure-faust) (0.8), [pure-midi](#pure-midi) (0.5) and
+[pure-stldict](#pure-stldict) (0.3).
+
+Finally, gcc and GNU make (or compatible) are required to compile the helper
+dsps and the example instruments; please check the Makefile for details.
+
+For a basic installation run `make`, then `sudo make install`. This will
+install the pd-faust objects in your lib/pd/extra/faust folder as a Pd object
+library which can be loaded with Pd's `-lib` option. To complete the
+installation, you still have to make sure that the library is loaded
+automatically at startup. This is done most conveniently by adding
+`faust/pdfaust` to your preloaded library modules in Pd's
+`Preferences/Startup` dialog.
+
+------------------------------------------------------------------------------
+
+> **Note:** The `faust/pdfaust` module must come *after* the `pure` entry
+> which loads pd-pure, otherwise you'll get an error message. In any case the
+> pd-pure loader will be required to run these objects, so it should be
+> configured accordingly; please check the
+> [pd-pure](#pd-pure-pd-loader-for-pure-scripts) documentation for details.
+
+------------------------------------------------------------------------------
+
+The `make` command also compiles the Faust dsps included in the distribution,
+so that the provided examples will be ready to run afterwards well (see
+[Examples](#examples) below).
+
+The Makefile tries to guess the installation prefix under which Pd is
+installed. If it guesses wrong, you can tell it the right prefix with
+`make prefix=/some/path`. Or you can specify the exact path of the lib/pd
+directory with `make pdlibdir=/some/path`; by default the Makefile assumes
+`$(prefix)/lib/pd`.
+
+It is also possible to specify an alternative flavour of Pd when building and
+installing the module, by adding a definition like `PD=pd-extended` to the
+`make` command line. This is known to work with
+[pd-extended](http://puredata.info/downloads/pd-extended) and
+[pd-l2ork](http://l2ork.music.vt.edu/main/?page_id=56), two popular
+alternative Pd distributions available on the web, as well as
+[purr-data](https://git.purrdata.net/jwilkes/purr-data) (the new
+cross-platform version of
+[pd-l2ork](http://l2ork.music.vt.edu/main/?page_id=56)).
+
+Some further build options are described in the Makefile. In particular, it is
+possible to compile the Faust dsps to LLVM bitcode which can be loaded
+directly by the Pure interpreter, but for that you'll need a special Faust
+version (see the
+[Faust2](https://bitbucket.org/purelang/pure-lang/wiki/Faust2) website for how
+to get this version up and running) and an LLVM-capable C/C++ compiler such as
+clang or gcc with the dragonegg plugin (please check the Makefile and the
+[LLVM](http://llvm.org/) website for details).
+
+If you have the required tools then you can build the bitcode modules by
+running `make bitcode` after `make`. If you run `make install` afterwards, the
+bitcode modules will be installed along with the "normal" Faust plugins. In
+addition, a second object library called `pdfaust2` will be built and
+installed, which can be used as a drop-in replacement for `pdfaust` and lets
+you run the bitcode modules. (Note that in the present implementation it is
+not possible to load both `pdfaust` and `pdfaust2` in Pd, you'll have to pick
+one or the other.)
+
+Usage
+-----
+
+Working with pd-faust basically involves adding a bunch of `faust~` (or the
+underlying `fsynth~` and `fdsp~`) objects to a Pd patch along with the
+corresponding GUI subpatches, and wiring up the Faust units in some variation
+of a synth-effects chain which typically takes input from Pd's MIDI interface
+(`notein`, `ctlin`, etc.) and outputs the signals produced by the Faust units
+to Pd's audio interface (`dac~`).
+
+For convenience, pd-faust also includes the `midiseq` and `oscseq` objects and
+a corresponding `midiosc` abstraction which can be used to handle MIDI input
+and playback as well as OSC controller automation. This useful helper
+abstraction is described in more detail under [Operating the
+Patches](#operating-the-patches) below.
+
+pd-faust interprets MIDI, OSC and Faust dsp filenames relative to the hosting
+Pd patch by default. It will also search the `midi`, `osc` and `dsp`
+subfolders, if they exist, for the corresponding types of files. Failing that,
+it finally searches the directories on the Pd library path (including their
+`midi`, `osc` and `dsp` subfolders). To disable this search, just use absolute
+pathnames (or pathnames relative to the `.` or `..` directory) instead.
+
+Like pd-pure, pd-faust remaps Pd's `menu-open` command so that it lets you
+edit the Faust source of a `faust~`, `fdsp~` or `fsynth~` object by
+right-clicking on the object and choosing `Open` from the context menu.
+
+### The fdsp\~ and fsynth\~ Objects
+
+The `fdsp~` object is invoked as follows:
+
+    fdsp~ dspname instname channel
+
+-   `dspname` denotes the name of the Faust dsp (usually this is just the name
+    of the .dsp file with the extension stripped off). Please note that the
+    Faust dsp must be provided in a form which can be loaded in *Pure* (not
+    Pd!), so the `pure.cpp` architecture (included in the Faust distribution)
+    must be used to compile the dsp to a shared library. (If you're already
+    running [Faust2](https://bitbucket.org/purelang/pure-lang/wiki/Faust2),
+    you can also compile to an LLVM bitcode file instead; Pure has built-in
+    support for loading these.) There's a GNU Makefile in the examples/dsp
+    subdirectory which shows how to do this. This Makefile is self-contained,
+    so you can just drop it into any directory with Faust dsp sources and run
+    `make` there to compile the modules to a format which is ready to be
+    loaded with pd-faust.
+-   `instname` denotes the name of the instance of the Faust unit. Multiple
+    instances of the same Faust dsp can be used in a Pd patch, which must all
+    have different instance names. In addition, the instance name is also used
+    to identify the GUI subpatch of the unit (see below) and to generate
+    unique OSC addresses for the unit's control elements.
+-   `channel` is the number of the MIDI channel the unit responds to. This can
+    be 1..16, or 0 to specify "omni" operation (listen to MIDI messages on all
+    channels).
+
+------------------------------------------------------------------------------
+
+> **Note:** Since the `fdsp~` and `fsynth~` objects are written in Pure, their
+> creation arguments should be specified in Pure syntax. In particular, both
+> `dspname` or `instname` may either be Pure identifiers or double-quoted
+> strings (the former will automatically be translated to the latter).
+> Similarly, the `channel` argument (as well as the `numvoices` argument of
+> the `fsynth~` object, see below) must be an integer constant in Pure syntax,
+> which is pretty much like Pd syntax but also allows the integer to be
+> specified in hexadecimal, octal or binary.
+
+------------------------------------------------------------------------------
+
+The `fdsp~` object requires a Faust dsp which can work as an effect unit,
+processing audio input and producing audio output. The unit can have as many
+audio input and output channels as you like (including zero).
+
+The `fsynth~` object works in a similar fashion, but has an additional
+creation argument specifying the desired number of voices:
+
+    fsynth~ dspname instname channel numvoices
+
+The `fsynth~` object requires a Faust dsp which can work as a monophonic
+synthesizer. This typically means that the unit has zero audio inputs and a
+nonzero number of audio outputs, although it is possible to have synths
+processing any number of audio input channels as well. (You can even have
+synths producing zero audio outputs, but this is generally not very useful.)
+In addition, pd-faust assumes that the Faust unit provides three so-called
+"voice controls" which indicate which note to play:
+
+-   `freq` is the fundamental frequency of the note in Hz.
+-   `gain` is the velocity of the note, as a normalized value between 0 and 1.
+    This usually controls the volume of the output signal.
+-   `gate` indicates whether a note is currently playing. This value is either
+    0 (no note to play) or 1 (play a note), and usually triggers the envelop
+    function (ADSR or similar).
+
+pd-faust doesn't care at which path inside the Faust dsp these controls are
+located, but they must all be there, and the basenames of the controls must be
+unique throughout the entire dsp. Otherwise the synth will not work as
+expected.
+
+Like [faust2pd](#faust2pd-pd-patch-generator-for-faust), pd-faust implements
+the necessary logic to drive the given number of voices of an `fsynth~`
+object. That is, it will actually create a separate instance of the Faust dsp
+for each voice and handle polyphony by allocating voices from this pool in a
+round-robin fashion, performing the usual voice stealing if the number of
+simultaneous notes to play exceeds the number of voices. Also note that an
+`fsynth~` operated in omni mode (`channel = 0`) automatically filters out
+messages on channel 10 which is reserved for percussion in the General MIDI
+standard.
+
+The `fdsp~` and `fsynth~` objects respond to the following messages:
+
+-   `bang` outputs the current control settings on the control outlet in OSC
+    format.
+-   `write` outputs the current control settings to external MIDI and/or OSC
+    devices. This message can also be invoked with a numeric argument to
+    toggle the "write mode" of the unit; please see [External MIDI and OSC
+    Controllers](#external-midi-and-osc-controllers) below for details.
+-   `reload` reloads the Faust unit. This also reloads the shared library or
+    bitcode file if the unit was recompiled since the object was last loaded.
+    (Instead of feeding a `reload` message to the control inlet of a Faust
+    unit, you can also just send a `bang` to the `reload` receiver.)
+-   `addr value` changes the control indicated by the OSC address `addr`. This
+    is also used internally for communication with the Pd GUI and for
+    controller automation.
+
+The `fdsp~` and `fsynth~` objects also respond to MIDI controller messages of
+the form `ctl val num chan`, and the `fsynth~` object understands note-related
+messages of the form `note num vel chan` (note on/off) and `bend val chan`
+(pitch bend). In either case, pd-faust provides the necessary logic to map
+controller and note-related messages to the corresponding control changes in
+the Faust unit.
+
+In addition, pd-faust 0.13 and later offer support for the MIDI Tuning
+Standard (MTS), so that instruments can be retuned using the corresponding
+sysex messages for octave-based tunings. To these ends, the `fsynth~` object
+accepts messages of the form `sysex b1 b2 ...` where `b1`, `b2`, ... are the
+individual data bytes of the message. A description of the MIDI Tuning
+Standard is beyond the scope of this manual. However, there are some tools
+which let you construct such messages from various input formats, such as the
+author's [sclsyx](https://bitbucket.org/agraef/sclsyx) program. You can then
+either include the tuning messages in a MIDI file or transmit them directly to
+Pd's MIDI input. There's also a version of sclsyx.pure included in the
+author's [pd-smmf](https://bitbucket.org/agraef/pd-smmf) package, which can be
+run as a Pd external to output tunings in the format understood by the
+`fsynth~` object.
+
+### The faust\~ Object
+
+Starting with version 0.10, pd-faust includes the `faust~` external as a
+convenience which provides the functionality of both `fdsp~` and `fsynth~` in
+a single object. This object also supplies reasonable defaults for most
+arguments. While the underlying `fdsp~` and `fsynth~` objects are still
+available for backward compatibility, the `faust~` object is often much easier
+to use and should be considered the preferred way to create Faust objects in a
+Pd patch now.
+
+The `faust~` object is invoked as follows:
+
+    fsynth~ dspname [instname] [channel] [numvoices]
+
+As indicated, all creation arguments except the first, `dspname` argument are
+optional. The meaning of these arguments is the same as with the `fdsp~` and
+`fsynth~` objects. A `numvoices` value of zero can be used to indicate an
+effect unit. If the `numvoices` argument is omitted, the `faust~` object
+checks the meta data of the Faust module to see whether the loaded Faust
+module is an effect or a synth and creates an instance of the corresponding
+underlying object (`fdsp~` or `fsynth~`).
+
+Note that if only a single number follows the `dspname` or `instname` argument
+then it is always interpreted as a channel number; thus, if you want to denote
+the `numvoices` argument then you'll have to specify *both* `channel` and
+`numvoices`, in that order.
+
+By default, the instance name is assumed to be the same as the dsp name, the
+default MIDI channel is 0 (omni), and the number of voices of an instrument is
+determined using the value of the `nvoices` meta key declared in the dsp
+source. Thus, to turn a Faust dsp into a synth with 8 voices you can use a
+declaration like the following anywhere in the Faust program:
+
+    declare nvoices "8";
+
+The format of this declaration is the same as for the
+[faust-lv2](https://bitbucket.org/agraef/faust-lv2) and
+[faust-vst](https://bitbucket.org/agraef/faust-vst) plugin architectures.
+
+If the `nvoices` declaration isn't present, the dsp is considered to be an
+effect unit by default. All default choices can be overridden by explicitly
+specifying the corresponding creation argument. In particular, you can specify
+the number of synth voices (overriding the `nvoices` key in the dsp source),
+or use a `numvoices` value of zero to force a synth to be loaded as an
+ordinary effect unit. Also, if there are multiple instances of the same dsp in
+a patch then you can explicitly specify different instance names using the
+`instname` argument, and the default `channel` value of zero (denoting omni
+input) can be overridden as needed if the unit should only listen on a
+specific MIDI channel.
+
+### GUI Subpatches
+
+For each `faust~`, `fdsp~` and `fsynth~` object, the Pd patch may contain an
+(initially empty) "one-off" graph-on-parent subpatch with the same name as the
+instance name of the Faust unit:
+
+    pd instname
+
+You shouldn't insert anything into this subpatch, its contents (a bunch of Pd
+GUI elements corresponding to the control elements of the Faust unit) will be
+generated automatically by pd-faust when the corresponding `faust~`, `fdsp~`
+or `fsynth~` object is created, and whenever the unit gets reloaded at
+runtime.
+
+As with faust2pd, the default appearance of the GUI can be adjusted in various
+ways; see [Tweaking the GUI Layout](#tweaking-the-gui-layout) below for
+details.
+
+The relative order in which you insert a `faust~`, `fdsp~` or `fsynth~` object
+and its GUI subpatch into the main patch matters. Normally, the GUI subpatch
+should be inserted *first*, so that it will be updated automatically when its
+associated Faust unit is first created, and also when the main patch is saved
+and then reloaded later.
+
+However, in some situations it may be preferable to insert the GUI subpatch
+*after* its associated Faust unit. If you do this, the GUI will *not* be
+updated automatically when the main patch is loaded, so you'll have to reload
+the dsp manually (sending it a `reload` message) to force an update of the GUI
+subpatch. This is useful, in particular, if you'd like to edit the GUI patch
+manually after it has been generated.
+
+In some cases it may even be desirable to completely "lock down" the GUI
+subpatch. This can be done by simply *renaming* the GUI subpatch after it has
+been generated. When Pd saves the main patch, it saves the current status of
+the GUI subpatches along with it, so that the renamed subpatch will remain
+static and will *never* be updated, even if its associated Faust unit gets
+reloaded. This generally makes sense only if the control interface of the
+Faust unit isn't changed after locking down its GUI patch. To "unlock" a GUI
+subpatch, you just rename it back to its original name. (In this case you
+might also want to reinsert the corresponding Faust unit afterwards, if you
+want to have the GUI generated automatically without an explicit `reload`
+again.)
+
+### Examples
+
+The examples folder contains a few example patches which illustrate how this
+all works. Having installed pd-faust as described above, you can run these
+from the examples directory, e.g.: `pd test.pd`. (You can also run the
+examples without actually installing pd-faust if you invoke Pd from the main
+pd-faust source directory, e.g., as follows:
+`pd -lib lib/pdfaust examples/test.pd`.)
+
+Here are some of the examples that are currently available:
+
+-   test.pd: Simple patch running a single Faust instrument.
+-   synth.pd: Slightly more elaborate patch featuring a synth-effects chain.
+-   bouree.pd: Full-featured example running various instruments.
+
+For your convenience, related MIDI and OSC files as well as the Faust sources
+of the instruments and effects are contained in corresponding subdirectories
+(midi, osc, dsp) of the examples directory. A slightly modified version of the
+faust-stk instruments from the Faust distribution is also included, please
+check the examples/dsp/README-STK file for more information about these.
+
+The MIDI files are all in standard MIDI file format. (Some of these come from
+the faust-stk distribution, others can be found on the web.) The OSC files
+used by pd-faust for controller automation are plain ASCII files suitable for
+hand-editing if you know what you are doing; the format should be fairly
+self-explanatory.
+
+### Operating the Patches
+
+The generated Pd GUI elements for the Faust dsps are pretty much the same as
+with [faust2pd](#faust2pd-pd-patch-generator-for-faust) (which see). The only
+obvious change is the addition of a "record" button (gray toggle in the upper
+right corner) which enables recording of OSC automation data.
+
+In each example distributed with pd-faust you can also find an instance of the
+`midiosc` abstraction which serves as a little sequencer applet that enables
+you to control MIDI playback and OSC recording. The usage of this abstraction
+should be fairly obvious, but you can also find a brief description below.
+
+------------------------------------------------------------------------------
+
+> **Note:** If you use the `midiosc` abstraction in your own patches, you
+> should copy it to the directory containing your patch and other required
+> files, so that MIDI and OSC files are properly located. Alternatively, you
+> can also set up Pd's search path as described at the beginning of the
+> [Usage](#usage) section.
+
+------------------------------------------------------------------------------
+
+The first creation argument of `midiosc` is the name of the MIDI file, either
+as a Pure identifier (in this case the .mid filename extension is supplied
+automatically) or as a double-quoted string. Similarly, the second argument
+specifies the name of the OSC file. Both arguments are optional; if the second
+argument is omitted, it defaults to the name of the MIDI file with new
+extension .osc. You can also omit both arguments if neither MIDI file playback
+nor saving recorded OSC data is required. Or you can leave the first parameter
+empty (specify `""` or `0` instead) to only set an OSC filename, if you don't
+need MIDI playback. The latter is useful, in particular, if you use `midiosc`
+with an external MIDI sequencer (see below).
+
+The abstraction has a single control outlet through which it feeds the
+generated MIDI and other messages to the connected `fsynth~` and `fdsp~`
+objects. Live MIDI input is also accepted and forwarded to the control outlet,
+after being translated to the format understood by `fsynth~` and `fdsp~`
+objects. In addition, `midiosc` can also be controlled through an external
+MIDI sequencer connected to Pd's MIDI input. To these ends, [MIDI Machine
+Control](http://en.wikipedia.org/wiki/MIDI_Machine_Control) (MMC) can be used
+to start and stop OSC playback and recording with the transport controls of
+the external sequencer program. To make this work, the external sequencer must
+be configured as an MMC master.
+
+At the bottom of the abstraction there is a little progress bar along with a
+time display which indicates the current song position. If playback is
+stopped, you can also use these to change the current position for playback,
+recording and a number of other operations as described below. Note that if
+you drive `midiosc` from an external MIDI sequencer instead, then it is a good
+idea to load the same MIDI file in `midiosc` anyway, so that it knows about
+the length of the MIDI sequence. This will make the progress bar display the
+proper position in the file.
+
+Here is a brief rundown of the available controls:
+
+-   The `start`, `stop` and `cont` controls in the *first* row of control
+    elements start, stop and continue MIDI and OSC playback, respectively. The
+    `midi` toggle in this row causes played MIDI events to be printed in the
+    Pd main window.
+-   The gray "record" toggle in the upper right corner of the abstraction
+    enables recording of OSC controller automation data. Note that this toggle
+    merely *arms* the OSC recorder; you still have to actually start the
+    recording with the `start` button. However, you can also first start
+    playback with `start` and then switch recording on and off as needed at
+    any point in the sequence (this is also known as "punch in/out"
+    recording). In either case, pushing the `stop` button stores the recorded
+    sequence for later playback. Also note that before you can start recording
+    any OSC data, you first have to arm the Faust units that you want to
+    record. This is done with the "record" toggle in the Pd GUI of each unit.
+-   The "bang" button next to the "record" toggle lets you record a static
+    snapshot of the current parameter settings of all armed units. This is
+    also done automatically when starting a fresh recording. The "bang" button
+    lets you change the starting defaults of parameters of an existing
+    recording. It is also useful if you just want to record a static snapshot
+    of the current parameter settings without recording any live parameter
+    changes. Moreover, you can also set the parameters at any given point in
+    the piece if you first position the progress bar or the time display
+    accordingly; in this case you may first want to recall the parameter
+    settings at the given point with the `send` button described below. In
+    either case, recording must be enabled and playback must be *off*. Then
+    just arm the Faust units that you wish to record, set the playback
+    position as needed, change the controls to what you want their values to
+    be (maybe after recalling the current settings), and finally push the
+    "bang" button.
+-   There are some additional controls related to OSC recording in the
+    *second* row: `save` saves the currently recorded data in an OSC file for
+    later use; `abort` is like `stop` in that it stops recording and playback,
+    but also throws away the data recorded in this take (rather than keeping
+    it for later playback); and `clear` purges the entire recorded OSC
+    sequence so that you can start a new one.
+-   Once some automation data has been recorded, it will be played back along
+    with the MIDI file. You can then just listen to it, or go on to record
+    more automation data as needed. Use the `osc` toggle in the second row to
+    print the OSC messages as they are played back. If you save the automation
+    data with the `save` button, it will be reloaded from its OSC file next
+    time the patch is opened.
+-   The controls in the *third* row provide some additional ways to configure
+    the playback process. The `loop` button can be used to enable looping,
+    which repeats the playback of the MIDI (and OSC) sequence ad infinitum.
+    The `thru` button, when switched on, routes the MIDI data during playback
+    through Pd's MIDI output so that it can be used to drive an external MIDI
+    device in addition to the Faust instruments. The `write` button does the
+    same with MIDI and OSC controller data generated either through automation
+    data or by manually operating the control elements in the Pd GUI, see
+    [External MIDI and OSC Controllers](#external-midi-and-osc-controllers)
+    below for details.
+-   There's one additional button in the third row, the `send` button which
+    recalls the recorded OSC parameter settings at a given point in the
+    sequence. Playback must be off for this to work. After setting the
+    playback position as desired, just push the `send` button. This sets the
+    controls to the current parameter values at the given point, for *all*
+    parameters which have been recorded up to (and including) this point.
+
+Please note that `midiosc` is merely a prototypical implementation which
+should cover most common uses. It can also be used as a starting point for
+your own abstractions if you need more elaborate input/output interfacing than
+what `midiosc` provides. On the other hand, for simple uses your patches may
+just feed control messages directly into `faust~`, `fdsp~` and `fsynth~`
+objects instead. If you just need plain MIDI input, another possibility is to
+use the `midi-input` abstraction contained in the author's
+[pd-lv2plugin](https://bitbucket.org/agraef/pd-lv2plugin) package which
+encodes incoming MIDI messages in a format compatible with the `faust~`,
+`fdsp~` and `fsynth~` objects.
+
+### External MIDI and OSC Controllers
+
+The `fsynth~` object has built-in (and hard-wired) support for MIDI notes,
+pitch bend and MIDI controller 123 (all notes off). Other controller data
+received from external MIDI and OSC devices is interpreted according to the
+controller mappings defined in the Faust source (this is explained below), by
+updating the corresponding GUI elements and the control variables of the Faust
+dsp. For obvious reasons, this only works with *active* Faust controls.
+
+A `faust~`, `fdsp~` or `fsynth~` object can also be put in *write mode* by
+feeding a message of the form `write 1` into its control inlet (the `write 0`
+message disables write mode again). For convenience, the `write` toggle in the
+`midiosc` abstraction allows you to do this simultaneously for all Faust units
+connected to `midiosc`'s control outlet.
+
+When an object is in write mode, it also *outputs* MIDI and OSC controller
+data in response to both automation data and the manual operation of the Pd
+GUI elements, again according to the controller mappings defined in the Faust
+source, so that it can drive an external device such as a MIDI fader box or a
+multitouch OSC controller. Note that this works with both *active* and
+*passive* Faust controls.
+
+To configure MIDI controller assignments, the labels of the Faust control
+elements have to be marked up with the special `midi` attribute in the Faust
+source. For instance, a pan control (MIDI controller 10) may be implemented in
+the Faust source as follows:
+
+    pan = hslider("pan [midi:ctrl 10]", 0, -1, 1, 0.01);
+
+pd-faust will then provide the necessary logic to handle MIDI input from
+controller 10 by changing the pan control in the Faust unit accordingly,
+mapping the controller values 0..127 to the range and step size given in the
+Faust source. Moreover, in write mode corresponding MIDI controller data will
+be generated and sent to Pd's MIDI output, on the MIDI channel specified in
+the creation arguments of the Faust unit (0 meaning "omni", i.e., output on
+all MIDI channels).
+
+The same functionality is also available for external OSC devices, employing
+explicit OSC controller assignments in the Faust source by means of the `osc`
+attribute. E.g., the following enables input and output of OSC messages for
+the OSC `/pan` address:
+
+    pan = hslider("pan [osc:/pan]", 0, -1, 1, 0.01);
+
+------------------------------------------------------------------------------
+
+> **Note:** In contrast to some other architectures included in the Faust
+> distribution, at present pd-faust only allows literal OSC addresses (no
+> glob-style patterns), and there is no way to specify an OSC value range (so
+> the value ranges of the controls of an external OSC device must match the
+> ranges of the corresponding controls in the Faust program).
+
+------------------------------------------------------------------------------
+
+To actually connect with external OSC devices, you will also need some OSC
+input and output facilities. Neither vanilla Pd nor pd-faust includes any of
+these, so you will have to rely on 3rd party externals for that. We recommend
+Martin Peach's [OSC
+externals](http://puredata.info/Members/martinrp/OSCobjects) which are
+included in Hans-Christoph Steiner's
+[Pd-extended](http://puredata.info/downloads/pd-extended) distribution.
+pd-faust includes a version of the `midiosc` abstraction named
+`midiosc-mrpeach` which can be used as a drop-in replacement for `midiosc` and
+implements OSC input and output using Martin Peach's objects. You most likely
+have to edit this abstraction to make it work for your local network setup; at
+least you'll probably have to change the network addresses in the abstraction
+so that it works with the OSC device or application that you use.
+
+Another useful abstraction is the `oscbrowser` object available in the
+author's separate
+[pd-mdnsbrowser](https://bitbucket.org/agraef/pd-mdnsbrowser) package. It lets
+you discover and publish Zeroconf (Avahi/Bonjour) services in the local
+network, so that your Pd patches can establish OSC connections in an automatic
+fashion.
+
+### Tweaking the GUI Layout
+
+As already mentioned, pd-faust provides the same global GUI layout options as
+[faust2pd](#faust2pd-pd-patch-generator-for-faust). Please check the faust2pd
+documentation for details. There are a few minor changes in the meaning of
+some of the options, though, which we consider notable improvements after some
+experience working with faust2pd. Here is a brief rundown of the available
+options, as they are implemented in pd-faust:
+
+-   `width=wd`, `height=ht`: Specify the maximum horizontal and/or vertical
+    dimensions of the layout area. If one or both of these values are nonzero,
+    pd-faust will try to make the GUI fit within this area.
+-   `font-size=sz`: Specify the font size (default is 10).
+-   `fake-buttons`: Render `button` controls as Pd toggles rather than bangs.
+-   `radio-sliders=max`: Render sliders with up to `max` different values as
+    Pd radio controls rather than Pd sliders. Note that in pd-faust this
+    option not only applies to sliders, but also to numeric entries, i.e.,
+    `nentry` in the Faust source. However, as with faust2pd's `radio-sliders`
+    option, the option is only applicable if the control is zero-based and has
+    a stepsize of 1.
+-   `slider-nums`: Add a number box to each slider control. Note that in
+    pd-faust this is actually the default, which can be disabled with the
+    `no-slider-nums` option.
+-   `exclude=pat,...`: Exclude the controls whose labels match the given glob
+    patterns from the Pd GUI.
+
+In pd-faust there is no way to specify the above options on the command line,
+so you'll have to put them as `pd` attributes on the *main* group of your
+Faust program, as described in the faust2pd documentation. For instance:
+
+    process = vgroup("[pd:no-slider-nums][pd:font-size=12]", ...);
+
+In addition, the following options can be used to change the appearance of
+individual control items. If present, these options override the corresponding
+defaults. Each option can also be prefixed with "`no-`" to negate the option
+value. (Thus, e.g., `no-hidden` makes items visible which would otherwise, by
+means of the global `exclude` option, be removed from the GUI.)
+
+-   `hidden`: Hides the corresponding control in the Pd GUI. This is the only
+    option which can also be used for group controls, in which case *all*
+    controls in the group will become invisible in the Pd GUI.
+-   `fake-button`, `radio-slider`, `slider-num`: These have the same meaning
+    as the corresponding global options, but apply to individual control
+    items.
+
+Again, these options are specified with the `pd` attribute in the label of the
+corresponding Faust control. For instance, the following Faust code hides the
+controls in the `aux` group, removes the number entry from the `pan` control,
+and renders the `preset` item as a Pd radio control:
+
+    aux = vgroup("aux [pd:hidden]", aux_part);
+    pan = hslider("pan [pd:no-slider-num]", 0, -1, 1, 0.01);
+    preset = nentry("preset [pd:radio-slider]", 0, 0, 7, 1);
+
+### Remote Control
+
+Also included in the sources is a helper abstraction faust-remote.pd and an
+accompanying elisp program faust-remote.el. These work pretty much like
+pure-remote.pd and pure-remote.el in the
+[pd-pure](#pd-pure-pd-loader-for-pure-scripts) distribution, but are tailored
+for the remote control of Faust dsps in a Pd patch. In particular, they enable
+you to quickly reload the Faust dsps in Pd using a simple keyboard command
+(`C-C C-X` by default) from Emacs. The faust-remote.el program was designed to
+be used with Juan Romero's Emacs [Faust
+mode](https://github.com/rukano/emacs-faust-mode); please see
+etc/faust-remote.el in the pd-faust source for usage instructions.
+
+Caveats and Bugs
+----------------
+
+Some parts of this software might still be experimental, under construction
+and/or bug-ridden. Bug reports, patches and suggestions are welcome. Please
+send these directly to the author, or post them either to the Faust or the
+Pure mailing list.
+
+In particular, please note the following known limitations in the current
+implementation:
+
+-   Passive Faust controls are only supported in `fdsp~` objects.
+-   The names of the voice controls in the `fsynth~` object (`freq`, `gain`,
+    `gate`) are currently hard-coded, as are the names of the `midi`, `osc`
+    and `dsp` subfolders used to locate various kinds of files.
+-   Polyphonic aftertouch and channel pressure messages are not supported in
+    the MIDI interface right now, so you'll have to use ordinary MIDI
+    controllers for these parameters instead. Coarse/fine pairs of MIDI
+    controllers aren't directly supported either, so you'll have to implement
+    these yourself as two separate Faust controls.
+-   There's no translation of OSC values. pd-faust thus always assumes that
+    the controls of an external OSC device have the ranges specified in the
+    Faust program. If this isn't the case then you'll have to adjust either
+    the OSC controller setup or the control ranges in the Faust program, or
+    use an external tool like [OSCulator](http://www.osculator.net/) to
+    translate the messages.
+
+Also, please check the TODO file included in the distribution for other issues
+which we are already aware of and which will hopefully be addressed in future
+pd-faust versions.

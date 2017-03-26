@@ -1,0 +1,205 @@
+<a name="doc-pure-avahi"></a>
+
+pure-avahi: Pure Avahi Interface
+================================
+
+<a name="module-avahi"></a>
+
+Version 0.3, March 06, 2017
+
+Albert Gräf &lt;<aggraef@gmail.com>&gt;
+
+This is a simple interface to [Avahi](http://avahi.org/), a
+[Zeroconf](http://en.wikipedia.org/wiki/Zero-configuration_networking)
+implementation for Linux and other Un\*x systems. The module lets you publish
+and query Zeroconf network services using Avahi, allowing you to establish
+connections for various kinds of TCP and UDP network services without having
+to manually configure network addresses. It is typically used along with the
+[sockets](pure-sockets.html#module-sockets) module which lets you create the
+network connections discovered with [avahi](#module-avahi).
+
+To keep things simple and easy to use, the module only exposes the most
+essential functionality of Ahavi right now, but the provided functions should
+hopefully be sufficient for most programs which require interoperability with
+other Avahi or Apple Bonjour applications. One known limitation is that the
+module allows you to publish and discover services in the default Avahi domain
+only. Typically this is the `local` domain, limiting you to services in the
+local network. However, this should cover most common uses of Zeroconf.
+
+There's a companion [bonjour](pure-bonjour.html#module-bonjour) module which
+implements the same API for [Bonjour](http://developer.apple.com/bonjour/),
+Apple's Zeroconf implementation. Since both modules implement the same
+functions, albeit in different namespaces, they can be used as drop-in
+replacements for each other. We also offer a compatibility module named
+`zeroconf` which can be used with either pure-avahi or pure-bonjour in a
+transparent fashion, so that no source changes are needed when switching the
+underlying implementation; please check the zeroconf.pure script included in
+the sources for details.
+
+This module is in its early stages, so it may still contain bugs or lack some
+features. Please report bugs on the issue tracker at the Pure Bitbucket site,
+and use the Pure mailing list for general discussion of the module.
+
+Copying
+-------
+
+Copyright (c) 2014 by Albert Graef.
+
+pure-avahi is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+pure-avahi is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program. If not, see &lt;<http://www.gnu.org/licenses/>&gt;.
+
+Installation
+------------
+
+Get the latest source from
+<https://bitbucket.org/purelang/pure-lang/downloads/pure-avahi-0.3.tar.gz>.
+
+Run `make` to compile the module and `make install` (as root) to install it in
+the Pure library directory. This requires GNU make, and of course you need to
+have Pure and Avahi installed. The latter should be readily available on most
+Linux systems, and ports are available for BSD systems as well.
+
+`make` tries to guess your Pure installation directory and platform-specific
+setup. If it gets this wrong, you can set some variables manually, please
+check the Makefile for details.
+
+Please note that the zeroconf.pure compatibility module is not installed by
+default, so you may want to copy it to the Pure library directory if needed.
+
+Usage
+-----
+
+To use the operations of this module, you need to have Avahi installed and the
+Avahi daemon running on your system. The details of this depend on the
+particular system that you use, so please consult the documentation of your
+Linux or BSD distribution for instructions.
+
+The following import declaration loads the functions of the avahi module in
+your Pure script:
+
+    using avahi;
+
+All operations are in the `avahi` namespace, so you might want to add the
+following declaration to access the functions using their unqualified
+identifiers:
+
+    using namespace avahi;
+
+Publishing Services
+-------------------
+
+These functions allow you to advertise a network service using Avahi, so that
+the service can be discovered by other applications participating in the
+Zeroconf protocol. Each service has a name (a string which uniquely identifies
+the service), a type (indicating the application and transport protocols
+utilized by the service) and a port number (TCP or UDP port number, depending
+on the service type). The service type normally takes the form `_app._tcp`
+(for TCP services) or `_app._udp` (for UDP), where `_app` specifies the
+protocol of the particular application (such as `_ipp` for network-connected
+printers, or `_osc` for applications speaking the OSC a.k.a. Open Sound
+Control protocol).
+
+<a name="avahi::publish"></a>`avahi::publish name stype port`
+:   Advertise a service in the local domain, given by its name (a string),
+    service type (a string) and (TCP or UDP) port number (an integer). Note
+    that this operation is actually carried out asynchronously. Use
+    [`avahi::check`](#avahi::check) below to wait for and report the result of
+    the operation. The returned result is a pointer to the service object
+    which can be passed to the following operations, or `NULL` in case of
+    error. (A `NULL` pointer can be passed safely to
+    [`avahi::check`](#avahi::check); it will fail in this case.) The service
+    will be unpublished automatically when the service object is
+    garbage-collected.
+
+<a name="avahi::check"></a>`avahi::check service`
+:   Check for the result of a [`avahi::publish`](#avahi::publish) operation.
+    This blocks until a result is available. A negative integer value
+    indicates failure (in this case the result is the Avahi error code).
+    Otherwise the result is a triple with the actual service name, type and
+    port. Note that the name may be different from the one passed to
+    [`avahi::publish`](#avahi::publish) if there was a name collision with
+    another service. Such collisions are resolved automatically by tacking on
+    a suffix of the form `#n` to the service name.
+
+<!-- -->
+Discovering Services
+--------------------
+
+These functions let you discover services of a given service type. For each
+(resolvable) service you'll be able to retrieve the corresponding network
+address and port, which is what you'll need to actually open a network
+connection to communicate with the service.
+
+<a name="avahi::browse"></a>`avahi::browse stype`
+:   Browse available services of a given type in the local domain. This
+    operation is carried out asynchronously; use
+    [`avahi::avail`](#avahi::avail) below to check whether new information is
+    available, and [`avahi::get`](#avahi::get) to retrieve the actual service
+    list. The result returned by [`avahi::browse`](#avahi::browse) is a
+    pointer to the browser object which can be passed to the following
+    operations, or `NULL` in case of error. (A `NULL` pointer can be passed
+    safely to the other operations; they will fail in this case.) Any
+    resources allocated to the browser will be released automatically when the
+    browser object is garbage-collected.
+
+<a name="avahi::avail"></a>`avahi::avail browser`
+:   Check whether the service information was updated since the last
+    invocation of [`avahi::get`](#avahi::get). Returns an integer (truth
+    value), which may also be negative (indicating the Avahi error code) in
+    case of error.
+
+<a name="avahi::get"></a>`avahi::get browser`
+:   Retrieve the current list of services. Each list entry is a tuple with the
+    name, type, domain, IP address (all string values) and port number (an
+    integer) of a service. The entries are in the same order as returned by
+    Avahi, but only include services whose network addresses can actually be
+    resolved using Avahi. Note that this information may change over time, as
+    new services are announced on the network or removed from it. An
+    application will typically call [`avahi::avail`](#avahi::avail) from time
+    to time to check whether new information is available and then retrieve
+    the updated service list using [`avahi::get`](#avahi::get). The result may
+    also be a negative integer (indicating the Avahi error code) in case of
+    error.
+
+<!-- -->
+Example
+-------
+
+Here's an example showing how to publish an UDP OSC (Open Sound Control)
+service which might be used to connect to mobile OSC applications such as
+hexler's TouchOSC:
+
+    using avahi;
+    using namespace avahi;
+
+    let s = publish "OSC Server" "_osc._udp" 8000;
+    check s;
+
+The last line checks for the result of the operation and returns the actual
+service name, type and port number if all went well. A TouchOSC instance
+running on the local network will then offer you to connect to the service.
+
+Continuing the example, here's how you can obtain a list of OSC services
+currently available on your local network:
+
+    let t = browse "_osc._udp";
+    avail t;
+    get t;
+
+If you're running TouchOSC somewhere on your local network, it will be listed
+there, along with our own service which we published above. The call in the
+second line can be used to check whether any new information is available.
+Applications typically invoke these two from time to time to update their
+service list, using code like the following:
+
+    avail t && get t;
