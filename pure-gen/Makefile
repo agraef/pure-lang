@@ -61,18 +61,23 @@ pure-gen: pure-gen.pure
 	pure $(PIC) $(PUREC_FLAGS) -c xx$< -o $@
 	rm -f xx$<
 
-# NOTE: This requires ghc (http://www.haskell.org/ghc/) and language-c
-# (http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c),
-# version 0.4.2 or later. If the compilation fails, it's probably because
-# Language.C 0.3.x is used; in this case we patch up the source accordingly
-# and try again. If you know that you have 0.3.x and want to avoid this extra
-# step then you can patch up the source beforehand.
+# NB: This requires ghc (http://www.haskell.org/ghc/, version 6 or later) and
+# language-c (https://hackage.haskell.org/package/language-c, version 0.4 or
+# 0.5), please check the README for details. Any language-c versions later
+# than 0.5 most likely won't work because of backward-incompatible changes in
+# the library. (If you can figure out which changes are needed in dump-ast to
+# compile against the latest version, please let me know!)
 
-# FIXME: As of Language.C 0.4.2, -XTypeSynonymInstances is needed to make the
-# dump-ast source compile. We should figure out which source changes are
-# needed to do without this kludge.
+# NB: If you're still running a really old language-c version like 0.3, then
+# try compiling dump-ast-old.hs instead, it might work.
 
-GHCFLAGS = -XTypeSynonymInstances -XFlexibleInstances
+# NB: The latest Haskell systems (on Arch at least) don't use static libraries
+# any more, while ghc still wants to link these by default, we work around
+# that by adding the -dynamic option to the GHCFLAGS below. If that option
+# seems to cause trouble, just remove it.
+
+# These options work around quirks with various ghc versions.
+GHCFLAGS = -XTypeSynonymInstances -XFlexibleInstances -dynamic
 dump-ast: dump-ast.hs dump-ast-old.hs
 	ghc $(GHCFLAGS) --make $< -o $@ || \
 	ghc $(GHCFLAGS) --make dump-ast-old.hs -o $@
