@@ -54,9 +54,11 @@ ALL_LDFLAGS = $(LDFLAGS) $(LIBS)
 %$(DLL): %.cpp
 	$(CXX) $(shared) $(ALL_CXXFLAGS) $< -o $@ $(ALL_LDFLAGS) $(PURE_LIBS)
 
-# compile Faust C++ module to LLVM bitcode (needs clang)
+# compile Faust C++ module to LLVM bitcode (needs clang) NB: need -std=c++11
+# here to avoid a clang error on the __float128 type in newer libc versions
+# (this type is only supported in clang 3.9+)
 %.bc: %.cpp
-	$(LLVMCXX) $(ALL_CXXFLAGS) -c $< -o $@
+	$(LLVMCXX) -std=c++11 $(ALL_CXXFLAGS) -c $< -o $@
 
 # dsp sources
 dspsource := $(sort $(wildcard *.dsp))
