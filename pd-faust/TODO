@@ -6,8 +6,9 @@ Optimizations:
 
 Features:
 
-- Implement passive controls in fsynth~ objects. The problem here is how to
-  aggregate the values of the different voices: sum, average, min, max?
+- Implement passive controls in fsynth~ (faust~ instrument) objects. The
+  problem here is how to aggregate the values of the different voices: sum,
+  average, min, max?
 
 - Add support for polyphonic aftertouch and channel pressure messages. It
   should be possible to map these to Faust controls as well.
@@ -19,20 +20,20 @@ Features:
   rather inconvenient.
 
 - Add support for erasing and editing already recorded automation data. This
-  might use something like "touch mode" in Cubase and Logic, or an explicit
-  "punch in/out" control. (Suggested by Julius Smith.)
+  might use something like "touch mode" in DAWs, or an explicit "punch in/out"
+  control. (Suggested by Julius Smith.)
 
 Design Issues:
 
-- Refactor the sources so that fsynth~ and fdsp~ share as much code as
-  possible.
+- Refactor the sources so that fsynth~ and fdsp~ share more code.
 
 - Voice controls (freq, gain, gate) are currently addressed using their
   basename only (without path), and only one of these (the first one) will be
   used if different instances of a voice control exist in different subgroups.
   This is done for efficiency, but it might be useful to handle multiple
-  instances of the voice controls in different subgroups. Also, we may want
-  to make the basenames of the voice controls configurable.
+  instances of the voice controls in different subgroups. Also, we may want to
+  make the basenames of the voice controls configurable. Finally, we also want
+  to provide compatibility with the emerging "Faust polyphony standard" here.
 
 - There's no special handling of coarse/fine MIDI controllers in the current
   implementation. Maybe there should be a way to map them to a single Faust
@@ -43,6 +44,9 @@ Design Issues:
   interpreting MMC locate commands. At present there's no way to configure the
   framerate either, so you should check that your sequencer indeed uses the
   30fps value in order to get accurate playback positions.
+
+- Add support for syncing via Jack transport (now available in Pd through
+  pd-jacktime).
 
 - We don't distinguish between different external MIDI and OSC controllers in
   write mode right now. Maybe we should keep track of the external source that
