@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-faust-$(version)
-version = 0.12
+version = 0.13
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
