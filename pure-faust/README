@@ -57,9 +57,9 @@ Installation
 ============
 
 Get the latest source from
-https://bitbucket.org/purelang/pure-lang/downloads/pure-faust-@version@.tar.gz.
+https://github.com/agraef/pure-lang/releases/download/pure-faust-@version@/pure-faust-@version@.tar.gz
 
-Binary packages can be found at http://purelang.bitbucket.org/. To install
+Binary packages can be found at https://agraef.github.io/pure-lang/. To install
 from source, run the usual ``make && sudo make install``. This requires Pure,
 of course (the present version will work with Pure 0.52 and later). The
 Makefile tries to guess the installation prefix under which Pure is
@@ -100,8 +100,14 @@ data will be represented as doubles on the Pure side.)
 Also note that the above compile command is for a Linux or BSD system using
 ``gcc``. Add ``-fPIC`` for 64 bit compilation. For Windows compilation, the
 output filename should be ``mydsp.dll`` instead of ``mydsp.so``; on Mac OSX,
-it should be ``mydsp.dylib``. There's a Makefile in the ``examples`` folder
-which automates this process.
+it should be ``mydsp.dylib``. There's a Makefile and a shell script in the
+``examples`` folder which both automate this process; the latter will also be
+included in recent Faust releases. Using the shell script, you can compile a
+Faust dsp simply as follows::
+
+  $ faust2pure mydsp.dsp
+
+This will also print the name of the compiled module on stdout.
 
 Once the module has been compiled, you can fire up the Pure interpreter and
 load the dsp as follows::
@@ -305,8 +311,8 @@ Note that only one of the :mod:`faust` and :mod:`faust2` modules may be
 imported into a program; trying to use both modules in the same program will
 *not* work. Also note that the :mod:`faust2` module requires Faust2_ and a
 fairly recent Pure version to work, whereas the :mod:`faust` module works with
-both Faust2 and the mainline Faust version and doesn't rely on the Faust
-bitcode loader (only the ``pure.cpp`` architecture is needed).
+both current Faust (Faust2) and older Faust versions and doesn't rely on the
+Faust bitcode loader (only the ``pure.cpp`` architecture is needed).
 
 Acknowledgements
 ================
