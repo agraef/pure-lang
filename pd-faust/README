@@ -104,19 +104,18 @@ purr-data_ (the new cross-platform version of pd-l2ork_).
 Some further build options are described in the Makefile. In particular, it is
 possible to compile the Faust dsps to LLVM bitcode which can be loaded
 directly by the Pure interpreter. This requires a recent Faust version (2.0
-and later) and an LLVM-capable C/C++ compiler such as clang (please check the
-Makefile and the LLVM_ website for details).
+and later) and an LLVM-capable C/C++ compiler such as clang_ (please check the
+`Compiling Faust DSPs`_ section below for details). If you have the required
+tools then you can build the bitcode modules by running ``make bitcode`` after
+``make``. If you run ``make install`` afterwards, the bitcode modules will be
+installed along with the "normal" Faust plugins. In addition, a second object
+library called ``pdfaust2`` will be built and installed, which can be used as
+a drop-in replacement for ``pdfaust`` and lets you run the bitcode
+modules. (Note that in the present implementation it is not possible to load
+both ``pdfaust`` and ``pdfaust2`` in Pd, you'll have to pick one or the
+other.)
 
-.. _LLVM: http://llvm.org/
-
-If you have the required tools then you can build the bitcode modules by
-running ``make bitcode`` after ``make``. If you run ``make install``
-afterwards, the bitcode modules will be installed along with the "normal"
-Faust plugins. In addition, a second object library called ``pdfaust2`` will
-be built and installed, which can be used as a drop-in replacement for
-``pdfaust`` and lets you run the bitcode modules. (Note that in the present
-implementation it is not possible to load both ``pdfaust`` and ``pdfaust2`` in
-Pd, you'll have to pick one or the other.)
+.. _clang: http://clang.llvm.org/
 
 Usage
 =====
@@ -131,15 +130,13 @@ For convenience, pd-faust also includes a few helper objects and abstractions
 to handle MIDI input and playback as well as OSC controller automation. For
 simple uses, the included ``midi-input`` and ``midi-output`` abstractions
 provide a way to encode and decode MIDI messages in the author's SMMF_ format
-used by ``faust~`` objects.
+used by ``faust~`` objects. For applications requiring more elaborate MIDI and
+OSC support, the ``midiseq`` and ``oscseq`` objects and a corresponding
+``midiosc`` abstraction can be used to handle MIDI input and playback as well
+as OSC controller automation. This is described in more detail under `MIDI and
+OSC Sequencing`_ below.
 
 .. _SMMF: https://bitbucket.org/agraef/pd-smmf
-
-For applications requiring more elaborate MIDI and OSC support, the
-``midiseq`` and ``oscseq`` objects and a corresponding ``midiosc`` abstraction
-can be used to handle MIDI input and playback as well as OSC controller
-automation. This is described in more detail under `MIDI and OSC Sequencing`_
-below.
 
 pd-faust interprets MIDI, OSC and Faust dsp filenames relative to the hosting
 Pd patch by default. It will also search the ``midi``, ``osc`` and ``dsp``
@@ -151,7 +148,64 @@ instead.
 
 Like pd-pure, pd-faust remaps Pd's ``menu-open`` command so that it lets you
 edit the Faust source of a ``faust~`` object by right-clicking on the object
-and choosing ``Open`` from the context menu.
+and choosing ``Open`` from the context menu. This requires that the ``.dsp``
+source file of the Faust module is available in the same directory as the
+binary module.
+
+Compiling Faust DSPs
+--------------------
+
+To run a Faust module (``.dsp`` file) inside Pd using the ``faust~`` object,
+the Faust dsp must be compiled to a form which can be loaded in *Pure* (not
+Pd!), so the ``pure.cpp`` architecture (included in the Faust distribution) is
+used to compile the dsp to a shared library object. It is of course possible
+to do this manually using the faust and gcc compilers, but for convenience
+there's a GNU Makefile in the examples/dsp subdirectory which provides all the
+build rules necessary to do this. This Makefile is self-contained, so you can
+just drop it into any directory with Faust dsp sources and run ``make`` there
+to compile the modules to a format which is ready to be loaded with pd-faust.
+
+Another possibility is to use the ``faust2pure`` script included in recent
+Faust versions and also in the examples subdirectory of the pure-faust
+package, see the :doc:`pure-faust<pure-faust>` documentation for details.
+E.g., to compile a Faust dsp ``organ.dsp`` to a module loadable with pd-faust,
+simply use the following command::
+
+  faust2pure organ.dsp
+
+This will leave a shared library module ``organ.so`` (``organ.dylib`` on
+macOS, ``organ.dll`` on Windows) in the current directory which can then be
+loaded with pd-faust, by just inserting an object like ``faust~ organ`` in
+your patch. Note that to make this work, pd-faust must be able to locate the
+object. To these ends, you should create the patch in the same directory that
+also contains the ``.dsp`` and ``.so`` files of the Faust dsp. (As mentioned
+earlier, it is also possible to put the ``.dsp`` and ``.so`` files into the
+``dsp`` subdirectory of the directory containing the patch, or just put them
+somewhere on Pd's library path.)
+
+If you're running a recent version of Faust, you can also compile to an LLVM
+bitcode file instead; pd-pure can load these directly using Pure's built-in
+Faust bitcode loader. As already mentioned, this requires Faust 2.0 or later
+and that you build and install the alternative ``pdfaust2`` library as
+described under Installation_ above. The main advantage of using bitcode
+modules is that compiling these is often much faster. The main disadvantage is
+that you'll need a special C compiler capable of producing LLVM bitcode (i.e.,
+clang_).
+
+The process of compiling Faust dsps to bitcode modules is pretty much the same
+as above, only that you have to run ``make bitcode`` with the provided
+Makefile, or use the faust2pure script with the ``-bitcode`` option, e.g.::
+
+  faust2pure -bitcode organ.dsp
+
+This creates the ``organ.bc`` module which can be loaded by the ``pdfaust2``
+library, pretty much like ``pdfaust`` loads shared object modules. Otherwise
+there won't be much of a noticeable difference (gcc may produce better code in
+some cases, clang in others, which may result in some Faust dsps running with
+better performance as shared library modules, others in bitcode). Note,
+however, that in the current implementation ``pdfaust`` and ``pdfaust2`` can
+*not* be loaded at the same time in Pd, therefore you'll have to decide
+beforehand which of the two available interfaces you want to use.
 
 The faust~ Object
 -----------------
@@ -179,16 +233,7 @@ hexadecimal, octal or binary.
 The meaning of these arguments is as follows:
 
 * ``dspname`` denotes the name of the Faust dsp (usually this is just the name
-  of the .dsp file with the extension stripped off). Please note that the
-  Faust dsp must be provided in a form which can be loaded in *Pure* (not
-  Pd!), so the ``pure.cpp`` architecture (included in the Faust distribution)
-  must be used to compile the dsp to a shared library. (If you're running a
-  recent version of Faust, you can also compile to an LLVM bitcode file
-  instead; Pure has built-in support for loading these.) There's a GNU
-  Makefile in the examples/dsp subdirectory which shows how to do this. This
-  Makefile is self-contained, so you can just drop it into any directory with
-  Faust dsp sources and run ``make`` there to compile the modules to a format
-  which is ready to be loaded with pd-faust.
+  of the .dsp file with the extension stripped off).
 
 * ``instname`` denotes the name of the instance of the Faust unit. By default,
   this is the same as ``dspname``. Multiple instances of the same Faust dsp
@@ -366,11 +411,14 @@ Examples
 --------
 
 The examples folder contains a few example patches which illustrate how this
-all works. Having installed pd-faust as described above, you can run these
-from the examples directory, e.g.: ``pd test.pd``. (You can also run the
-examples without actually installing pd-faust if you invoke Pd from the main
-pd-faust source directory, e.g., as follows: ``pd -lib lib/pdfaust
-examples/test.pd``.)
+all works. Having compiled and installed pd-faust as described above, you can
+run these directly from the examples directory in the sources, e.g.: ``pd
+test.pd``. (You can also run the examples without actually installing pd-faust
+if you invoke Pd from the main pd-faust source directory, e.g., as follows:
+``pd -lib lib/pdfaust examples/test.pd``.) The same collection of examples is
+also copied to ``$prefix/lib/pd/extra/faust`` when running ``make install``
+(where ``$prefix`` denotes the prefix under which Pd is installed, usually
+``/usr`` or ``/usr/local``) so that you can also run them from there.
 
 Here are some of the examples that are currently available:
 
@@ -388,7 +436,6 @@ of the instruments and effects are contained in corresponding subdirectories
 (midi, osc, dsp) of the examples directory. A slightly modified version of
 the faust-stk instruments from the Faust distribution is also included, please
 check the examples/dsp/README-STK file for more information about these.
-
 The MIDI files are all in standard MIDI file format. (Some of these come from
 the faust-stk distribution, others can be found on the web.) The OSC files
 used by pd-faust for controller automation are plain ASCII files suitable for

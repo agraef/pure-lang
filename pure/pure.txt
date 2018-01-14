@@ -10434,19 +10434,14 @@ lets you use these capabilities in order to process sample data stored in Pure
 matrices.
 
 Pure's LLVM bitcode loader has some special knowledge about Faust built into
-it, which makes interfacing to Faust programs simple and efficient. At
-present, you'll need a special LLVM-capable version of Faust to make this
-work, which is available under the "faust2" branch in Faust's git repository.
-Some information on how to get this up and running can be found on the `LLVM
-backend for Faust`_ website.
-
-.. _LLVM backend for Faust: https://bitbucket.org/purelang/pure-lang/wiki/Faust2
+it, which makes interfacing to Faust programs simple and efficient. You'll
+need a recent LLVM-capable version of Faust (Faust 2.0 or later, abbreviated
+"Faust2" in the following) to make this work.
 
 .. note:: There's also an alternative interface to Faust which is available as
-   a separate package and works with either Faust2 or the stable Faust
-   version. Please check the :doc:`pure-faust<pure-faust>` package for
-   details. This package also provides the :mod:`faust2` compatibility module
-   which implements the pure-faust API on top of Pure's built-in Faust
+   a separate package, please check the :doc:`pure-faust<pure-faust>` package
+   for details. This package also provides the :mod:`faust2` compatibility
+   module which implements the pure-faust API on top of Pure's built-in Faust
    interface, so that you can also use the operations of this module instead.
    (The pure-faust API can in fact be more convenient to use in some cases,
    especially if you want to load a lot of different Faust modules dynamically
@@ -10478,6 +10473,14 @@ Faust module needs to be linked against additional C/C++ code. For instance:
 
    faust -double -a pure.c -lang c example.dsp -o example.c
    clang -emit-llvm -O3 -c example.c -o example.bc
+
+The :doc:`pure-faust<pure-faust>` package contains a little helper script
+``faust2pure`` (also available in recent Faust revisions) which makes this a
+lot easier, so that you can simply write:
+
+.. code-block:: console
+
+   faust2pure -double -bitcode example.dsp
 
 A third possibility is to just inline Faust code in a Pure script, as
 described in the `Inline Code`_ section. The compilation step is then handled
