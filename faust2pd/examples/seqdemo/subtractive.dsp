@@ -1,5 +1,6 @@
 
-declare name "subtractive -- saw wave filtered with resonant lowpass";
+declare name "subtractive";
+declare description "saw wave filtered with resonant lowpass";
 declare author "Albert Graef";
 declare version "1.0";
 

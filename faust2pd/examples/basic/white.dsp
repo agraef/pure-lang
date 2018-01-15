@@ -1,5 +1,6 @@
 
-declare name "white -- white noise";
+declare name "white";
+declare description "white noise";
 declare author "Albert Graef";
 declare version "1.0";
 

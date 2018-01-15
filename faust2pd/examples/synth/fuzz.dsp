@@ -1,7 +1,8 @@
 
 /* A simple waveshaping effect. */
 
-declare name "fuzz -- a simple distortion effect";
+declare name "fuzz";
+declare description "a simple distortion effect";
 declare author "Bram de Jong (from musicdsp.org)";
 declare version "1.0";
 

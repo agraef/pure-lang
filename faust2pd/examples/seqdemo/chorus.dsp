@@ -1,7 +1,8 @@
 
 /* A simple chorus effect. */
 
-declare name "chorus -- a simple chorus effect";
+declare name "chorus";
+declare description "a simple chorus effect";
 declare author "Albert Graef";
 declare version "1.0";
 

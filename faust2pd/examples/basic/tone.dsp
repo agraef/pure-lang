@@ -1,5 +1,6 @@
 
-declare name "tone -- sine oscillator with adjustable frequency";
+declare name "tone";
+declare description "sine oscillator with adjustable frequency";
 declare author "Albert Graef";
 declare version "1.0";
 

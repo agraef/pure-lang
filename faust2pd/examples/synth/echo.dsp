@@ -1,7 +1,8 @@
 
 /* Stereo delay with feedback. */
 
-declare name "echo -- stereo delay effect";
+declare name "echo";
+declare description "stereo delay effect";
 declare author "Albert Graef";
 declare version "1.0";
 

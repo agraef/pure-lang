@@ -1,7 +1,8 @@
 
 /* Compressor unit. */
 
-declare name "compressor -- compressor/limiter unit";
+declare name "compressor";
+declare description "compressor/limiter unit";
 declare author "Albert Graef";
 declare version "1.0";
 

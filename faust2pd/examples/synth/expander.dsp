@@ -4,7 +4,8 @@
 /* This is pretty much the same as compressor.dsp, but here the given ratio is
    applied to *attenuate* levels *below* the threshold. */
 
-declare name "expander -- expander/noise gate unit";
+declare name "expander";
+declare description "expander/noise gate unit";
 declare author "Albert Graef";
 declare version "1.0";
 

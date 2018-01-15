@@ -15,7 +15,8 @@
    by cranking up the delay time while setting the feedback to zero and
    reducing level and depth (the latter by at least an order of magnitude). */
 
-declare name "flanger -- stereo flanger with feedback";
+declare name "flanger";
+declare description "stereo flanger with feedback";
 declare author "Albert Graef";
 declare version "1.0";
 

@@ -2,7 +2,8 @@
 /* Stereo amplifier stage with bass, treble, gain and balance controls and a
    dB meter. */
 
-declare name "amp -- stereo amplifier stage";
+declare name "amp";
+declare description "stereo amplifier stage";
 declare author "Albert Graef";
 declare version "1.0";
 

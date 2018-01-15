@@ -1,4 +1,4 @@
-declare name "Saxophone";
+declare name "saxophony";
 declare description "Nonlinear WaveGuide Saxophone";
 declare author "Romain Michon";
 declare copyright "Romain Michon (rmichon@ccrma.stanford.edu)";

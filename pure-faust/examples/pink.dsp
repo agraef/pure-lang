@@ -1,5 +1,6 @@
 
-declare name "pink -- pink noise";
+declare name "pink";
+declare description "pink noise";
 declare author "Albert Graef";
 declare version "1.0";
 

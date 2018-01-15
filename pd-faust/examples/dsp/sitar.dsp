@@ -1,4 +1,4 @@
-declare name "Sitar";
+declare name "sitar";
 declare description "WaveGuide Sitar";
 declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
 declare copyright "Romain Michon";

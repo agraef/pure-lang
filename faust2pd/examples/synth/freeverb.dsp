@@ -5,7 +5,8 @@
 //
 //======================================================
 
-declare name "freeverb -- a Schroeder reverb";
+declare name "freeverb";
+declare description "a Schroeder reverb";
 declare author "Yann Orlarey";
 declare version "1.0";
 

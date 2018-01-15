@@ -1,5 +1,6 @@
 
-declare name "pan -- simple panning control";
+declare name "pan";
+declare description "simple panning control";
 declare author "Albert Graef";
 declare version "1.0";
 

@@ -1,4 +1,4 @@
-declare name "Bass";
+declare name "bass";
 declare description "Nonlinear WaveGuide Acoustic Bass";
 declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
 declare copyright "Romain Michon";

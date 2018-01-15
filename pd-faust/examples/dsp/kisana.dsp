@@ -4,7 +4,7 @@
 //
 //-----------------------------------------------
 
-declare name  	"Kisana";
+declare name  	"kisana";
 declare author  "Yann Orlarey";
 
 import("music.lib"); 

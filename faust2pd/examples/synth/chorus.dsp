@@ -1,7 +1,8 @@
 
 /* Stereo chorus. */
 
-declare name "chorus -- stereo chorus effect";
+declare name "chorus";
+declare description "stereo chorus effect";
 declare author "Albert Graef";
 declare version "1.0";
 

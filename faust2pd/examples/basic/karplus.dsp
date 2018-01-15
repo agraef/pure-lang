@@ -1,5 +1,6 @@
 
-declare name "karplus -- Karplus-Strong string synth";
+declare name "karplus";
+declare description "Karplus-Strong string synth";
 declare author "Yann Orlarey";
 declare version "1.0";
 

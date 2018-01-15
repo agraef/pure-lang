@@ -1,4 +1,4 @@
-declare name "Voice Formant";
+declare name "voiceForm";
 declare description "Voice Formant Instrument";
 declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
 declare copyright "Romain Michon";
