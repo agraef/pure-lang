@@ -526,11 +526,14 @@ faust_t *faust_init(const char *name, int rate)
   fd->ui = new PureUI();
   if (!fd->ui) goto error;
   fd->d->buildUserInterface(fd->ui);
-  // Get rid of bogus "0x00" labels in recent Faust revisions. Also, for
-  // backward compatibility with old Faust versions, make sure that default
-  // toplevel groups and explicit toplevel groups with an empty label are
-  // treated alike (these both return "0x00" labels in the latest Faust, but
-  // would be treated inconsistently in earlier versions).
+  // Get rid of bogus "0x00" labels in older Faust versions. Also, for
+  // backward compatibility with even older Faust versions, make sure that
+  // default toplevel groups and explicit toplevel groups with an empty label
+  // are treated alike (these both return "0x00" labels in previous Faust
+  // versions, but would be treated inconsistently in earlier versions). Note
+  // that all this has been changed once again in the latest Faust versions,
+  // which now use the declared plugin name as default if available, or the
+  // basename of the dsp file otherwise.
   for (int i = 0; i < fd->ui->nelems; i++) {
     if (!fd->ui->elems[i].label) continue;
     if (!*fd->ui->elems[i].label ||
