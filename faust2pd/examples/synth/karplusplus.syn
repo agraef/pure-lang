@@ -1,5 +1,6 @@
 
-declare name "karplusplus -- Karplus-Strong + Fuzz";
+declare name "karplusplus";
+declare description "Karplus-Strong + Fuzz";
 declare author "Yann Orlarey, Albert Graef";
 declare version "1.0";
 

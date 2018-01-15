@@ -1,5 +1,6 @@
 
-declare name "subtractive -- saw wave filtered with resonant lowpass";
+declare name "subtractive";
+declare description "saw wave filtered with resonant lowpass";
 declare author "Albert Graef";
 declare version "1.0";
 
@@ -76,8 +77,8 @@ saw(x)	= x/PI-1;
 smooth(c) = *(1-c) : +~*(c);
 
 process	= tblosc(1<<16, saw, freq, 0) : ((env,freq,_) : filter) :
-	  *(env * (gain/*:smooth(0.999)*/))
-        : vgroup("3-master", *(vol) : panner(pan))
+	  *(env * gain)
+        : vgroup("3-master", *(vol:smooth(0.99)) : panner(pan:smooth(0.99)))
 with {
   env = gate : vgroup("1-adsr", adsr(attack, decay, sustain, release));
   filter(env,freq)

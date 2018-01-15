@@ -1,5 +1,6 @@
 
-declare name "organ -- a simple additive synth";
+declare name "organ";
+declare description "a simple additive synth";
 declare author "Albert Graef";
 declare version "1.0";
 
