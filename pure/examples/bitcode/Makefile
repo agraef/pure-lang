@@ -63,7 +63,10 @@ LLVMBIN = $(shell pkg-config pure --variable tool_prefix)
 # be found in the corresponding *.pure scripts.
 
 c_source   := $(wildcard *.c)
-f_source   := $(wildcard *.f90)
+# f_source disabled for now, as neither llvm-gcc and dragonegg is supported
+# any longer, so at present we're left without an LLVM-capable Fortran
+# compiler that we could use. :(
+#f_source   := $(wildcard *.f90)
 dsp_source := $(wildcard *.dsp)
 bitcode    := $(c_source:.c=.bc) $(f_source:.f90=.bc) $(dsp_source:.dsp=.bc)
 assembler  := $(c_source:.c=.ll) $(f_source:.f90=.ll) $(dsp_source:.dsp=.ll)
