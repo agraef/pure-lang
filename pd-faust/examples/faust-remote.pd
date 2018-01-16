@@ -1,11 +1,8 @@
-#N canvas 145 344 478 468 10;
+#N canvas 487 204 478 468 10;
 #X obj 33 233 netreceive 4711 1;
 #X obj 278 268 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
 -1 -1;
 #X obj 278 294 del 10;
-#X text 29 6 Control the Pure runtime remotely. You can use pdsend
-to send messages to UDP port 4711 (modify the port number below as
-needed).;
 #X obj 278 236 inlet;
 #X obj 192 408 pure-runtime;
 #X obj 192 435 outlet;
@@ -17,34 +14,40 @@ over the patch \, see the pd-pure README for details.;
 #X msg 374 268 reload;
 #X obj 278 320 list;
 #X obj 328 268 t b a;
-#X text 27 57 - A 'bang' message quickly reloads Pure object scripts
-after modifications. A 'reload' message works similarly \, but restarts
-the Pure runtime environment from scratch (this reloads *all* loaded
-scripts including imported modules \, but typically takes much longer).
-;
 #X msg 278 392 bang;
 #X msg 336 392 reload;
 #X obj 278 369 route bang reload;
 #X obj 278 344 list trim;
 #X obj 33 252 route bang reload dspreload;
 #X obj 139 318 s reload;
-#X connect 0 0 17 0;
+#X obj 139 287 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X text 29 6 Control the Pure runtime and Faust dsps remotely. You
+can use pdsend to send messages to UDP port 4711 (modify the port number
+below as needed). This works like pure-remote \, but also provides
+a message to quickly reload all Faust dsps.;
+#X text 27 77 - A 'bang' message quickly reloads Pure object scripts
+after modifications. A 'reload' message works similarly \, but restarts
+the Pure runtime environment from scratch. Moreover \, the 'dspreload'
+message reloads all Faust dsps.;
+#X connect 0 0 15 0;
 #X connect 1 0 2 0;
-#X connect 2 0 10 0;
-#X connect 4 0 17 0;
-#X connect 5 0 6 0;
-#X connect 5 1 7 0;
-#X connect 9 0 11 0;
-#X connect 10 0 16 0;
-#X connect 11 0 1 0;
-#X connect 11 1 10 1;
-#X connect 13 0 5 0;
-#X connect 14 0 5 0;
-#X connect 15 0 13 0;
-#X connect 15 1 14 0;
-#X connect 16 0 15 0;
-#X connect 17 0 11 0;
-#X connect 17 1 9 0;
-#X connect 17 2 18 0;
-#X connect 17 3 5 0;
-#X coords 0 -1 1 1 115 20 1 180 265;
+#X connect 2 0 9 0;
+#X connect 3 0 15 0;
+#X connect 4 0 5 0;
+#X connect 4 1 6 0;
+#X connect 8 0 10 0;
+#X connect 9 0 14 0;
+#X connect 10 0 1 0;
+#X connect 10 1 9 1;
+#X connect 11 0 4 0;
+#X connect 12 0 4 0;
+#X connect 13 0 11 0;
+#X connect 13 1 12 0;
+#X connect 14 0 13 0;
+#X connect 15 0 10 0;
+#X connect 15 1 8 0;
+#X connect 15 2 16 0;
+#X connect 15 3 4 0;
+#X connect 17 0 16 0;
+#X coords 0 -1 1 1 115 20 1 41 284;
