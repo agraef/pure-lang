@@ -148,9 +148,11 @@ instead.
 
 Like pd-pure, pd-faust remaps Pd's ``menu-open`` command so that it lets you
 edit the Faust source of a ``faust~`` object by right-clicking on the object
-and choosing ``Open`` from the context menu. This requires that the ``.dsp``
+and choosing ``Open`` from the context menu. (This requires that the ``.dsp``
 source file of the Faust module is available in the same directory as the
-binary module.
+binary module.) There's also special support for the Emacs editor which lets
+you quickly compile Faust programs and reload Faust dsps in Pd, see `Remote
+Control`_ for details.
 
 Compiling Faust DSPs
 --------------------
@@ -733,14 +735,27 @@ Remote Control
 --------------
 
 Also included in the sources is a helper abstraction faust-remote.pd and an
-accompanying elisp program faust-remote.el. These work pretty much like
+accompanying elisp package faust-remote.el. These work pretty much like
 pure-remote.pd and pure-remote.el in the :doc:`pd-pure<pd-pure>` distribution,
 but are tailored for the remote control of Faust dsps in a Pd patch. In
-particular, they enable you to quickly reload the Faust dsps in Pd using a
-simple keyboard command (``C-C C-X`` by default) from Emacs. The
-faust-remote.el program was designed to be used with Juan Romero's Emacs
+particular, they enable you to quickly compile Faust sources (``C-C C-K``
+command) and reload the compiled dsps in Pd (``C-C C-X``) from Emacs. Clicking
+the bang control in the faust-remote.pd abstraction also reloads all Faust
+dsps.
+
+The faust-remote.el package was designed to be used with Juan Romero's Emacs
 `Faust mode`_; please see etc/faust-remote.el in the pd-faust source for usage
-instructions.
+instructions. Note that at present faust-remote.el isn't installed
+automatically. You can do this manually by just copying the file to your Emacs
+site-lisp directory or any other location on the Emacs load-path. E.g., on
+Linux and other Unix-like systems::
+
+  sudo cp etc/faust-remote.el /usr/share/emacs/site-lisp/
+
+To enable the package, put the following line into your .emacs configuration
+file (this also auto-loads `Faust mode`_)::
+
+  (require 'faust-remote)
 
 .. _Faust mode: https://github.com/rukano/emacs-faust-mode
 
