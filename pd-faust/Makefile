@@ -102,7 +102,7 @@ l2ork-deb: $(l2ork-debsrc) dist
 	rm -rf $(dist)
 
 $(l2ork-debsrc):
-	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
+	wget -nv https://github.com/agraef/pure-lang/releases/download/$(dist)/$(dist).tar.gz -O $@
 
 purrdata-debsrc = $(shell echo $(dist) | sed -e 's/pd-faust/purrdata-faust/' -e 's/-$(version)/_$(version)/').orig.tar.gz
 
@@ -113,4 +113,4 @@ purrdata-deb: $(purrdata-debsrc) dist
 	rm -rf $(dist)
 
 $(purrdata-debsrc):
-	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
+	wget -nv https://github.com/agraef/pure-lang/releases/download/$(dist)/$(dist).tar.gz -O $@
