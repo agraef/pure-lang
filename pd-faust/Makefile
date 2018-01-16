@@ -50,6 +50,7 @@ realclean:
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
+	cp examples/faust-remote.pd "$(DESTDIR)$(pdlibdir)/extra"
 	cp COPYING COPYING.LESSER README TODO examples/*.pd etc/*.el lib/pdfaust*$(PDDLL) "$(DESTDIR)$(pdextradir)"
 	cp -R examples/dsp examples/midi examples/osc "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
@@ -58,7 +59,7 @@ install:
 	cp *.pure "$(DESTDIR)$(pdextradir)/src"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(pdextradir)"
+	rm -rf "$(DESTDIR)$(pdextradir)" "$(DESTDIR)$(pdlibdir)/extra/faust-remote.pd"
 
 Makefile.config: Makefile.config.in Makefile
 	sed -e "s?@version@?$(version)?g" < $< > $@
