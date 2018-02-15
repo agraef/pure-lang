@@ -199,7 +199,7 @@ ifneq "$(findstring -mingw,$(host))" ""
 libpure_soname = lib$(libpure_name)$(major)$(DLL)
 libpure = lib$(libpure_name)$(major)$(DLL)
 LDFLAGS = -Wl,--stack=0x800000 -Wl,--enable-auto-import
-AUXLIBS += -DLIBGLOB='"libglob.dll"' -DLIBREGEX='"libregex-1.dll"'
+#AUXLIBS += -DLIBGLOB='"libglob.dll"' -DLIBREGEX='"libregex-1.dll"'
 LIBS += -lmingwex
 endif
 
@@ -386,6 +386,10 @@ endif
 ifneq ($(libpure), $(libpure_lnkname))
 	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpure_lnkname)
 endif
+ifneq "$(findstring -mingw,$(host))" ""
+# mingw: Windows needs these to go into $(bindir)
+	cp $(libpure) $(libpure_lnkname) $(DESTDIR)$(bindir)
+endif
 endif
 	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/$(pure_exe)
 	$(INSTALL) -m 644 pure.pc $(DESTDIR)$(pkgconfigdir)/$(pure_pc)
@@ -411,6 +415,9 @@ endif
 
 uninstall:
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
+ifneq "$(findstring -mingw,$(host))" ""
+	rm -f $(addprefix $(DESTDIR)$(bindir)/, $(libpure) $(libpure_lnkname))
+endif
 ifneq ($(elcfiles),)
 	rm -rf $(addprefix $(DESTDIR), $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc)
 endif

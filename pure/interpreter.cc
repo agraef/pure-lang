@@ -154,16 +154,6 @@ void interpreter::init_jit_mode()
 #endif
 }
 
-#if defined(__MINGW32__) && defined(LIBREGEX) && !__MINGW64__
-// Support for legacy mingw32 systems which still have libgnurx-0.dll.
-// FIXME: We should rather use the latest GNU regex package from the
-// MinGW project instead, as we already do in the mingw64 port (cf.
-// http://kemovitra.blogspot.de/2009/07/mingw-porting-gnu-regex-to-windows.html)
-// then this kludge can go away.
-#undef LIBREGEX
-#define LIBREGEX "libgnurx-0.dll"
-#endif
-
 void interpreter::init()
 {
   if (!g_interp) g_interp = this;

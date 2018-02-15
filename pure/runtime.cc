@@ -13186,46 +13186,42 @@ int spawnve(int mode, const char *prog, char * const argv[],
 #ifdef __MINGW32__
 /* Windows compatibility. */
 
-#if !__MINGW64__
-/* mingw64 has these, so we only need these wrappers for mingw32 */
-
 extern "C"
-int execv(const char* prog, const char* const* argv)
+int execv(const char* prog, char* const argv[])
 {
   return _execv(prog, argv);
 }
 
 extern "C"
-int execvp(const char* prog, const char* const* argv)
+int execvp(const char* prog, char* const argv[])
 {
   return _execvp(prog, argv);
 }
 
 extern "C"
-int execve(const char* prog, const char* const* argv, const char* const* envp)
+int execve(const char* prog, char* const argv[], char* const envp[])
 {
   return _execve(prog, argv, envp);
 }
 
 extern "C"
-int spawnv(int mode, const char* prog, const char* const* argv)
+int spawnv(int mode, const char* prog, char* const argv[])
 {
   return _spawnv(mode, prog, argv);
 }
 
 extern "C"
-int spawnvp(int mode, const char* prog, const char* const* argv)
+int spawnvp(int mode, const char* prog, char* const argv[])
 {
   return _spawnvp(mode, prog, argv);
 }
 
 extern "C"
-int spawnve(int mode, const char* prog, const char* const* argv,
-	    const char* const* envp)
+int spawnve(int mode, const char* prog, char* const argv[],
+	    char* const envp[])
 {
   return _spawnve(mode, prog, argv, envp);
 }
-#endif
 
 #undef fileno
 
