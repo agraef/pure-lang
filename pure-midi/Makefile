@@ -63,7 +63,7 @@ excludes = '^(linux|unix)$$'
 
 portmidi.pure: portmidi.h porttime.h pmdev.h
 ifeq ($(DLL),.dll)
-	echo 'using "lib:portmidi";' > $@
+	echo 'using "lib:libportmidi";' > $@
 	pure-gen -N -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
 else
 	pure-gen -m Pm -p Pm -x $(excludes) -sportmidi.h:: portmidi.h -lpmlib -o $@

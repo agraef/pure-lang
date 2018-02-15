@@ -82,6 +82,27 @@ EXE = .exe
 DLL = .dll
 LIBS = -lpd
 LDFLAGS = -Wl,--enable-auto-import
+ifeq "$(PD)" "pd"
+ifneq "$(wildcard /c/Program*/Pd/src/m_pd.h)" ""
+# Special case: Vanilla Pd on Windows. This assumes an existing Pd
+# installation in the "Program Files" folder. Note that installing directly
+# into $(pdlibdir) will fail (permission problem), thus you'll have to install
+# into a staging directgory instead (using DESTDIR) and then manually copy
+# files over.
+pdlibdir = $(wildcard /c/Program*/Pd)
+pdincdir = "$(pdlibdir)/src"
+LIBS = "$(pdlibdir)/bin/pd.dll"
+endif
+endif
+ifneq "$(PD)" "pd"
+ifneq "$(wildcard /c/Program*/Purr*Data/include/m_pd.h)" ""
+# Special case: Purr Data flavor of Pd on Windows. This will be tried anyway
+# if $(PD) is set to anything else but "pd".
+pdlibdir = $(wildcard /c/Program*/Purr*Data)
+pdincdir = "$(pdlibdir)/include"
+LIBS = -L"$(pdlibdir)/bin" -lpd
+endif
+endif
 endif
 ifneq "$(findstring -linux,$(host))" ""
 # Linux

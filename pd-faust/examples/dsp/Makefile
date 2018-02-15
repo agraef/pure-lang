@@ -27,7 +27,7 @@ PURE_INCLUDES = $(shell pkg-config pure --cflags)
 PURE_LIBS = $(shell pkg-config pure --libs)
 
 # LLVM setup. Make sure that we find the LLVM toolchain.
-LLVM_CONFIG = $(word 1,$(wildcard /opt/local/bin/llvm-config*) $(wildcard /usr/local/bin/llvm-config*) $(wildcard /usr/bin/llvm-config*))
+LLVM_CONFIG = $(word 1,$(shell which llvm-config) $(wildcard /opt/local/bin/llvm-config*) $(wildcard /usr/local/bin/llvm-config*) $(wildcard /usr/bin/llvm-config*))
 LLVM_PATH = $(shell $(LLVM_CONFIG) --bindir)
 PATH := $(LLVM_PATH):$(PATH)
 # clang bitcode compilation.
