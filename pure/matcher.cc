@@ -180,14 +180,16 @@ state *matcher::match(state *st, expr x)
     } else if (tagcmp(t->tag, x.tag()) > 0)
       break;
   // no literal match, check for a matching qualified variable transition
-  if (x.tag() < EXPR::APP)
-    for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++)
+  if (x.tag() < EXPR::APP) {
+    for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++) {
       if (t->ttag == 0)
 	continue;
       else if (t->ttag == x.tag())
 	return t->st;
       else if (t->ttag < x.tag())
 	break;
+    }
+  }
   // still no match, use default transition if present
   if ((t = st->tr.begin()) != st->tr.end() &&
       t->tag == EXPR::VAR && t->ttag == 0)
@@ -278,8 +280,8 @@ state *matcher::match(state *st, pure_expr *x)
     } else if (tagcmp(t->tag, x->tag) > 0)
       break;
   // no literal match, check for a matching qualified variable transition
-  if (x->tag < EXPR::APP)
-    for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++)
+  if (x->tag < EXPR::APP) {
+    for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++) {
       if (t->ttag == 0)
 	continue;
       else if (t->ttag == x->tag ||
@@ -288,6 +290,8 @@ state *matcher::match(state *st, pure_expr *x)
 	return t->st;
       else if (t->ttag < x->tag)
 	break;
+    }
+  }
   // still no match, use default transition if present
   if ((t = st->tr.begin()) != st->tr.end() &&
       t->tag == EXPR::VAR && t->ttag == 0)

@@ -3933,57 +3933,60 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     }
   }
   // load scripts specified on the command line
-  if (argv) for (; *argv; ++argv)
-    if (string(*argv).substr(0,2) == "-v") {
-      uint8_t level = 1;
-      string s = string(*argv).substr(2);
-      if (!s.empty()) level = (uint8_t)strtoul(s.c_str(), 0, 0);
-      interp.verbose = level;
-    } else if (*argv == string("-x")) {
-      if (*++argv) {
-	count++; interp.modname = *argv;
+  if (argv) {
+    for (; *argv; ++argv) {
+      if (string(*argv).substr(0,2) == "-v") {
+	uint8_t level = 1;
+	string s = string(*argv).substr(2);
+	if (!s.empty()) level = (uint8_t)strtoul(s.c_str(), 0, 0);
+	interp.verbose = level;
+      } else if (*argv == string("-x")) {
+	if (*++argv) {
+	  count++; interp.modname = *argv;
+	  try { interp.run(*argv, false); } catch (err &e) {
+	    cerr << "pure_create_interp: " << e.what() << endl;
+	    delete _interp;
+	    return 0;
+	  }
+	} else {
+	  cerr << "pure_create_interp: missing script name\n";
+	  delete _interp;
+	  return 0;
+	}
+	break;
+      } else if (*argv == string("--"))
+	break;
+      else if (string(*argv).substr(0,2) == "-o" ||
+	       string(*argv).substr(0,2) == "-l" ||
+	       string(*argv).substr(0,2) == "-I" ||
+	       string(*argv).substr(0,2) == "-L") {
+	string s = string(*argv).substr(2);
+	if (s.empty()) ++argv;
+      } else if (string(*argv).substr(0,8) == "--escape") {
+	string s = string(*argv).substr(8);
+	if (s.empty()) ++argv;
+      } else if (string(*argv).substr(0,8) == "--enable") {
+	string s = string(*argv).substr(8);
+	if (s.empty()) ++argv;
+      } else if (string(*argv).substr(0,9) == "--disable") {
+	string s = string(*argv).substr(9);
+	if (s.empty()) ++argv;
+      } else if (string(*argv).substr(0,6) == "--main") {
+	string s = string(*argv).substr(6);
+	if (s.empty()) ++argv;
+      } else if (**argv == '-')
+	;
+      else if (**argv) {
+	if (count++ == 0) interp.modname = *argv;
 	try { interp.run(*argv, false); } catch (err &e) {
 	  cerr << "pure_create_interp: " << e.what() << endl;
 	  delete _interp;
 	  return 0;
 	}
-      } else {
-	cerr << "pure_create_interp: missing script name\n";
-	delete _interp;
-	return 0;
+	if (!batch) break;
       }
-      break;
-    } else if (*argv == string("--"))
-      break;
-    else if (string(*argv).substr(0,2) == "-o" ||
-	     string(*argv).substr(0,2) == "-l" ||
-	     string(*argv).substr(0,2) == "-I" ||
-	     string(*argv).substr(0,2) == "-L") {
-      string s = string(*argv).substr(2);
-      if (s.empty()) ++argv;
-    } else if (string(*argv).substr(0,8) == "--escape") {
-      string s = string(*argv).substr(8);
-      if (s.empty()) ++argv;
-    } else if (string(*argv).substr(0,8) == "--enable") {
-      string s = string(*argv).substr(8);
-      if (s.empty()) ++argv;
-    } else if (string(*argv).substr(0,9) == "--disable") {
-      string s = string(*argv).substr(9);
-      if (s.empty()) ++argv;
-    } else if (string(*argv).substr(0,6) == "--main") {
-      string s = string(*argv).substr(6);
-      if (s.empty()) ++argv;
-    } else if (**argv == '-')
-      ;
-    else if (**argv) {
-      if (count++ == 0) interp.modname = *argv;
-      try { interp.run(*argv, false); } catch (err &e) {
-	cerr << "pure_create_interp: " << e.what() << endl;
-	delete _interp;
-	return 0;
-      }
-      if (!batch) break;
     }
+  }
   interp.symtab.init_builtins();
   interp.temp = 1;
   interp.modno = interp.modctr++;
