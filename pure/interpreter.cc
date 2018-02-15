@@ -11025,10 +11025,17 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 #endif
 #endif
     if (!llcopts.empty()) llcopts += " ";
+#if defined(__MINGW32__) && LLVM35
+    // LLVM 3.5 opt seems broken on msys2/mingw, so we have to do without it
+    string cmd = llc+" "+llcopts+custom_opts+
+      string(pic?"-relocation-model=pic ":"")+quote(target)+
+      " -o "+quote(asmfile);
+#else
     string cmd = opt+" -f -std-compile-opts "+quote(target)+
       " | "+llc+" "+llcopts+custom_opts+
       string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
+#endif
     if (vflag) std::cerr << cmd << '\n';
     unlink(asmfile.c_str());
     int status = system(cmd.c_str());
