@@ -2161,7 +2161,9 @@ extern int pure_register_class(const char *name, pure_interp *interp,
 
 /* Loader setup. */
 
-#ifndef WIN32
+#ifdef WIN32
+#include <windows.h>
+#else
 #define __USE_GNU // to get RTLD_DEFAULT
 #include <dlfcn.h> // for dlsym
 #ifndef RTLD_DEFAULT
@@ -2235,13 +2237,14 @@ extern void pure_setup(void)
     restore_sym = pure_sym("pd_restore");
     varargs_sym = pure_sym("varargs");
 #if PD_MENU_COMMANDS
-#ifndef WIN32
-    /* nw.js support (currently only supported on Linux and Mac). XXXTODO:
-       Make this work on Windows as well. */
+    /* nw.js support. */
+#ifdef WIN32
+    nw_gui_vmess = (void*)GetProcAddress(GetModuleHandle("pd.dll"), "gui_vmess");
+#else
     nw_gui_vmess = dlsym(RTLD_DEFAULT, "gui_vmess");
+#endif
     if (nw_gui_vmess)
       post("pd-pure: using JavaScript interface (Pd-l2ork nw.js version)");
-#endif
 #endif
 #ifdef VERBOSE
     post("pd-pure: adding '%s' to include path", buf);
