@@ -26,13 +26,8 @@ MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 # Compilation options to link with XML/XSLT.
-ifeq ($(DLL),.dll)
-XMLLIBS = -lxslt -lxml2
-XMLFLAGS = 
-else
 XMLLIBS = $(shell xml2-config --libs) $(shell xslt-config --libs)
 XMLFLAGS = $(shell xml2-config --cflags)
-endif
 
 MOD_CFLAGS += $(XMLFLAGS)
 MOD_LDFLAGS += $(XMLLIBS)

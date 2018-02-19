@@ -3,25 +3,11 @@
 dist = pure-doc-$(version)
 version = 0.7
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
+# platform-specific setup
 
-# Installation goes into $(bindir) and $(datadir), you can also set this
-# directly instead of $(prefix).
-bindir = $(prefix)/bin
-libdir = $(prefix)/lib
-datadir = $(libdir)/pure
-
-# Try to guess the host system type and do platform-specific setup.
-host = $(shell ./config.guess)
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-endif
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
 
 DISTFILES = COPYING Makefile README config.guess fixdoc pure-doc.ll pure-doc.cc debian/*
 SEDFILES = README
@@ -34,13 +20,12 @@ pure-doc.cc: pure-doc.ll
 	flex -o $@ $<
 
 clean:
-	rm -f pure-doc$(EXE)
+	rm -f pure-doc
 
 realclean: clean
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
-	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
 	cp pure-doc "$(DESTDIR)$(bindir)"
 
 uninstall:

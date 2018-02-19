@@ -3,13 +3,6 @@
 dist = pure-gen-$(version)
 version = 0.20
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
-
 # Installation goes into the following directories. You can also set these
 # directly instead of $(prefix). In addition, packagers may want to set the
 # DESTDIR variable for a staged install.
@@ -21,11 +14,19 @@ endif
 # Alternatively, you can also set the DUMP_AST shell environment variable at
 # runtime to tell pure-gen about the right path to the dump-ast executable.
 
+prefix = $(shell pkg-config pure --variable prefix)
 bindir = $(prefix)/bin
-libdir = $(prefix)/lib
+libdir = $(shell pkg-config pure --variable libdir)
+
 pkgdatadir = $(libdir)/pure-gen
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
+
+# NB: The latest Haskell systems (on Arch at least) don't use static libraries
+# any more, while ghc still wants to link these by default, we work around
+# that by adding the -dynamic option to the GHCFLAGS below. If that option
+# seems to cause trouble, just comment out the following line.
+GHCDYN = -dynamic
 
 # Try to guess the host system type and do platform-specific setup.
 host = $(shell ./config.guess)
@@ -33,6 +34,7 @@ gcc = gcc
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
+GHCDYN =
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX: Try to find a suitable gcc version to be used as the C preprocessor.
@@ -71,13 +73,8 @@ pure-gen: pure-gen.pure
 # NB: If you're still running a really old language-c version like 0.3, then
 # try compiling dump-ast-old.hs instead, it might work.
 
-# NB: The latest Haskell systems (on Arch at least) don't use static libraries
-# any more, while ghc still wants to link these by default, we work around
-# that by adding the -dynamic option to the GHCFLAGS below. If that option
-# seems to cause trouble, just remove it.
-
 # These options work around quirks with various ghc versions.
-GHCFLAGS = -XTypeSynonymInstances -XFlexibleInstances -dynamic
+GHCFLAGS = -XTypeSynonymInstances -XFlexibleInstances $(GHCDYN)
 dump-ast: dump-ast.hs dump-ast-old.hs
 	ghc $(GHCFLAGS) --make $< -o $@ || \
 	ghc $(GHCFLAGS) --make dump-ast-old.hs -o $@
