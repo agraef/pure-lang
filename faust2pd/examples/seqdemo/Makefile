@@ -6,7 +6,12 @@ host = $(shell ../../config.guess)
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+EXTRA_CFLAGS += -I/usr/local/include
+ifneq "$(wildcard /c/Program*/Pd/bin/pd.dll)" ""
+PDLIB = "$(wildcard /c/Program*/Pd/bin/pd.dll)"
+else
 PDLIB = -Wl,--enable-auto-import -lpd
+endif
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX

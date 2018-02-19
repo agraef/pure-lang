@@ -23,6 +23,14 @@ host = $(shell ./config.guess)
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
+ifneq "$(wildcard /c/Program*/Pd/src/m_pd.h)" ""
+# Special case: Vanilla Pd on Windows. This assumes an existing Pd
+# installation in the "Program Files" folder. Note that installing directly
+# into $(pdlibdir) will fail (permission problem), thus you'll have to install
+# into a staging directgory instead (using DESTDIR) and then manually copy
+# files over.
+datadir = "$(wildcard /c/Program*/Pd/extra)"
+endif
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
