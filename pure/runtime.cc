@@ -6094,7 +6094,7 @@ void pure_throw(pure_expr* e)
 Your Pure program has died with an unhandled exception. Running the program\n\
 with the debugger (pure -g) may provide additional information.\n\n\
 For further help and information about Pure please try the 'help' command in\n\
-the interpreter or visit http://purelang.bitbucket.org.\n\n";
+the interpreter or visit https://agraef.github.io/pure-lang.\n\n";
     abort(); // no exception handler, bail out
   } else {
     interp.astk->e = e;
