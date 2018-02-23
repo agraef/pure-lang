@@ -527,7 +527,10 @@ main(int argc, char *argv[])
   int count = 0;
   bool batch = false, quiet = false, spiffy = true, force_interactive = false,
     want_prelude = true, have_prelude = false,
-    want_rcfile = true, want_editing = true;
+    want_rcfile = true;
+#ifdef HAVE_LIBREADLINE
+  bool want_editing = true;
+#endif
   string rcfile;
 #ifdef __MINGW32__
   string outname = "a.exe";
@@ -625,7 +628,11 @@ main(int argc, char *argv[])
       else if (strcmp(arg, "--norc") == 0)
 	want_rcfile = false;
       else if (strcmp(arg, "--noediting") == 0)
+#ifdef HAVE_LIBREADLINE
 	want_editing = false;
+#else
+        ;
+#endif
       else if (strcmp(arg, "--nosymbolic") == 0)
 	interp.symbolic = false;
       else if (strcmp(arg, "--symbolic") == 0)
