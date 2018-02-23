@@ -83,6 +83,12 @@ typedef std::complex<double> Complex;
 #undef longjmp
 #define setjmp  _setjmp
 #define longjmp  _longjmp
+#elif defined(__MINGW64__)
+// setjmp/longjmp crash with mingw64, use gcc builtins instead
+#undef setjmp
+#undef longjmp
+#define setjmp  __builtin_setjmp
+#define longjmp  __builtin_longjmp
 #endif
 
 /* Implement the basic GSL-like operations on the matrix types that we need.
