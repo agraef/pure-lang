@@ -485,9 +485,15 @@ execvp prog::string argv::rlist = execvp prog (smatrix argv);
 execve prog::string argv::rlist envp::rlist =
   execve prog (smatrix argv) (smatrix envp);
 
+#! --if x86_64-w64-mingw32
+extern int64 spawnv(int mode, char *prog, char **argv);
+extern int64 spawnvp(int mode, char *prog, char **argv);
+extern int64 spawnve(int mode, char *prog, char **argv, char **envp);
+#! --else
 extern int spawnv(int mode, char *prog, char **argv);
 extern int spawnvp(int mode, char *prog, char **argv);
 extern int spawnve(int mode, char *prog, char **argv, char **envp);
+#! --endif
 
 spawnv mode::int prog::string argv::rlist = spawnv mode prog (smatrix argv);
 spawnvp mode::int prog::string argv::rlist = spawnvp mode prog (smatrix argv);

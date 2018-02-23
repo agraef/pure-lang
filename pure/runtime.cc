@@ -13207,6 +13207,27 @@ int execve(const char* prog, char* const argv[], char* const envp[])
   return _execve(prog, argv, envp);
 }
 
+#ifdef __MINGW64__
+// for reasons unknown to mankind, these return intptr_t instead of an int
+extern "C"
+intptr_t spawnv(int mode, const char* prog, char* const argv[])
+{
+  return _spawnv(mode, prog, argv);
+}
+
+extern "C"
+intptr_t spawnvp(int mode, const char* prog, char* const argv[])
+{
+  return _spawnvp(mode, prog, argv);
+}
+
+extern "C"
+intptr_t spawnve(int mode, const char* prog, char* const argv[],
+	    char* const envp[])
+{
+  return _spawnve(mode, prog, argv, envp);
+}
+#else
 extern "C"
 int spawnv(int mode, const char* prog, char* const argv[])
 {
@@ -13225,6 +13246,7 @@ int spawnve(int mode, const char* prog, char* const argv[],
 {
   return _spawnve(mode, prog, argv, envp);
 }
+#endif
 
 #undef fileno
 
