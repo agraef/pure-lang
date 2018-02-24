@@ -25,7 +25,7 @@ DISTFILES = COPYING Makefile README g2.pure g2_*.pure penguin.pure debian/* g2-0
 SEDFILES = README
 
 %: %.pure
-	pure -L$(g2libdir) -c $^ -o $@
+	pure -L$(g2libdir) -c $^ -o $@ -fPIC
 
 examples = g2_test g2_life
 
