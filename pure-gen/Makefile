@@ -144,4 +144,4 @@ deb: $(debsrc) dist
 	rm -rf $(dist)
 
 $(debsrc):
-	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
+	wget -nv https://github.com/agraef/pure-lang/releases/download/pure-gen-$(version)/$(dist).tar.gz -O $@
