@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gen-$(version)
-version = 0.20
+version = 0.21
 
 # Installation goes into the following directories. You can also set these
 # directly instead of $(prefix). In addition, packagers may want to set the
@@ -23,10 +23,12 @@ mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
 # NB: The latest Haskell systems (on Arch at least) don't use static libraries
-# any more, while ghc still wants to link these by default, we work around
+# any more, while ghc still wants to link these by default. We work around
 # that by adding the -dynamic option to the GHCFLAGS below. If that option
-# seems to cause trouble, just comment out the following line.
+# seems to cause trouble, just comment out the following line. Or uncomment
+# the second line to enforce static linking.
 GHCDYN = -dynamic
+#GHCDYN = -static
 
 # Try to guess the host system type and do platform-specific setup.
 host = $(shell ./config.guess)
@@ -70,11 +72,10 @@ pure-gen: pure-gen.pure
 # the library. (If you can figure out which changes are needed in dump-ast to
 # compile against the latest version, please let me know!)
 
-# If language-c 0.4 .. 0.5 is not readily available for your system, you can
-# run this to install language-c-0.5.0 locally using cabal.
+# If a suitable language-c version is not readily available, you can run this
+# to install the included language-c 0.5.0 locally using cabal.
 cabal-install:
-	cabal update
-	cabal install language-c-0.5.0
+	cd language-c && cabal install
 
 # NB: If you're still running a really old language-c version like 0.3, then
 # try compiling dump-ast-old.hs instead, it might work.
@@ -84,6 +85,19 @@ GHCFLAGS = -XTypeSynonymInstances -XFlexibleInstances $(GHCDYN)
 dump-ast: dump-ast.hs dump-ast-old.hs
 	ghc $(GHCFLAGS) --make $< -o $@ || \
 	ghc $(GHCFLAGS) --make dump-ast-old.hs -o $@
+
+# Alternative self-contained static build using included language-c source, to
+# make things easier for package maintainers. This requires that your ghc
+# supports static linkage.
+maintainer-build:
+# Install locally into the build directory.
+	cd language-c && HOME=$(shell pwd)/cabal cabal install
+# Make sure to do a static build here, since the cabal-installed language-c
+# will be gone once we're finished.
+	$(MAKE) GHCDYN=-static HOME=$(shell pwd)/cabal
+# Clean up.
+	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
+	rm -rf cabal
 
 # Minimal test suite:
 
