@@ -97,7 +97,7 @@ maintainer-build:
 	$(MAKE) GHCDYN=-static HOME=$(shell pwd)/cabal
 # Clean up.
 	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
-	rm -rf cabal
+	rm -rf cabal language-c/dist
 
 # Minimal test suite:
 
@@ -106,6 +106,7 @@ check:
 
 clean:
 	rm -f pure-gen$(EXE) dump-ast$(EXE) *~ *.hi *.o
+	rm -rf cabal language-c/dist
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
@@ -127,6 +128,7 @@ dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/language-c
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	rm -f $(dist)/language-c/dist
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
