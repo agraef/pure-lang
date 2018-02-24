@@ -70,6 +70,12 @@ pure-gen: pure-gen.pure
 # the library. (If you can figure out which changes are needed in dump-ast to
 # compile against the latest version, please let me know!)
 
+# If language-c 0.4 .. 0.5 is not readily available for your system, you can
+# run this to install language-c-0.5.0 locally using cabal.
+cabal-install:
+	cabal update
+	cabal install language-c-0.5.0
+
 # NB: If you're still running a really old language-c version like 0.3, then
 # try compiling dump-ast-old.hs instead, it might work.
 
