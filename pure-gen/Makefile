@@ -22,13 +22,13 @@ pkgdatadir = $(libdir)/pure-gen
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
-# NB: The latest Haskell systems (on Arch at least) don't use static libraries
-# any more, while ghc still wants to link these by default. We work around
-# that by adding the -dynamic option to the GHCFLAGS below. If that option
-# seems to cause trouble, just comment out the following line. Or uncomment
-# the second line to enforce static linking.
-GHCDYN = -dynamic
-#GHCDYN = -static
+# Set GHCFLAGS to whatever additional ghc compilation flags are required on
+# your platform. In particular, you'll want to set the linkage type to either
+# -dynamic or -static, or leave it empty for the default (usually -static).
+# Note that some systems (Arch) only ship with dynamic Haskell libraries these
+# days. (But see below for static linkage on Arch.)
+GHCFLAGS = -dynamic
+#GHCFLAGS = -static
 
 # Try to guess the host system type and do platform-specific setup.
 host = $(shell ./config.guess)
@@ -36,7 +36,8 @@ gcc = gcc
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
-GHCDYN =
+# Windows uses the official packages which use static linking by default.
+GHCFLAGS =
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX: Try to find a suitable gcc version to be used as the C preprocessor.
@@ -75,26 +76,33 @@ pure-gen: pure-gen.pure
 # If a suitable language-c version is not readily available, you can run this
 # to install the included language-c 0.5.0 locally using cabal.
 cabal-install:
-	cd language-c && cabal install
+	cd language-c && cabal update && cabal install
+
+# These options work around quirks with various ghc versions.
+GHCXFLAGS += -XTypeSynonymInstances -XFlexibleInstances
+dump-ast: dump-ast.hs
+	ghc $(GHCFLAGS) $(GHCXFLAGS) --make $< -o $@
 
 # NB: If you're still running a really old language-c version like 0.3, then
 # try compiling dump-ast-old.hs instead, it might work.
 
-# These options work around quirks with various ghc versions.
-GHCFLAGS = -XTypeSynonymInstances -XFlexibleInstances $(GHCDYN)
-dump-ast: dump-ast.hs dump-ast-old.hs
-	ghc $(GHCFLAGS) --make $< -o $@ || \
-	ghc $(GHCFLAGS) --make dump-ast-old.hs -o $@
+# dump-ast: dump-ast.hs dump-ast-old.hs
+# 	ghc $(GHCFLAGS) $(GHCXFLAGS) --make $< -o $@ || \
+# 	ghc $(GHCFLAGS) $(GHCXFLAGS) --make dump-ast-old.hs -o $@
 
-# Alternative self-contained static build using included language-c source, to
-# make things easier for package maintainers. This requires that your ghc
-# supports static linkage.
+# Alternative self-contained static build using the included language-c
+# source, to make things easier for package maintainers. This requires that
+# your ghc supports static linkage. NOTE: On Arch you'll have to install
+# ghc-static and ghc-pristine (AUR) and make sure that
+# /usr/share/ghc-pristine/bin comes first on PATH to make this work.
+# Cf. https://wiki.archlinux.org/index.php/haskell#Static_linking.
+
 maintainer-build:
 # Install locally into the build directory.
-	cd language-c && HOME=$(shell pwd)/cabal cabal install
+	cd language-c && HOME=$(shell pwd)/cabal cabal update && HOME=$(shell pwd)/cabal cabal install
 # Make sure to do a static build here, since the cabal-installed language-c
 # will be gone once we're finished.
-	$(MAKE) GHCDYN=-static HOME=$(shell pwd)/cabal
+	$(MAKE) GHCFLAGS=-static HOME=$(shell pwd)/cabal
 # Clean up.
 	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
 	rm -rf cabal language-c/dist
