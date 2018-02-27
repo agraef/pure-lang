@@ -55,19 +55,19 @@ vtkRenderWindow renWin
   ren1 AddActor world
   ren1 SetBackground .1 .2 .4
 
-# Here comes the tricky part. On Linux/X11 we want to embed the rendering
-# window inside a Tk toplevel, using vtkTkRenderWidget, so that the event
-# processing of the default interactor works. Unfortunately, vtkTkRenderWidget
-# doesn't always work if we aren't running X11 (crashes on Windows, and isn't
-# embeddable in Gnocl on the Mac), so we use a vtkRenderWindowInteractor on
-# other systems instead.
+# Here comes the tricky part. On both Linux and Mac it is possible to embed
+# the rendering window inside a Tk toplevel, using vtkTkRenderWidget. This has
+# the advantage that we have full control over the window from Tk, and on
+# Linux it is needed to make the event processing of the render widget work.
+# OTOH, vtkTkRenderWidget crashes on Windows, so we have to use a generic
+# vtkRenderWindowInteractor there instead.
 
 set os [lindex [array get tcl_platform os] 1]
 if {$os != "Windows NT"} {
 
 # Note that we pop up the rendering window inside a separate toplevel here,
-# but in principle it could also be embedded in the main toplevel with the
-# control panel.
+# but in principle it could also be embedded in the main toplevel with our
+# custom GUI, see below. (This doesn't work with Gnocl on the Mac, though.)
 toplevel .vtkw
 wm protocol .vtkw WM_DELETE_WINDOW ::vtk::cb_exit
 wm title .vtkw {VTK Window}
