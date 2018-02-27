@@ -63,7 +63,7 @@ vtkRenderWindow renWin
 # other systems instead.
 
 set os [lindex [array get tcl_platform os] 1]
-if {$os == "Linux"} {
+if {$os != "Windows NT"} {
 
 # Note that we pop up the rendering window inside a separate toplevel here,
 # but in principle it could also be embedded in the main toplevel with the
