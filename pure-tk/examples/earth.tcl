@@ -10,9 +10,9 @@ package require vtkinteraction
 
 # If you have Gnocl installed (http://www.gnocl.org/) then you'll get a
 # somewhat fancier GTK+ GUI, otherwise you'll have to be content with plain
-# Tk. Set GTK to 0 below if you always want the Tk GUI anyway.
+# Tk. Set GTK to 0 if you always want the Tk GUI anyway.
 
-set GTK 1
+if [expr ![info exists GTK]] {set GTK 1}
 if {$GTK && [catch {package require Gnocl}]} { set GTK 0 }
 
 wm withdraw .
@@ -55,17 +55,39 @@ vtkRenderWindow renWin
   ren1 AddActor world
   ren1 SetBackground .1 .2 .4
 
+# Here comes the tricky part. On Linux/X11 we want to embed the rendering
+# window inside a Tk toplevel, using vtkTkRenderWidget, so that the event
+# processing of the default interactor works. Unfortunately, vtkTkRenderWidget
+# doesn't always work if we aren't running X11 (crashes on Windows, and isn't
+# embeddable in Gnocl on the Mac), so we use a vtkRenderWindowInteractor on
+# other systems instead.
+
+set os [lindex [array get tcl_platform os] 1]
+if {$os == "Linux"} {
+
+# Note that we pop up the rendering window inside a separate toplevel here,
+# but in principle it could also be embedded in the main toplevel with the
+# control panel.
+toplevel .vtkw
+wm protocol .vtkw WM_DELETE_WINDOW ::vtk::cb_exit
+wm title .vtkw {VTK Window}
+vtkTkRenderWidget .vtkw.ren -width 400 -height 400 -rw renWin; pack .vtkw.ren
+::vtk::bind_tk_render_widget .vtkw.ren
+
+} else {
+
+# This always pops up in its own window.
 vtkRenderWindowInteractor iren
   iren SetRenderWindow renWin
 
-# Here's how you'd create an embedded rendering window. This only seems to
-# work on Linux/X11, however, so this has been removed for the sake of
-# cross-platform compatibility.
+}
 
-# vtkTkRenderWidget .ren -width 400 -height 400 -rw renWin; pack .ren
-# ::vtk::bind_tk_render_widget .ren
-
-# Supply a minimal GUI.
+# Supply a main window with a little GUI. This is just a control panel with
+# some buttons to switch interaction and rendering modes, and a quit button to
+# exit the program. Note that you can also switch these modes by typing the
+# appropriate keyboard commands directly in the rendering window: w/s switches
+# between wireframe and solid rendering, t/j between trackball and joystick
+# interaction.
 
 if {!$GTK} {
 
@@ -86,20 +108,19 @@ wm protocol . WM_DELETE_WINDOW ::vtk::cb_exit
 wm title . Earth
 
 # Set some reasonable minimum window size.
-wm minsize . 400 [winfo reqheight .box.quit]
+#wm minsize . 400 [winfo reqheight .box.quit]
 
-# Show the main window.
+# Show the main window. Also enforce that it's topmost so that it doesn't get
+# obscured by the render window.
 wm deiconify .
-
-# Render the image. VTK will create this in its own toplevel.
-renWin Render
+wm attributes . -topmost 1
 
 } else {
 
 # GTK+ GUI. This requires Gnocl.
 
 set box [gnocl::box -orientation vertical -borderWidth 0]
-set top [gnocl::window -title Earth -width 400 -height 30 -child $box \
+set top [gnocl::window -title Earth -child $box -keepAbove 1 \
 	     -onDestroy ::vtk::cb_exit]
 set bbox [gnocl::box -buttonType 1 -borderWidth 0]
 $bbox add [gnocl::checkButton -text Rotate -variable rotate \
@@ -112,7 +133,7 @@ $bbox add [gnocl::button -text %#Quit -onClicked ::vtk::cb_exit]
 $box add $bbox
 gnocl::update
 
-# Render the image. VTK will create this in its own toplevel.
-renWin Render
-
 }
+
+# Render the image.
+renWin Render

@@ -49,8 +49,12 @@ renWin Render" (if val v then "Wireframe" else "Surface");
 interactor_cb v = tk $ sprintf "[[renWin GetInteractor] GetInteractorStyle] \
 SetCurrentStyleTo%sCamera" (if val v then "Trackball" else "Joystick");
 
-/* The main program: execute the Tcl script and enter the main loop. */
+/* The main program: execute the Tcl script and enter the main loop. You can
+   also specify the -tk command line option to enforce a Tk GUI even if Gnocl
+   is present. */
 
-main = tk earth $$ tk_main;
+main = tk earth $$ tk_main when
+  argc < 2 || tk (sprintf "set GTK %d" (argv!1 ~= "-tk"));
+end;
 
 if compiling then () else main;
