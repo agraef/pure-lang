@@ -108,19 +108,18 @@ wm protocol . WM_DELETE_WINDOW ::vtk::cb_exit
 wm title . Earth
 
 # Set some reasonable minimum window size.
-#wm minsize . 400 [winfo reqheight .box.quit]
+wm minsize . 400 [winfo reqheight .box.quit]
 
-# Show the main window. Also enforce that it's topmost so that it doesn't get
-# obscured by the render window.
+# Show the main window.
 wm deiconify .
-wm attributes . -topmost 1
+#wm attributes . -topmost 1
 
 } else {
 
 # GTK+ GUI. This requires Gnocl.
 
 set box [gnocl::box -orientation vertical -borderWidth 0]
-set top [gnocl::window -title Earth -child $box -keepAbove 1 \
+set top [gnocl::window -title Earth -width 400 -height 30 -child $box \
 	     -onDestroy ::vtk::cb_exit]
 set bbox [gnocl::box -buttonType 1 -borderWidth 0]
 $bbox add [gnocl::checkButton -text Rotate -variable rotate \
