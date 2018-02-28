@@ -17,7 +17,7 @@
 ;; Configurable items. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Convenient keybindings. In particular, the toggle-session-math-input
-;; binding (Ctrl+$ by default) provides a quick way to toggle between
+;; binding (Ctrl+Shift+M by default) provides a quick way to toggle between
 ;; program/verbatim and math mode on the session input line.
 
 (define pure-keymap
