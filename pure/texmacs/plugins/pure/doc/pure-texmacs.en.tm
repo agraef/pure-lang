@@ -1,11 +1,11 @@
-<TeXmacs|1.0.7.17>
+<TeXmacs|1.99.5>
 
-<style|<tuple|tmdoc|varsession>>
+<style|<tuple|tmdoc|framed-session|american>>
 
 <\body>
   <doc-data|<doc-title|The Pure <TeXmacs>
-  Plugin>|<doc-author-data|<author-name|Albert
-  Gräf>|<author-email|dr.graef@t-online.de>|<author-homepage|http://pure-lang.googlecode.com/>>|<doc-date|<date>>>
+  Plugin>|<doc-author|<author-data|<author-name|Albert
+  Gräf>|<author-email|dr.graef@t-online.de>|<author-homepage|http://pure-lang.googlecode.com/>>>|<doc-date|<date>>>
 
   <\table-of-contents|toc>
     <vspace*|1fn><with|font-series|bold|math-font-series|bold|1.<space|2spc>About
@@ -126,8 +126,8 @@
   verbatim Pure code, they are <em|real interactions> with the Pure
   interpreter, so you can rerun the calculations or enter your own code. By
   these means you can use <TeXmacs> as a frontend for the Pure interpreter;
-  please check the <TeXmacs> documentation, section ``<TeXmacs> \ as an
-  interface'', for details. To make this work, you'll have to install the
+  please check the <TeXmacs> documentation, section \P<TeXmacs> \ as an
+  interface\Q, for details. To make this work, you'll have to install the
   plugin first so that <TeXmacs> knows about it; instructions for that can be
   found in the <hlink|Pure installation instructions|http://docs.pure-lang.googlecode.com/hg/install.html#texmacs-mode>.
   The distributed configuration actually defines various different types of
@@ -139,7 +139,7 @@
   also possible to globally override formatting options such as the color of
   prompts, input and output fields, by defining the <verbatim|pure-input> and
   <verbatim|pure-output> macros accordingly; see the <TeXmacs> manual,
-  section ``Writing <TeXmacs> style files'', for details. An example can be
+  section \PWriting <TeXmacs> style files\Q, for details. An example can be
   found in the accompanying <verbatim|pure-session-styles.ts> file; install
   this in your <verbatim|~/.TeXmacs/packages> directory if you want to give
   it a try.
@@ -175,9 +175,9 @@
       fact n = if n\<gtr\>0 then n*fact (n-1) else 1;
     </input>
 
-    <\unfolded>
+    <\unfolded-subsession>
       This is a subsession.
-    <|unfolded>
+    <|unfolded-subsession>
       <\unfolded-io>
         \<gtr\>\ 
       <|unfolded-io>
@@ -200,7 +200,7 @@
       <|input>
         \;
       </input>
-    </unfolded>
+    </unfolded-subsession>
 
     <\unfolded-io>
       \<gtr\>\ 
@@ -382,7 +382,7 @@
   in the right directory (by invoking it from the command line), or change
   the working directory manually inside the Pure session. To help with the
   latter, the <TeXmacs>-hosted interpreter offers a special <verbatim|cdd>
-  (``current document directory'') command:
+  (\Pcurrent document directory\Q) command:
 
   <\session|pure|default>
     <\unfolded-io>
@@ -512,12 +512,12 @@
 
   <\itemize>
     <item>To use math <em|input>, you can toggle the input line between math
-    and program (verbatim) mode using the <key|Ctrl+$> key combination. This
-    isn't a standard <TeXmacs> keybinding, but is defined at the beginning of
-    the <verbatim|pure-init.scm> script for your convenience; you can edit
-    the script to change this according to your preferences. Of course, you
-    can also use the corresponding <samp|Focus \| Input options \|
-    Mathematical input> menu option or the equivalent toolbar item; these
+    and program (verbatim) mode using the <key|Ctrl+Shift+M> key combination.
+    This isn't a standard <TeXmacs> keybinding, but is defined at the
+    beginning of the <verbatim|pure-init.scm> script for your convenience;
+    you can edit the script to change this according to your preferences. Of
+    course, you can also use the corresponding <samp|Focus \| Input options
+    \| Mathematical input> menu option or the equivalent toolbar item; these
     become visible when the cursor is located at the input line. Or you can
     make math input the default by putting the following Scheme command into
     your <verbatim|my-init-texmacs.scm> file:
@@ -629,8 +629,8 @@
   To enter an expression like the one above as a mathematical formula, we
   must first switch the input line to <em|math input mode>. To do that, you
   can go search the toolbar for <samp|Input Options \| Mathematical Input>
-  and check it, or type the key combination <key|Ctrl $> defined by the Pure
-  plugin. Another useful convenience is the <verbatim|?> prefix operator
+  and check it, or type the key combination <key|Ctrl+Shift+M> defined by the
+  Pure plugin. Another useful convenience is the <verbatim|?> prefix operator
   (defined in <verbatim|texmacs.pure>) which simplifies its expression
   argument, which is quoted automagically. Here's how the expression
   <verbatim|? df (sin (x^2)) x)> looks like when typed in math input mode:
@@ -902,7 +902,7 @@
   Most mathematical expressions are mapped to corresponding Pure expressions
   in a sensible way. We start out by declaring a few additional operators to
   be used below, so that they are known to Reduce. (This isn't strictly
-  necessary, but silences the ``<verbatim|declared operator>'' messages from
+  necessary, but silences the \P<verbatim|declared operator>\Q messages from
   Reduce.)
 
   <\session|pure|math>
@@ -2101,7 +2101,7 @@
     </unfolded-io-math>
   </session>
 
-  As we already saw in the prime sieve example, Pure can deal with ``lazy''
+  As we already saw in the prime sieve example, Pure can deal with \Plazy\Q
   lists (called <em|streams> in functional programming parlance) just fine.
   So let's be bold and just define the infinite stream of <em|all> rows of
   the Pascal triangle. This is easily done with a nested list comprehension
@@ -2361,14 +2361,14 @@
     </input>
   </session>
 
-  Note that for <TeXmacs> the ``<math|<around*|(|2*k-1|)> <math-bf|when >n>''
+  Note that for <TeXmacs> the \P<math|<around*|(|2*k-1|)> <math-bf|when >n>\Q
   part looks like any other ordinary term belonging under the product on the
   right, which is followed by an equals sign and another term
-  ``<math|5<math-bf| end>>''. This makes perfect sense for <TeXmacs>, but
+  \P<math|5<math-bf| end>>\Q. This makes perfect sense for <TeXmacs>, but
   it's not valid Pure syntax. This wouldn't normally be a problem (Pure would
   be able to reparse the expression correctly anyway), if it wasn't for the
   <math|<big|prod>>operator which translates to a Pure list comprehension. So
-  the ``<math|<around*|(|2*k-1|)> <math-bf|when >n>'' part ended up in this
+  the \P<math|<around*|(|2*k-1|)> <math-bf|when >n>\Q part ended up in this
   list comprehension where it doesn't belong, hence the somewhat surprising
   syntax error.
 
@@ -2641,7 +2641,7 @@
   output; this is what we use here). This enables a few additional options in
   the <samp|Pure> plugin menu, as well as the <samp|Insert \| Link> menu and
   the corresponding toolbar button. These facilities are described in more
-  detail at the end of the ``<TeXmacs> \ as an interface'' section in the
+  detail at the end of the \P<TeXmacs> \ as an interface\Q section in the
   <TeXmacs> online help, so we only give a few basic examples here.
 
   For instance, you can just select any valid Pure expression in the text and
@@ -2742,7 +2742,6 @@
 <\initial>
   <\collection>
     <associate|font-base-size|10>
-    <associate|language|american>
     <associate|page-medium|paper>
     <associate|page-type|a4>
     <associate|par-hyphen|normal>

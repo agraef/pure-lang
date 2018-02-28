@@ -1,6 +1,6 @@
-<TeXmacs|1.0.7.17>
+<TeXmacs|1.99.5>
 
-<style|<tuple|tmdoc|varsession>>
+<style|<tuple|tmdoc|framed-session|american>>
 
 <\body>
   <section|Pure Sessions>
@@ -58,8 +58,8 @@
   verbatim Pure code, they are <em|real interactions> with the Pure
   interpreter, so you can rerun the calculations or enter your own code. By
   these means you can use <TeXmacs> as a frontend for the Pure interpreter;
-  please check the <TeXmacs> documentation, section ``<TeXmacs> \ as an
-  interface'', for details. To make this work, you'll have to install the
+  please check the <TeXmacs> documentation, section \P<TeXmacs> \ as an
+  interface\Q, for details. To make this work, you'll have to install the
   plugin first so that <TeXmacs> knows about it; instructions for that can be
   found in the <hlink|Pure installation instructions|http://puredocs.bitbucket.org/install.html#texmacs-mode>.
   The distributed configuration actually defines various different types of
@@ -218,7 +218,7 @@
   in the right directory (by invoking it from the command line), or change
   the working directory manually inside the Pure session. To help with the
   latter, the <TeXmacs>-hosted interpreter offers a special <verbatim|cdd>
-  (``current document directory'') command:
+  (\Pcurrent document directory\Q) command:
 
   <\session|pure|default>
     <\unfolded-io>
@@ -302,12 +302,12 @@
 
   <\itemize>
     <item>To use math <em|input>, you can toggle the input line between math
-    and program (verbatim) mode using the <key|Ctrl+$> key combination. This
-    isn't a standard <TeXmacs> keybinding, but is defined at the beginning of
-    the <verbatim|pure-init.scm> script for your convenience; you can edit
-    the script to change this according to your preferences. Of course, you
-    can also use the corresponding <samp|Focus \| Input options \|
-    Mathematical input> menu option or the equivalent toolbar item; these
+    and program (verbatim) mode using the <key|Ctrl+Shift+M> key combination.
+    This isn't a standard <TeXmacs> keybinding, but is defined at the
+    beginning of the <verbatim|pure-init.scm> script for your convenience;
+    you can edit the script to change this according to your preferences. Of
+    course, you can also use the corresponding <samp|Focus \| Input options
+    \| Mathematical input> menu option or the equivalent toolbar item; these
     become visible when the cursor is located at the input line. Or you can
     make math input the default by putting the following Scheme command into
     your <verbatim|my-init-texmacs.scm> file:
@@ -376,7 +376,7 @@
     key will enter a special <TeXmacs> command, but you can escape the
     backslash character as follows: <key|Shift+F5 \\>. For instance (note
     that to type the right arrow, you just enter <key|- \<gtr\>>; likewise,
-    the <key|..> operator shows as a ``<math|\<ldots\>>'' symbol in math
+    the <key|..> operator shows as a \P<math|\<ldots\>>\Q symbol in math
     input):
 
     <\session|pure|reduce>
@@ -397,8 +397,8 @@
       </unfolded-io-math>
     </session>
 
-    <item>The key combination <key|, Tab Tab> produces an ``invisible
-    comma''. This is useful, in particular, to enter matrix subscripts in
+    <item>The key combination <key|, Tab Tab> produces an \Pinvisible
+    comma\Q. This is useful, in particular, to enter matrix subscripts in
     Pure, such as:
 
     <\session|pure|reduce>
@@ -422,7 +422,7 @@
 
     <item>Matrices, sub- and superscripts (<key|_> and <key|^>) and the usual
     arithmetic and logical operators will work in Pure. In particular, note
-    that <key|*> will by default produce an ``invisible multiplication'' in
+    that <key|*> will by default produce an \Pinvisible multiplication\Q in
     <TeXmacs> which will be interpreted correctly in Pure, but you can also
     enter a visible multiplication instead (type <key|*> and then repeat
     <key|Tab> to cycle through the alternatives). For instance:
@@ -521,7 +521,7 @@
   output; this is what we use here). This enables a few additional options in
   the <samp|Pure> plugin menu, as well as the <samp|Insert \| Link> menu and
   the corresponding toolbar button. These facilities are described in more
-  detail at the end of the ``<TeXmacs> \ as an interface'' section in the
+  detail at the end of the \P<TeXmacs> \ as an interface\Q section in the
   <TeXmacs> online help, so we only give a few basic examples here.
 
   <\bothlined>
@@ -602,7 +602,6 @@
 <\initial>
   <\collection>
     <associate|font-base-size|10>
-    <associate|language|american>
     <associate|page-type|a4>
     <associate|par-hyphen|normal>
     <associate|preamble|false>
