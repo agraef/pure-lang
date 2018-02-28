@@ -22,7 +22,7 @@
 
 (define pure-keymap
 '(;; math input toggle
-  ("C-$" (toggle-session-math-input))))
+  ("C-M" (toggle-session-math-input))))
 
 ;; The default "<symbol> space" math bindings are quite annoying when entering
 ;; Pure expressions, so we disable them here; there are other ways to get
@@ -92,13 +92,25 @@
 (define (pure-session?) (or (in-pure?) (in-pure-debug?) (in-pure-math?)))
 (define (pure-script?) (or (pure-script-scripts?) (pure-script-math-scripts?)))
 
-;; Detect the Pure library path (this needs pkg-config).
+;; Detect the Pure library path (make a good guess on Windows).
 (use-modules (ice-9 popen))
 (define pure-lib-path
-  (let* ((port (open-input-pipe "pkg-config pure --variable libdir"))
-	 (str (read-line port)))
-    (close-pipe port)
-    (if (string? str) str pure-default-lib-path)))
+  ;; XXXFIXME: The Windows check is a horrible kludge, does TeXmacs provide a
+  ;; better way to do this?
+  (if (url-exists? "c:/Windows")
+      ;; The popen stuff doesn't seem to work on Windows (throws an
+      ;; exception), so we're checking some common locations instead.
+      (let ((str (cond ((url-exists? "c:/msys64/mingw32/lib/pure")
+		       "c:/msys64/mingw32/lib")
+		      ((url-exists? "c:/msys32/mingw32/lib/pure")
+		       "c:/msys32/mingw32/lib")
+		      (else pure-default-lib-path))))
+	str)
+      ;; This needs pkg-config, and a working popen.
+      (let* ((port (open-input-pipe "pkg-config pure --variable libdir"))
+	     (str (read-line port)))
+	(close-pipe port)
+	(if (string? str) str pure-default-lib-path))))
 
 ;; Check if the given script exists on the library path or in one of the
 ;; texmacs-specific paths. Return the full script name if present, ""
@@ -152,7 +164,7 @@
 ;; with the most important help files in it.
 
 (define pure-texmacs-help-available
-  (url-exists-in-help? (string-append pure-lib-path "/pure/docs/index.tm")))
+  (url-exists? (string-append pure-lib-path "/pure/docs/index.tm")))
 
 (import-from (doc help-funcs))
 
