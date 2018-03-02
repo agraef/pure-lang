@@ -21,6 +21,77 @@ using "lib:octave_embed";
 extern void octave_init(int argc, char **argv);
 extern void octave_fini();
 
+#! --if *-mingw32
+// Windows kludge: Make sure that octave finds its m files.
+extern void _putenv(char*);
+() when
+  // Adjust these as needed. Note the backslashes. Slashes do NOT work here.
+  // In a self-contained installation, we have these in the Pure libdir:
+  pref = "\\msys64\\mingw32\\lib\\pure\\octave\\";
+  // This is the install prefix for a standard msys2/mingw32 install of
+  // Octave, use this instead if you installed Octave yourself:
+  //pref = "\\msys64\\mingw32\\share\\octave\\";
+  // Default path gleaned from a Linux install of Octave 4.0.3. You may have
+  // to adjust this if you're running your own Octave installation and you'd
+  // rather want to pull the m files and oct modules from there.
+  path = join ";" $ map (pref+)
+    ["site\\m",
+     "site\\m\\startup",
+     "4.0.3\\m",
+     "4.0.3\\m\\audio",
+     "4.0.3\\m\\deprecated",
+     "4.0.3\\m\\elfun",
+     "4.0.3\\m\\general",
+     "4.0.3\\m\\geometry",
+     "4.0.3\\m\\gui",
+     "4.0.3\\m\\help",
+     "4.0.3\\m\\image",
+     "4.0.3\\m\\io",
+     "4.0.3\\m\\java",
+     "4.0.3\\m\\linear-algebra",
+     "4.0.3\\m\\miscellaneous",
+     "4.0.3\\m\\ode",
+     "4.0.3\\m\\optimization",
+     "4.0.3\\m\\path",
+     "4.0.3\\m\\pkg",
+     "4.0.3\\m\\plot",
+     "4.0.3\\m\\plot\\appearance",
+     "4.0.3\\m\\plot\\draw",
+     "4.0.3\\m\\plot\\util",
+     "4.0.3\\m\\polynomial",
+     "4.0.3\\m\\prefs",
+     "4.0.3\\m\\profiler",
+     "4.0.3\\m\\set",
+     "4.0.3\\m\\signal",
+     "4.0.3\\m\\sparse",
+     "4.0.3\\m\\specfun",
+     "4.0.3\\m\\special-matrix",
+     "4.0.3\\m\\startup",
+     "4.0.3\\m\\statistics",
+     "4.0.3\\m\\statistics\\base",
+     "4.0.3\\m\\statistics\\distributions",
+     "4.0.3\\m\\statistics\\models",
+     "4.0.3\\m\\statistics\\tests",
+     "4.0.3\\m\\strings",
+     "4.0.3\\m\\testfun",
+     "4.0.3\\m\\time",
+     "4.0.3\\data"];
+  path = ".;"+path;
+  // Note that we only set a minimal environment here so that the embedded
+  // Octave finds its m files and the stuff necessary to make the help command
+  // work (sort of; you'll still need makeinfo and info programs which work in
+  // the DOS command line, or be content with the plain text rendering). By
+  // redefining pref above we can just relocate all these files as needed.
+  _putenv("OCTAVE_PATH="+path);
+  _putenv("OCTAVE_BUILT_IN_DOCSTRINGS_FILE=" + pref +
+	  "4.0.3\\etc\\built-in-docstrings");
+  _putenv("OCTAVE_DOC_CACHE_FILE=" + pref +
+	  "4.0.3\\etc\\doc-cache");
+  _putenv("OCTAVE_TEXI_MACROS_FILE=" + pref +
+	  "4.0.3\\etc\\macros.texi");
+end;
+#! --endif
+
 // Initialize Octave. The command line options are for quiet startup (no
 // sign-on message) and to disable Octave's command history (to prevent Octave
 // from clobbering Pure's readline).
