@@ -239,6 +239,9 @@ mouse_wheel_zoom args = octave_call "mouse_wheel_zoom" 0 args;
 // Some Octave installations default to the 'fltk' graphics toolkit which
 // doesn't work very well in Pure (no interactivity). Use 'gnuplot' as a
 // portable default instead, this seems to work fine on both Linux and OSX.
+// NB: On some platforms, gnuplot is not automatically registered even though
+// it's supported, so we do that first to be on the safe side.
+octave_eval "register_graphics_toolkit('gnuplot');";
 octave_eval "graphics_toolkit('gnuplot');";
 
 /* The following aren't plotting functions, but they are useful in many plot
