@@ -59,6 +59,7 @@ extern "C" void octave_restore_signal_mask (void);
 #define can_interrupt octave::can_interrupt
 #define octave_catch_interrupts octave::catch_interrupts
 #define octave_interrupt_exception octave::interrupt_exception
+#define octave_execution_exception octave::execution_exception
 #if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=3
 #define eval_string octave::eval_string
 #define feval octave::feval
@@ -167,6 +168,11 @@ void octave_fini(void)
   }
 }
 
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=3
+#define recover octave::interpreter::recover_from_exception
+#elif OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
+#define recover recover_from_exception
+#else
 static void recover(void)
 {
 #if 0
@@ -184,10 +190,11 @@ static void recover(void)
   octave_restore_signal_mask ();
   octave_catch_interrupts ();
 }
+#endif
 
 int octave_eval(const char *cmd)
 {
-  int parse_status;
+  int parse_status = 0;
 
   if (!init) return -1;
 
@@ -197,6 +204,10 @@ int octave_eval(const char *cmd)
   // here so that we can set up an interrupt (SIG_INT) handler.
   octave_save_signal_mask ();
 
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
+  // Get rid of all the cruft below which is in Kienzle's original code but
+  // doesn't seem to be needed any more.
+#else
   // XXXFIXME: Really need to clean up this cruft, this just seems needlessly
   // complicated. Is this even needed any more?
   if (octave_set_current_context) {
@@ -211,6 +222,7 @@ int octave_eval(const char *cmd)
     octave_restore_signal_mask ();
 #endif
   }
+#endif
 
   can_interrupt = true;
   octave_catch_interrupts ();
@@ -229,6 +241,12 @@ int octave_eval(const char *cmd)
     recover ();
     std::cout << "\n";
     error_state = -2;
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
+  } catch (octave_execution_exception) {
+    recover ();
+    std::cout << "\n";
+    error_state = -1;
+#endif
   } catch (std::bad_alloc) {
     recover ();
     std::cout << "\n";
@@ -1040,7 +1058,13 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 
 static void install_builtins()
 {
-#if OCTAVE_MAJOR>3 || OCTAVE_MAJOR>=3 && OCTAVE_MINOR>=8
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=3
+  // install_builtin_function is deprecated in 4.3, might be gone in 4.4+, but
+  // this will hopefully continue to work
+  octave_value fcn (new octave_builtin (Fpure_call, "pure_call", "embed.cc", PURE_HELP));
+  octave::symbol_table& symtab = embedded_interpreter->get_symbol_table();
+  symtab.install_built_in_function ("pure_call", fcn);
+#elif OCTAVE_MAJOR>3 || OCTAVE_MAJOR>=3 && OCTAVE_MINOR>=8
   install_builtin_function(Fpure_call, "pure_call", "embed.cc", PURE_HELP);
 #else
   install_builtin_function(Fpure_call, "pure_call", PURE_HELP);
