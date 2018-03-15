@@ -207,7 +207,7 @@ uninstall:
 # viewing.
 
 docsdir = ../../pure-lang-docs
-webdir = ../../purelang.bitbucket.org
+webdir = ../../pure-lang-pages
 
 $(docsdir)/Makefile: docs/Makefile.in Makefile
 	sed -e 's/@version@/$(version)/g' < $< > $@
