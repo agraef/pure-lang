@@ -391,7 +391,7 @@ HL_FLAGS = --indented-code-classes=pure
 HTML_FLAGS = $(HL_FLAGS) --highlight-style=tango
 # LaTeX options (engine, sections numbering, toc and highlighting style),
 # adjust as needed.
-TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --latex-engine=xelatex
+TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --pdf-engine=xelatex
 # Pdf options. These options are for DIN A4 paper, adjust as needed.
 PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'geometry:vmargin=2cm' -V 'geometry:hmargin=2cm' -V 'fontsize:12pt'
 
@@ -431,17 +431,17 @@ $(BUILDDIR)/markdown/%.md: %.txt $(indexfile)
 # Build html from the individual Markdown files. pure-reduce.html is treated
 # separately in order to include MathJAX.
 $(BUILDDIR)/markdown/pure-reduce.html: $(BUILDDIR)/markdown/pure-reduce.md
-	pandoc -s -S $< -o $@ --mathjax $(HTML_FLAGS)
+	pandoc -s $< -o $@ --mathjax $(HTML_FLAGS)
 $(BUILDDIR)/markdown/%.html: $(BUILDDIR)/markdown/%.md
-	pandoc -s -S $< -o $@ $(HTML_FLAGS)
+	pandoc -s $< -o $@ $(HTML_FLAGS)
 
 # Build pdf from the individual Markdown files.
 $(BUILDDIR)/markdown/%.pdf: $(BUILDDIR)/markdown/%.md
-	pandoc -s -S $< -o $@ $(TEX_FLAGS) $(PDF_FLAGS)
+	pandoc -s $< -o $@ $(TEX_FLAGS) $(PDF_FLAGS)
 
 # Build LaTeX source from the individual Markdown files.
 $(BUILDDIR)/markdown/%.tex: $(BUILDDIR)/markdown/%.md
-	pandoc -s -S $< -o $@ $(TEX_FLAGS)
+	pandoc -s $< -o $@ $(TEX_FLAGS)
 
 # Special versions of the Markdown docs for building one big html/pdf/tex doc.
 mdpuredocs = $(addprefix $(BUILDDIR)/markdown/puredoc-,$(mdfiles))
@@ -455,15 +455,15 @@ puredocname = puredoc
 
 # Build one big html doc from all the Markdown files.
 $(BUILDDIR)/markdown/$(puredocname).html: $(mdpuredocs)
-	pandoc -s -S -o $@ $^ --mathjax $(HTML_FLAGS)
+	pandoc -s -o $@ $^ --mathjax $(HTML_FLAGS)
 
 # Build one big pdf doc from all the Markdown files.
 $(BUILDDIR)/markdown/$(puredocname).pdf: $(mdpuredocs)
-	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
+	pandoc -s -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
 
 # Build one big LaTeX source from all the Markdown files.
 $(BUILDDIR)/markdown/$(puredocname).tex: $(mdpuredocs)
-	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
+	pandoc -s -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
 
 # Phony targets to build the entire shebang.
 
