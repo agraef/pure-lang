@@ -229,8 +229,8 @@ Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_norl.cc \
 pure_main.c pure.1 pure.txt install-docs.sh run-tests.in \
-run-test.in pure.pc.in \
-etc/pure-mode.el.in etc/pure.* etc/pure-*.xml etc/pure-highlight.lang \
+run-test.in pure.pc.in etc/pure-mode.el.in etc/flycheck-pure.el \
+etc/pure.* etc/pure-*.xml etc/pure-highlight.lang \
 debian/* \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
 examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
@@ -305,14 +305,18 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' $(srcdir)/etc/pure-mode.el.in > etc/pure-mode.el.tmp
 	mv etc/pure-mode.el.tmp etc/pure-mode.el
 
-# create pure-mode.elc from pure-mode.el (this requires emacs)
+# create pure-mode.elc from pure-mode.el (and flycheck-pure.elc from
+# flycheck-pure.el; this requires emacs)
 
 ELC = $(EMACS) -q --no-site-file -batch -eval "(add-to-list 'load-path \".\")" -eval "(setq byte-compile-warnings '(callargs free-vars noruntime redefine))" -f batch-byte-compile
 
 etc/pure-mode.elc: etc/pure-mode.el
 	cd etc && $(ELC) pure-mode.el
 
-elc: etc/pure-mode.elc
+etc/flycheck-pure.elc: etc/flycheck-pure.el
+	cd etc && $(ELC) flycheck-pure.el
+
+elc: etc/pure-mode.elc etc/flycheck-pure.elc
 
 # generate the library documentation (this requires pure-doc)
 
@@ -331,7 +335,7 @@ install.txt: INSTALL
 # cleaning
 
 clean:
-	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc texmacs/plugins/pure/*/*~
+	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc etc/flycheck-pure.elc texmacs/plugins/pure/*/*~
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -400,7 +404,7 @@ endif
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/$(pure_1)
 ifneq ($(elcfiles),)
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
-	$(INSTALL) -m 644 etc/pure-mode.el etc/pure-mode.elc $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 etc/pure-mode.el etc/pure-mode.elc etc/flycheck-pure.el etc/flycheck-pure.elc $(DESTDIR)$(elispdir)
 endif
 ifneq ($(tmfiles),)
 	for x in $(addprefix $(DESTDIR), $(tmdir)/packages $(tmdir)/plugins/pure/doc $(tmdir)/plugins/pure/progs); do $(INSTALL) -d $$x; done
@@ -420,7 +424,7 @@ ifneq "$(findstring -mingw,$(host))" ""
 	rm -f $(addprefix $(DESTDIR)$(bindir)/, $(libpure) $(libpure_lnkname))
 endif
 ifneq ($(elcfiles),)
-	rm -rf $(addprefix $(DESTDIR), $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc)
+	rm -rf $(addprefix $(DESTDIR), $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc $(elispdir)/flycheck-pure.el $(elispdir)/flycheck-pure.elc)
 endif
 ifneq ($(tmfiles),)
 	rm -rf $(addprefix $(DESTDIR), $(addprefix $(tmdir)/,$(patsubst $(srcdir)/texmacs/%,%,$(tmsrc)) plugins/pure))
@@ -442,7 +446,8 @@ olddocs = https://github.com/agraef/pure-lang/releases/download/$(dist)/pure-doc
 install-docs:
 	@MAKE=$(MAKE) ./install-docs.sh "$(docs)" || MAKE=$(MAKE) ./install-docs.sh "$(olddocs)"
 
-# install pure-mode.el and pure-mode.elc
+# install pure-mode.el and pure-mode.elc (as well as flycheck-pure.el and
+# flycheck-pure.elc)
 
 # This will normally be done automatically with 'make install' if emacs is
 # detected on your system. However, these targets also allow you to do this
@@ -450,19 +455,19 @@ install-docs:
 # to install the files in a custom location (in the latter case you will also
 # want to set elispdir accordingly).
 
-install-el: etc/pure-mode.el
+install-el: etc/pure-mode.el etc/flycheck-pure.el
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
-	$(INSTALL) -m 644 $< $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 $^ $(DESTDIR)$(elispdir)
 
-install-elc: etc/pure-mode.elc
+install-elc: etc/pure-mode.elc etc/flycheck-pure.elc
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
-	$(INSTALL) -m 644 $< $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 $^ $(DESTDIR)$(elispdir)
 
 uninstall-el:
-	rm -rf $(DESTDIR)$(elispdir)/pure-mode.el
+	rm -rf $(DESTDIR)$(elispdir)/pure-mode.el $(DESTDIR)$(elispdir)/flycheck-pure.el
 
 uninstall-elc:
-	rm -rf $(DESTDIR)$(elispdir)/pure-mode.elc
+	rm -rf $(DESTDIR)$(elispdir)/pure-mode.elc $(DESTDIR)$(elispdir)/flycheck-pure.elc
 
 # install the TeXmacs plugin and accompanying files
 
