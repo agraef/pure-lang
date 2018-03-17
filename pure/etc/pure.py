@@ -3,10 +3,9 @@
 # highlighting for Pure scripts and interactive Pure sessions in Pygments and
 # other Pygments-enabled software such as Sphinx.
 
-# For the time being, you'll have to install this manually. Add the Python
-# code below to pygments/lexers/functional.py in the Pygments sources and rerun
-# pygments/lexers/_mapping.py to have this lexer included in Pygments. Then
-# reinstall Pygments as usual.
+# Until this becomes part of Pygments, you'll have to install this
+# manually. The easiest way to do this is by installing the Pygments addon
+# module available here: https://github.com/agraef/pygments-lexer-pure
 
 class PureLexer(RegexLexer):
     """
