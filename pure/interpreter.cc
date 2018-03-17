@@ -1621,7 +1621,7 @@ void interpreter::init_tags()
   if (tagsfile.empty()) {
     if (tags == 2)
       tagsfile = "TAGS";
-    else
+    else if (tags == 1)
       tagsfile = "tags";
     tagsdir = cwd;
   } else {
@@ -1709,7 +1709,7 @@ bool ctag_cmp(const CtagInfo& x, const CtagInfo& y)
 void interpreter::print_tags()
 {
   init_tags();
-  if (chdir(tagsdir.c_str())) perror("chdir");
+  if (tags > 0 && chdir(tagsdir.c_str())) perror("chdir");
   if (tags == 2) {
     ofstream out(tagsfile.c_str());
     for (list<string>::const_iterator it = tag_files.begin(),

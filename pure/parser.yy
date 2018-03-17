@@ -255,7 +255,8 @@ item_pos
 item
 : expr ';'
 { interp.loc = &yyloc;
-  if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
+  if (interp.tags<0) { restricted_action(interp.parse($1), delete $1); }
+  else if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
   else delete $1; }
 | ESCAPE expr EOX
 { interp.loc = &yyloc;
