@@ -340,13 +340,14 @@ file is not needed for normal operation, but can be used to write C/C++
 extensions modules or embed Pure in your C/C++ applications.)
 
 In addition, if the presence of GNU Emacs was detected at configure time, then
-by default pure-mode.el and pure-mode.elc will be installed in the Emacs
-site-lisp directory. make tries to guess the proper location of the site-lisp
-directory, but if it guesses wrong or if you want to install in some custom
-location then you can also set the ``elispdir`` make variable accordingly. If
-you prefer, you can also disable the automatic installation of the elisp files
-by running configure with ``./configure --without-elisp``. (In that case, it's
-still possible to install the elisp files manually with ``make install-el
+by default pure-mode.el and pure-mode.elc (as well as the corresponding
+flycheck package) will be installed in the Emacs site-lisp directory. make
+tries to guess the proper location of the site-lisp directory, but if it
+guesses wrong or if you want to install in some custom location then you can
+also set the ``elispdir`` make variable accordingly. If you prefer, you can
+also disable the automatic installation of the elisp files by running
+configure with ``./configure --without-elisp``. (In that case, it's still
+possible to install the elisp files manually with ``make install-el
 install-elc``.)
 
 Similarly, if you have `GNU TeXmacs`_ on your system and configure can locate
@@ -527,7 +528,7 @@ Also, you can enable code folding by adding this to your .emacs:
    (require 'hideshow)
    (add-hook 'pure-mode-hook 'hs-minor-mode)
 
-These lines should come before the loading of Pure mode in your .emacs, so
+These lines should come *before* the loading of Pure mode in your .emacs, so
 that Pure mode can adjust accordingly.
 
 Once Emacs has been configured to load Pure mode, you can just run it with a
@@ -538,6 +539,47 @@ Pure file to check that it works, e.g.::
 The online help about Pure mode can be read with ``C-h m``. The Pure
 documentation can be accessed in Pure mode with ``C-c h``.
 
+Last but not least, support for flycheck_, the on-the-fly syntax checker is
+available through a separate flycheck-pure.el package, which can be enabled in
+your .emacs as follows:
+
+.. code-block:: scheme
+
+   (require 'flycheck-pure)
+   (eval-after-load 'flycheck
+     '(add-hook 'flycheck-mode-hook #'flycheck-pure-setup))
+
+You need to have flycheck_ installed to make this work (it's available in
+MELPA_). Also, the Pure interpreter needs to be in your ``PATH`` or flycheck
+will not be able to find it.
+
+.. _flycheck: http://www.flycheck.org
+.. _MELPA: https://melpa.org
+
+This is highly recommended, because flycheck will warn you about syntax
+errors, undeclared identifiers, etc. immediately -- anything which can be
+found without actually executing the program. flycheck does this by
+continually running ``pure --check`` on your program while you're editing it.
+By default, flycheck will flag both errors and warnings by invoking the Pure
+interpreter with the :option:`-w <pure -w>` option. If you only want to see
+real compilation errors, you can turn this off by setting the
+``flycheck-pure-warnings`` variable to ``nil``:
+
+.. code-block:: scheme
+
+   (setq flycheck-pure-warnings nil)
+
+Also note that flycheck will not run on a buffer unless you specifically
+enable it (in which case you'll see the ``FlyC`` indicator in the mode line).
+However, you can also enable flycheck globally so that it automatically runs
+in every buffer with a mode that has an associated checker. To these ends, add
+the following line to your .emacs:
+
+.. code-block:: scheme
+
+   (add-hook 'after-init-hook #'global-flycheck-mode)
+
+Please check the flycheck_ website for more information.
 
 TeXmacs Plugin
 ==============

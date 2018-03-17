@@ -66,6 +66,7 @@ using namespace std;
                   pure [options ...] [-b|-c|-i] [script ...] [-- args ...]\n\
 -b                Batch mode (execute given scripts and exit).\n\
 -c                Batch compilation (compile scripts to native binary).\n\
+--check           Syntax check only, do not actually execute scripts.\n\
 --ctags, --etags  Create a tags file in ctags (vi) or etags (emacs) format.\n\
 --disable=optname Disable source option (conditional compilation).\n\
 --eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
@@ -297,6 +298,10 @@ main(int argc, char *argv[])
 	batch = true; interp.tags = 1;
       } else if (strcmp(arg, "--etags") == 0) {
 	batch = true; interp.tags = 2;
+      } else if (strcmp(arg, "--check") == 0) {
+	// this works basically like tags mode, but only does a syntax check
+	// without generating any other output
+	batch = true; interp.tags = -1;
       } else if (strcmp(arg, "--eager-jit") == 0)
 	interp.eager_jit = true;
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)

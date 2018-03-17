@@ -89,7 +89,7 @@ if test "$pure_cv_gnu_linker" = yes; then
 fi
 
 dnl Install elisp files?
-elcfiles="etc/pure-mode.elc"
+elcfiles="etc/pure-mode.elc etc/flycheck-pure.elc"
 AC_ARG_WITH(elisp,
   [  --with-elisp            install elisp files (default if emacs is available)],
   [case "${withval}" in

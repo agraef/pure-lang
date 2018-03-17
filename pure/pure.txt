@@ -241,9 +241,10 @@ of ``-c``, the interpreter then also dumps the program as a native executable,
 performing `batch compilation`, see `Compiling Scripts`_ below.)
 
 Batch mode is also entered if the interpreter is invoked with one of the
-``--ctags`` and ``--etags`` options. However, in this case the given scripts
-are not executed at all, but only parsed in order to produce a vi or emacs
-tags file, see `Tagging Scripts`_ below.
+``--check``, ``--ctags`` and ``--etags`` options. However, in this case the
+given scripts are not executed at all, but only parsed in order to check them
+for syntactic validity, or to produce a vi or emacs tags file, see
+`Tagging Scripts`_ below.
 
 Here are some common ways to invoke the interpreter:
 
@@ -308,6 +309,10 @@ below.
 .. option:: -c
 
    Batch compilation (compile the given scripts to a native binary).
+
+.. option:: --check
+
+   Syntax check only, do not execute code or produce any output files.
 
 .. option:: --ctags
    	    --etags
@@ -459,11 +464,12 @@ Options and source files are processed in the order in which they are given on
 the command line. Processing of options and source files ends when either the
 :option:`--` or the :option:`-x` option is encountered, or after the first
 script (non-option) argument in `script mode` (i.e., if none of the options
-:option:`-b`, :option:`-i`, :option:`--ctags` and :option:`--etags` is
-present). In either case, any remaining parameters are passed to the executing
-script by means of the global :var:`argc` and :var:`argv` variables, denoting
-the number of arguments and the list of the actual parameter strings,
-respectively. In script mode this also includes the script name as ``argv!0``.
+:option:`-b`, :option:`-i`, :option:`--check`, :option:`--ctags` and
+:option:`--etags` is present). In either case, any remaining parameters are
+passed to the executing script by means of the global :var:`argc` and
+:var:`argv` variables, denoting the number of arguments and the list of the
+actual parameter strings, respectively. In script mode this also includes the
+script name as ``argv!0``.
 
 Script mode is useful, in particular, to turn Pure scripts into executable
 programs by including a "shebang" like the following as the first line in your
