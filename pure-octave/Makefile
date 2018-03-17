@@ -55,10 +55,22 @@ octave_embed$(DLL): embed.o
 	rm -f $@
 	$(MKOCT_LDCXX) $(shared) $(dllname) -o $@ embed.o $(MKOCT_LDFLAGS) -lpure $(RLD_FLAG)
 else
+ifeq ($(DLL),.dll)
+# Custom build commands for msys2/mingw32 using a static build of Octave 4.0.3.
+# Set this to the staging directory where your build of Octave is installed.
+octave-buildroot = $(HOME)/buildroot-octave/mingw32
+#octave-buildroot = c:/msys64/home/ag/buildroot-octave/mingw32
+octave_embed$(DLL): embed.cc embed.h
+	rm -f $@
+	g++ -c -mieee-fp -g -O2 -I$(octave-buildroot)/include/octave-4.0.3/octave -I$(octave-buildroot)/include/octave-4.0.3 -DOCTAVE_MAJOR=4 -DOCTAVE_MINOR=0 $< -o embed.o
+	g++ -mieee-fp -g -O2 -shared -Wl,--export-all-symbols -Wl,--enable-auto-import -Wl,--enable-runtime-pseudo-reloc  -o $@  embed.o -lpure -L$(octave-buildroot)/lib/octave/4.0.3 -loctinterp -loctave -lglpk -lportaudio -ldsound -lsetupapi -lwinmm -lole32 -luuid -lsndfile -lcurl -lopenblas -lreadline -lncurses -lpcre -lquadmath -lhdf5 -lfftw3 -lfftw3f -lfontconfig -lfreetype -lopengl32 -lglu32 -lgdi32 -lws2_32 -lgfortran -lz
+	strip $@
+else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
 	$(mkoctfile) -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG)
 	if test -f $@.oct; then mv $@.oct $@; fi
+endif
 endif
 
 clean:
