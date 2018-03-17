@@ -14,7 +14,7 @@ available from the [Arch User Repositories][5], please also check
 our [Pure on Arch Linux][6] wiki page for details. We also offer a reasonably
 complete set of Ubuntu packages at [Launchpad][7]. Instructions for installing
 Pure on the Mac and Windows can be found on the [Pure on Mac OS X][6b]
-and [Pure on Mac Windows][6c] wiki pages. Source packages can be found on
+and [Pure on Windows][6c] wiki pages. Source packages can be found on
 the [Download][2] page. Please also have a look at our [mailing list][8] /
 Google group and [IRC chat][9] (#pure-lang on freenode) if you need any help
 or if you want to discuss Pure.
