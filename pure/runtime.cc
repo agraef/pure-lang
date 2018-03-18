@@ -17359,7 +17359,9 @@ void PureFaustUI::run() {}
    on whether floating point parameters are passed as double (faust -double)
    or not. */
 
-// You might have to disable this if you're still running an old Faust2 version.
+// Disable this if you're still running an old Faust2 version.
+#define FAUST_NEW_UI 1
+// Disable this if you're still running a *really* old Faust2 version.
 #define FAUST_NEW_META 1
 
 extern "C" {
@@ -17444,6 +17446,9 @@ struct UIGlue {
   void *addNumEntry;
   void *addHorizontalBargraph;
   void *addVerticalBargraph;
+#if FAUST_NEW_UI
+  void *addSoundfile;
+#endif
   void *declare;
 
 };
@@ -17471,6 +17476,17 @@ static void closeBoxGlue(void* cpp_interface)
     FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
     fstinterface->closeBox();
 }
+
+#if FAUST_NEW_UI
+// XXXFIXME: to be implemented, cf. addSoundfile() in faust/gui/UI.h
+static void addSoundfileGlue(void* cpp_interface, const char* label, const char* filename, void* sf_zone)
+{
+#if 0
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addSoundFile(label, filename, sf_zone); // XXXTODO
+#endif
+}
+#endif
 
 static void addButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
 {
@@ -17590,6 +17606,9 @@ void *faust_float_ui()
   glue->addNumEntry = (void*)addNumEntryFloatGlue;
   glue->addHorizontalBargraph = (void*)addHorizontalBargraphFloatGlue;
   glue->addVerticalBargraph = (void*)addVerticalBargraphFloatGlue;
+#if FAUST_NEW_UI
+  glue->addSoundfile = (void*)addSoundfileGlue;
+#endif
   glue->declare = (void*)declareFloatGlue;
   return glue;
 }
@@ -17611,6 +17630,9 @@ void *faust_double_ui()
   glue->addNumEntry = (void*)addNumEntryDoubleGlue;
   glue->addHorizontalBargraph = (void*)addHorizontalBargraphDoubleGlue;
   glue->addVerticalBargraph = (void*)addVerticalBargraphDoubleGlue;
+#if FAUST_NEW_UI
+  glue->addSoundfile = (void*)addSoundfileGlue;
+#endif
   glue->declare = (void*)declareDoubleGlue;
   return glue;
 }
