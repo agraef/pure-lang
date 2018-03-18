@@ -313,8 +313,10 @@ ELC = $(EMACS) -q --no-site-file -batch -eval "(add-to-list 'load-path \".\")" -
 etc/pure-mode.elc: etc/pure-mode.el
 	cd etc && $(ELC) pure-mode.el
 
+# If flycheck isn't installed then this target will fail. In that case we
+# proceed anyway without the byte-compiled file and just install the el file.
 etc/flycheck-pure.elc: etc/flycheck-pure.el
-	cd etc && $(ELC) flycheck-pure.el
+	cd etc && $(ELC) flycheck-pure.el || echo "flycheck not found, skipping bytecode compilation"
 
 elc: etc/pure-mode.elc etc/flycheck-pure.elc
 
@@ -404,7 +406,7 @@ endif
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/$(pure_1)
 ifneq ($(elcfiles),)
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
-	$(INSTALL) -m 644 etc/pure-mode.el etc/pure-mode.elc etc/flycheck-pure.el etc/flycheck-pure.elc $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 etc/*.el etc/*.elc $(DESTDIR)$(elispdir)
 endif
 ifneq ($(tmfiles),)
 	for x in $(addprefix $(DESTDIR), $(tmdir)/packages $(tmdir)/plugins/pure/doc $(tmdir)/plugins/pure/progs); do $(INSTALL) -d $$x; done
@@ -461,13 +463,14 @@ install-el: etc/pure-mode.el etc/flycheck-pure.el
 
 install-elc: etc/pure-mode.elc etc/flycheck-pure.elc
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
-	$(INSTALL) -m 644 $^ $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 $< $(DESTDIR)$(elispdir)
+	test -f etc/flycheck-pure.elc && $(INSTALL) -m 644 $< $(DESTDIR)$(elispdir) || true
 
 uninstall-el:
-	rm -rf $(DESTDIR)$(elispdir)/pure-mode.el $(DESTDIR)$(elispdir)/flycheck-pure.el
+	rm -f $(DESTDIR)$(elispdir)/pure-mode.el $(DESTDIR)$(elispdir)/flycheck-pure.el
 
 uninstall-elc:
-	rm -rf $(DESTDIR)$(elispdir)/pure-mode.elc $(DESTDIR)$(elispdir)/flycheck-pure.elc
+	rm -f $(DESTDIR)$(elispdir)/pure-mode.elc $(DESTDIR)$(elispdir)/flycheck-pure.elc
 
 # install the TeXmacs plugin and accompanying files
 
