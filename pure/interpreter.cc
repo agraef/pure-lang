@@ -85,6 +85,10 @@ char *alloca ();
 #include <llvm/Linker.h>
 #endif
 
+#ifndef PIC
+#define PIC ""
+#endif
+
 #include "gsl_structs.h"
 
 uint8_t interpreter::g_verbose = 0;
@@ -794,7 +798,7 @@ interpreter::interpreter(int _argc, char **_argv)
     eager_jit(false), interactive(false), debugging(false), texmacs(false),
     symbolic(true), checks(true), folding(true), consts(true),
     bigints(false), use_fastcc(true),
-    pic(false), strip(true), restricted(false), ttymode(false),
+    pic(*PIC), strip(true), restricted(false), ttymode(false),
     override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
@@ -820,7 +824,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     eager_jit(false), interactive(false), debugging(false), texmacs(false),
     symbolic(true), checks(true), folding(true), consts(true),
     bigints(false), use_fastcc(true),
-    pic(false), strip(true), restricted(true), ttymode(false), override(false),
+    pic(*PIC), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
     interactive_mode(false), escape_mode(0),

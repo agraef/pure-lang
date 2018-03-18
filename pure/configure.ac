@@ -386,6 +386,7 @@ case $host in
   ;;
 esac
 AC_SUBST(PIC)
+AC_DEFINE_UNQUOTED(PIC, "${PIC}", [Define if the -fPIC flag is needed for shared libraries.])
 
 dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
