@@ -71,7 +71,7 @@
 This is a quick reference guide to the Pure programming language for the impatient. It briefly summarizes all important language constructs and gives a few basic examples, so that seasoned programmers can pick up the language at a glance and start hacking away as quickly as possible.
 \end{abstract}
 
-{\noindent\footnotesize Copyright \copyright\ 2009-2017 Albert Gr\"af. Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation. See \url{http://www.gnu.org/copyleft/fdl.html}. The latest version of this document can be found at \url{https://agraef.github.io/pure-lang/quickref/pure-quickref.pdf}.}
+{\noindent\footnotesize Copyright \copyright\ 2009-2018 Albert Gr\"af. Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation. See \url{http://www.gnu.org/copyleft/fdl.html}. The latest version of this document can be found at \url{https://agraef.github.io/pure-lang/quickref/pure-quickref.pdf}.}
 
 \tableofcontents
 
@@ -1552,25 +1552,24 @@ using "bc:myutils";
 \end{lstlisting}
 
 \index{clang}\index{llvm-gcc}\index{dragonegg}\index{C}\index{C++}\index{Fortran}\index{Faust}\index{inline code}
-Moreover, if you have the necessary LLVM compilers installed, C code as well as code written in a number of other languages can be inlined directly in Pure scripts, using the \verb|%< ... %>| construct. Currently this works with C, C++ and Fortran, using \href{http://clang.llvm.org}{clang}, \href{http://dragonegg.llvm.org}{dragonegg} or (for older LLVM versions) \href{http://llvm.org}{llvm-gcc}.%
-\footnote{Pure also offers special support for Grame's functional DSP programming language \href{http://faust.grame.fr/}{Faust}; this requires that you have an LLVM-capable version of the Faust compiler installed, see the ``\href{http://www.grame.fr/~letz/faust_llvm.html}{LLVM backend for Faust}'' website for details.} For instance, here is a little example which calls some Fortran 90 code to compute the factorial:
+Moreover, C code as well as code written in other languages with LLVM-enabled compilers can be inlined directly in Pure scripts, using the \verb|%< ... %>| construct. In particular, this works with C, C++ and Fortran, using \href{http://clang.llvm.org}{clang} and the gcc \href{http://dragonegg.llvm.org}{dragonegg} plug-in.%
+\footnote{Unfortunately, dragonegg is not maintained any more, so the Fortran inlining capability isn't of much use these days; it's still possible to load Fortran code from shared libraries, however. On a happier note, Pure continues to offer special support for Grame's functional DSP programming language \href{http://faust.grame.fr/}{Faust}, including the capability to inline Faust code, please check the Pure manual for details.} For instance, here is a little snippet which calls some C code to compute the gcd (greatest common divisor) of two numbers:
 
 \needspace{9\baselineskip}
-\begin{lstlisting}[language=Fortran]
-%< -*- Fortran90 -*-
-function fact(n) result(p)
-  integer n, p
-  p = 1
-  do i = 1, n
-     p = p*i
-  end do
-end function fact
+\begin{lstlisting}[language=C]
+%<
+int mygcd(int x, int y)
+{
+  if (y == 0)
+    return x;
+  else
+    return mygcd(y, x%y);
+}
 %>
 \end{lstlisting}
 
 \begin{lstlisting}
-fact n::int = fact_ {n};
-map fact (1..10);
+map (mygcd 25) (30..35);
 \end{lstlisting}
 
 \section{The Interpreter}
@@ -1622,10 +1621,10 @@ Having your script file loaded in Emacs, you can then use the keyboard command \
 \index{vim}\index{gedit}\index{kate}
 Syntax highlighting support is available for a number of other popular text editors, such as Vim, Gedit and Kate. The Kate support is particularly nice because it also provides code folding for comments and block structure. See the \texttt{etc} directory in the sources. Installation instructions are contained in the language files.
 
-On Windows, there's another GUI frontend for the interpreter named ``PurePad''. This is a kind of mini-IDE which lets you edit and run Pure scripts.
-
 \index{tags}\index{etags}\index{ctags}
 The Pure interpreter has support for ``tags'' files in both emacs (``etags'') and vi (``ctags'') format, which can be used to quickly locate the global declarations and definitions of a Pure script in editors and other utilities like the \verb|less| program which provide this feature. Tags files can be created with the \verb|--etags| and \verb|--ctags| options of the interpreter, please see the Pure manual for details. Emacs Pure mode also provides the ``Make Tags'' command to create a tags file in Emacs.
+
+Current versions of the interpreter also offer the \verb|--check| option which does a quick syntax check of a script without executing code or producing output files. This option is particularly useful with ``\href{http://www.flycheck.org/}{flycheck},'' the Emacs on-the-fly syntax checker. Details can be found in the \href{https://agraef.github.io/pure-docs/install.html#emacs-pure-mode}{Emacs section} of the installation manual.
 
 \subsection{Interactive Commands}
 \label{Interactive}
@@ -1648,12 +1647,9 @@ A convenience for interactive usage is the \verb|ans| function which gives acces
 
 \index{interactive commands}
 The interpreter also understands the following special commands for interactive usage. These have to be typed on a line by themselves, starting with the command keyword in column one.%
-\footnote{Thus you can ``escape'' normal Pure code by indenting a line with one or more spaces; this is necessary if an expression starts with an identifier which looks like a command word.
+\footnote{Thus you can ``escape'' normal Pure code by indenting a line with one or more spaces; this is necessary if an expression starts with an identifier which looks like a command word. Recent versions of the Pure interpreter also provide an alternative command syntax in which interactive commands are escaped by prefixing them with a special character at the very beginning of the line; please check the corresponding section in the Pure manual for details.} A closer description of the commands is available in the Pure manual, which can be invoked in the interpreter with the \verb|help| command.
 
-Recent versions of the Pure interpreter also provide an alternative command syntax in which interactive commands are escaped by prefixing them with a special character at the very beginning of the line. The command prefix is set with the \texttt{\textendash\textendash escape} option of the interpreter or the \texttt{PURE\_ESCAPE} environment variable; please check the corresponding section in the Pure manual for details.}
 \index{help command}\index{interactive commands!help}\index{BROWSER variable}\index{PURE\_HELP variable}
-A closer description of the commands is available in the Pure manual, which can be invoked in the interpreter with the \verb|help| command. (This requires an external html browser, \texttt{w3m} by default; you can set your preferred browser with the \texttt{PURE\_HELP} or the \texttt{BROWSER} environment variable.)
-
 \begin{description}
 \item[\rm\texttt{!} \nt{command}] Shell escape.\index{shell escape}
 \item[\rm\texttt{break} {[\nt{symbol} \ldots{}]}] Set breakpoints. See Section \ref{Debugging} below.
@@ -1662,7 +1658,7 @@ A closer description of the commands is available in the Pure manual, which can 
 \item[\rm\texttt{clear} {[\nt{option} \ldots{}]} {[\nt{symbol} \ldots{}]}] Purge the definitions of the given symbols (variables, functions, etc.). Also, \verb|clear ans| clears the most recent result (see the description of \verb|ans| above).
 \item[\rm\texttt{del} {[\nt{option} \ldots{}]} {[\nt{symbol} \ldots{}]}] Delete breakpoints and tracepoints. See Section \ref{Debugging} below.
 \item[\rm\texttt{dump} {[\texttt{-n} \nt{filename}]} {[\nt{option} \ldots{}]} {[\nt{symbol} \ldots{}]}] Dump a snapshot of the currently defined symbols to a text file. The file is in Pure syntax, so it can be loaded again with the \texttt{run} command, see below.
-\item[\rm\texttt{help} {[\nt{target}]}] Display the Pure manual, or some other bit of documentation. This requires an html browser (\texttt{w3m} by default, you can set a different browser program with the \texttt{BROWSER} environment variable). Try \verb|help online-help| for more information on the online help facility.
+\item[\rm\texttt{help} {[\nt{target}]}] Display the Pure manual, or some other bit of documentation. This requires an html browser (\texttt{w3m} by default, you can set a different browser program with the \texttt{PURE\_HELP} or the \texttt{BROWSER} environment variable). Try \verb|help online-help| for more information on the online help facility.
 \item[\rm\texttt{ls} {[\nt{args} \ldots{}]}] List files (shell \texttt{ls}(1) command).
 \item[\rm\texttt{mem}] Print current memory usage. This reports the number of expression cells currently in use by the program, along with the size of the freelist (the number of allocated but currently unused expression cells).
 \item[\rm\texttt{pwd}] Print the current working dir (shell \texttt{pwd}(1) command).
@@ -2065,7 +2061,7 @@ when n,m = dim x end if dmatrixp x;
 
 While Pure encodes strings in a C-compatible way internally, most list
 operations in the Pure prelude carry over to strings, so that they can be used
-pretty much like they were lists of (UTF-8) characters. Character arithmetic
+pretty much as if they were lists of (UTF-8) characters. Character arithmetic
 works as well. For instance, here's the rot13 encoding in Pure:
 
 \begin{lstlisting}
@@ -2869,3 +2865,8 @@ To obtain a complete formal semantics, one might specify the actual behaviour of
 In practice, the Pure compiler inlines calls to some built-in operations, including arithmetic (if the argument types are known) and the built-in special forms, as native code. Other operations are implemented in the runtime or other 3rd party libraries and are called via Pure's C interface, which automatically handles the necessary conversions between Pure's term data structure and native data such as numbers and pointers. Most primitive operations are partial functions and thus their applications are treated like normal forms if arguments don't match, which gives the programmer the opportunity to specify his own rewriting rules to overload the primitive definitions (cf.\ Section \ref{C Interface}).
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
