@@ -4453,10 +4453,15 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
   }
 }
 
-void interpreter::exec(expr *x)
+void interpreter::exec(expr *x, bool noexec)
 {
   last.clear(); checkfuns(*x);
   if (result) pure_free(result); result = 0;
+  if (noexec) {
+    // skip execution (syntax check only)
+    delete x;
+    return;
+  }
   // Keep a copy of the original expression, so that we can give proper
   // diagnostics below.
   expr y = *x;

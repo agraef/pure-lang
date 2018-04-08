@@ -907,7 +907,7 @@ public:
   void declare(bool priv, prec_t prec, fix_t fix, list<string> *ids);
   void define(rule *r);
   void define_const(rule *r);
-  void exec(expr *x);
+  void exec(expr *x, bool noexec = false);
   void parse(expr *x);
   void clearsym(int32_t f);
   void cleartypesym(int32_t f);
