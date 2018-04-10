@@ -815,8 +815,9 @@ public:
      anything. It is still checked that the variable symbol is not already
      bound to a different kind of symbol, otherwise an err exception is
      thrown. */
-  void defn(int32_t tag, pure_expr *x);
-  void defn(const char *varname, pure_expr *x);
+  void defn(int32_t tag, pure_expr *x, bool deprecated = false);
+  void defn(const char *varname, pure_expr *x, bool deprecated = false);
+  set<int32_t> deprecated_vars;
 
   /* Constant definitions. These work like the variable definition methods
      above, but define constant symbols which are directly substituted into

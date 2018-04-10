@@ -1003,7 +1003,7 @@ void interpreter::init_sys_vars(const string& version,
   }
   defn("argc",		pure_int(argv.size()));
   defn("argv",		args);
-  defn("compiling",	pure_int(compiling));
+  defn("compiling",	pure_int(compiling), true); // deprecated
   defn("version",	pure_cstring_dup(version.c_str()));
   defn("sysinfo",	pure_cstring_dup(host.c_str()));
   // memory sizes
@@ -6685,6 +6685,10 @@ void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
 	  if (compat && x.tag() != f)
 	    warning(*loc, "warning: implicit declaration of '"+sym.s+"'");
 	}
+      } else if (!b && compat &&
+		 deprecated_vars.find(x.tag()) != deprecated_vars.end()) {
+	// Warn about deprecated symbols.
+	warning(*loc, "warning: '"+sym.s+"' variable is deprecated");
       }
     }
   }
@@ -11106,14 +11110,14 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
     return 0;
 }
 
-void interpreter::defn(const char *varname, pure_expr *x)
+void interpreter::defn(const char *varname, pure_expr *x, bool deprecated)
 {
   symbol& sym = symtab.checksym(varname);
   sym.unresolved = false;
-  defn(sym.f, x);
+  defn(sym.f, x, deprecated);
 }
 
-void interpreter::defn(int32_t tag, pure_expr *x)
+void interpreter::defn(int32_t tag, pure_expr *x, bool deprecated)
 {
   assert(tag > 0);
   globals g;
@@ -11134,6 +11138,7 @@ void interpreter::defn(int32_t tag, pure_expr *x)
     throw err("symbol '"+sym.s+
 	      "' is already declared as an extern function");
   }
+  if (deprecated) deprecated_vars.insert(tag);
   GlobalVar& v = globalvars[tag];
   if (!v.v) {
     if (sym.priv)
