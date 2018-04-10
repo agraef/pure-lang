@@ -1003,7 +1003,7 @@ void interpreter::init_sys_vars(const string& version,
   }
   defn("argc",		pure_int(argv.size()));
   defn("argv",		args);
-  defn("compiling",	pure_int(compiling));
+  defn("compiling",	pure_int(compiling), true); // deprecated
   defn("version",	pure_cstring_dup(version.c_str()));
   defn("sysinfo",	pure_cstring_dup(host.c_str()));
   // memory sizes
@@ -4467,6 +4467,10 @@ void interpreter::exec(expr *x, bool noexec)
   expr y = *x;
   pure_expr *e, *res = eval(*x, e, compiling);
   if ((verbose&verbosity::defs) != 0) cout << *x << ";\n";
+  if (compiling) {
+    delete x;
+    return;
+  }
   if (!res) {
     ostringstream msg;
     if (e) {
@@ -6681,6 +6685,10 @@ void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
 	  if (compat && x.tag() != f)
 	    warning(*loc, "warning: implicit declaration of '"+sym.s+"'");
 	}
+      } else if (!b && compat &&
+		 deprecated_vars.find(x.tag()) != deprecated_vars.end()) {
+	// Warn about deprecated symbols.
+	warning(*loc, "warning: '"+sym.s+"' variable is deprecated");
       }
     }
   }
@@ -11102,14 +11110,14 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
     return 0;
 }
 
-void interpreter::defn(const char *varname, pure_expr *x)
+void interpreter::defn(const char *varname, pure_expr *x, bool deprecated)
 {
   symbol& sym = symtab.checksym(varname);
   sym.unresolved = false;
-  defn(sym.f, x);
+  defn(sym.f, x, deprecated);
 }
 
-void interpreter::defn(int32_t tag, pure_expr *x)
+void interpreter::defn(int32_t tag, pure_expr *x, bool deprecated)
 {
   assert(tag > 0);
   globals g;
@@ -11130,6 +11138,7 @@ void interpreter::defn(int32_t tag, pure_expr *x)
     throw err("symbol '"+sym.s+
 	      "' is already declared as an extern function");
   }
+  if (deprecated) deprecated_vars.insert(tag);
   GlobalVar& v = globalvars[tag];
   if (!v.v) {
     if (sym.priv)
@@ -13627,17 +13636,15 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   f.CreateRet(codegen(x));
   fun_finish();
   pop(&f);
-  // JIT and execute the function. Note that we need to do this even in a
-  // batch compilation, since subsequent const definitions and resulting code
-  // may depend on the outcome of this computation.
-  void *fp = JIT->getPointerToFunction(f.f);
-  assert(fp);
-  begin_stats();
-  res = pure_invoke(fp, &e);
-  end_stats();
-  // Get rid of our anonymous function.
-  JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
+    // JIT and execute the function.
+    void *fp = JIT->getPointerToFunction(f.f);
+    assert(fp);
+    begin_stats();
+    res = pure_invoke(fp, &e);
+    end_stats();
+    // Get rid of our anonymous function.
+    JIT->freeMachineCodeForFunction(f.f);
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
@@ -13833,9 +13840,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
   unwind();
   fun_finish();
   pop(&f);
-  // JIT and execute the function. Note that we need to do this even in a
-  // batch compilation, since subsequent const definitions and resulting code
-  // may depend on the outcome of this computation.
+  // JIT and execute the function.
   void *fp = JIT->getPointerToFunction(f.f);
   assert(fp);
   begin_stats();

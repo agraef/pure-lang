@@ -35,7 +35,7 @@ using namespace gnuplot;
 #! --if compiled
 using system;
 const delta = 3; // seconds to pause between plots
-pause = if compiling then popdn() else refresh() $$ sleep delta;
+pause = refresh() $$ sleep delta;
 #! --else
 pause = refresh();
 #! --endif
@@ -117,7 +117,7 @@ let t = 0:0.2..20;
 let s = [sin(t)*exp(-t/5) | t = t];
 let a = [0, 20, -1, 1];
 let n = 8;
-compiling || do frame $ linspace(0,n*pi,200) with
+do frame $ linspace(0,n*pi,200) with
   frame k = () when
     plot(t, map (sin(k)*) s);
     axis(a);

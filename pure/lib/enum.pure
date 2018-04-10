@@ -17,6 +17,19 @@
 
      using enum;
 
+   Also note that the :func:`enum` and :func:`defenum` functions use
+   meta-programming to modify the running program, which only works when
+   running in the interpreter. Thus, if a script using these functions is to
+   be compiled to a native executable, you need to make sure that calls to
+   :func:`enum` and :func:`defenum` are invoked at compile time. The ``const``
+   keyword does this for you, e.g.::
+
+     const enum day;
+
+   This isn't necessary if the script runs in the interpreter, but it won't
+   hurt there either, so to be on the safe side, it is recommended to just
+   always use ``const`` with these operations.
+
    The following operations are provided:
 
    .. function:: enum sym
@@ -60,12 +73,12 @@
    Once the type is defined, we can turn it into an enumeration simply as
    follows::
 
-     enum day;
+     const enum day;
 
    There's also a convenience function :func:`defenum` which defines the type
    and makes it enumerable in one go::
 
-     defenum day [sun,mon,tue,wed,thu,fri,sat];
+     const defenum day [sun,mon,tue,wed,thu,fri,sat];
 
    In particular, this sets up the functions ``day`` and ``ord`` so that you
    can convert between members of the ``day`` type and the corresponding
@@ -132,14 +145,6 @@
 
 public enum enump enumof defenum;
 
-/* We only want enum to be executed when running interpreted, since it
-   requires meta programming stuff that's not available in native executables.
-   So for batch-compiled scripts you need to make sure that enum gets invoked
-   at compile time. */
-
-#! --if compiled
-enum name::symbol = () if ~compiling;
-#! --endif
 enum name::symbol = () when
   defs = zip defs (0..#defs-1);
   add_fundef $ ['(ord x-->n) | (_ x-->v),n = defs; ok x v] +
@@ -151,9 +156,6 @@ end if ~null defs && all symbolp [x | _ x-->_ = defs] when
   defs = get_typedef name;
 end;
 
-#! --if compiled
-defenum name::symbol elts::list = () if ~compiling;
-#! --endif
 defenum name::symbol elts::list = enum name when
   // Make sure that all the symbols are nonfix.
   eval $ "nonfix "+join " " (map str elts);

@@ -10,7 +10,7 @@ using namespace lo;
 let s = osc_server 7770;
 let t = make_address 7770;
 
-if null s then exit 1 else if compiling then () else
+if null s then exit 1 else
 printf "OSC server running at %s\n" (server_thread_get_url s);
 
 // Output a few messages (cf. client.pure).
@@ -48,7 +48,7 @@ osc_send_timestamped t (timetag NULL 5) "/quit" "" ();
 
 // Now read them back:
 
-if compiling then () else puts "Reading messages:" $$
+puts "Reading messages:" $$
 osc_main ["*"=>generic,"/foo/bla"=>foo,"/quit"=>quit] with
   generic addr ts path types data =
     printf "generic [%08x.%08x]: %s, types: %s, args: %s\n"
