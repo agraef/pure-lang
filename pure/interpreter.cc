@@ -4467,6 +4467,10 @@ void interpreter::exec(expr *x, bool noexec)
   expr y = *x;
   pure_expr *e, *res = eval(*x, e, compiling);
   if ((verbose&verbosity::defs) != 0) cout << *x << ";\n";
+  if (compiling) {
+    delete x;
+    return;
+  }
   if (!res) {
     ostringstream msg;
     if (e) {
@@ -13627,17 +13631,15 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   f.CreateRet(codegen(x));
   fun_finish();
   pop(&f);
-  // JIT and execute the function. Note that we need to do this even in a
-  // batch compilation, since subsequent const definitions and resulting code
-  // may depend on the outcome of this computation.
-  void *fp = JIT->getPointerToFunction(f.f);
-  assert(fp);
-  begin_stats();
-  res = pure_invoke(fp, &e);
-  end_stats();
-  // Get rid of our anonymous function.
-  JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
+    // JIT and execute the function.
+    void *fp = JIT->getPointerToFunction(f.f);
+    assert(fp);
+    begin_stats();
+    res = pure_invoke(fp, &e);
+    end_stats();
+    // Get rid of our anonymous function.
+    JIT->freeMachineCodeForFunction(f.f);
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
@@ -13833,9 +13835,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
   unwind();
   fun_finish();
   pop(&f);
-  // JIT and execute the function. Note that we need to do this even in a
-  // batch compilation, since subsequent const definitions and resulting code
-  // may depend on the outcome of this computation.
+  // JIT and execute the function.
   void *fp = JIT->getPointerToFunction(f.f);
   assert(fp);
   begin_stats();
