@@ -340,7 +340,9 @@ below.
 .. option:: -fPIC
    	    -fpic
 
-   Create position-independent code (batch compilation).
+   Create position-independent code (batch compilation). (This option will
+   normally be added automatically on platforms where it is needed, so you'll
+   rarely have to specify this explicitly.)
 
 .. option:: -g
 
@@ -491,7 +493,10 @@ The following variables are always predefined by the interpreter:
 .. variable:: compiling
 
    A flag indicating whether the program is executed in a batch compilation
-   (:option:`-c` option), see `Compiling Scripts`_ below.
+   (:option:`-c` option), see `Compiling Scripts`_ below. (This variable is
+   still provided for backward compatibility, but shouldn't be needed any more
+   and is considered deprecated. The compiler will warn about its use when the
+   :option:`-w <pure -w>` option is specified.)
 
 .. variable:: version
    	      sysinfo
@@ -543,17 +548,17 @@ otherwise this option will be ignored.
 It is also possible to compile your scripts to native code beforehand, using
 the :option:`-c` batch compilation option. This option forces the interpreter
 to batch mode (unless :option:`-i` is specified as well, which overrides
-:option:`-c`). Any scripts specified on the command line are then executed as
-usual, but after execution the interpreter takes a snapshot of the program and
-compiles it to one of several supported output formats, LLVM assembler (.ll)
-or bitcode (.bc), native assembler (.s) or object (.o), or a native
-executable, depending on the output filename specified with :option:`-o`. If
-the output filename ends in the .ll extension, an LLVM assembler file is
-created which can then be processed with the LLVM toolchain. If the output
-filename is just '-', the assembler file is written to standard output, which
-is useful if you want to pass the generated code to the LLVM tools in a
-pipeline. If the output filename ends in the .bc extension, an LLVM bitcode
-file is created instead.
+:option:`-c`). Any scripts specified on the command line are then compiled as
+usual (only bypassing immediate execution of toplevel expressions) and the
+interpreter finally takes a snapshot of the program and outputs it in one of
+several supported output formats, LLVM assembler (.ll) or bitcode (.bc),
+native assembler (.s) or object (.o), or a native executable, depending on the
+output filename specified with :option:`-o`. If the output filename ends in
+the .ll extension, an LLVM assembler file is created which can then be
+processed with the LLVM toolchain. If the output filename is just '-', the
+assembler file is written to standard output, which is useful if you want to
+pass the generated code to the LLVM tools in a pipeline. If the output
+filename ends in the .bc extension, an LLVM bitcode file is created instead.
 
 The .ll and .bc formats are supported natively by the Pure interpreter, no
 external tools are required to generate these. If the target is an .s, .o or
@@ -3078,6 +3083,8 @@ if the discriminant ``d = p^2/4-q`` is nonnegative::
 Note that the above definition leaves the case of a negative discriminant
 undefined.
 
+.. _Simple Rules:
+
 Simple Rules
 ------------
 
@@ -3566,45 +3573,14 @@ instance:
 .. code-block:: console
 
    $ pure -c hello.pure -o hello
-   Hello, world!
    $ ./hello
    Hello, world!
 
-You'll notice that the compilation command in the first line above *also*
-prints the ``Hello, world!`` message. This reveals a rather unusual aspect of
-Pure's batch compiler: it actually *executes* the script even during batch
-compilation. The reasons for this behaviour and potential uses are discussed
-in the `Batch Compilation`_ section. If you want to suppress the program
-output during batch compilation, you can rewrite the program as follows::
-
-  using system;
-  main = puts "Hello, world!";
-  compiling || main;
-
-Note that here we turned the code to be executed into a separate ``main``
-function. This isn't really necessary, but often convenient, since it allows
-us to run the code to be executed by just evaluating a single function. (Note
-that in contrast to C, the name ``main`` has no special significance in Pure;
-it's just a function like any other. We still have to include a call to this
-function at the end of our program so that it gets executed.)
-
-The last line now reads ``compiling || main`` which is a shorthand for "if the
-``compiling`` variable is nonzero then do nothing, otherwise evaluate the
-``main`` function". In a batch compilation the interpreter sets this variable
-to a nonzero value so that the evaluation of ``main`` is skipped:
-
-.. code-block:: console
-
-   $ pure -c hello.pure -o hello
-   $ ./hello
-   Hello, world!
-
-We should mention here that batch-compiled scripts have some limitations
-because the compiled executable runs under a trimmed-down runtime system. This
-disables some of the advanced compile time features which are only available
-when running a script with the interpreter or at batch-compilation time.
-However, this won't usually affect run-of-the-mill scripts like the one above.
-More information about this can be found in the `Batch Compilation`_ section.
+We should mention here that batch-compiled scripts have some limitations. In
+particular, some of the advanced compile time features are only available when
+running a script with the interpreter. However, this won't affect
+run-of-the-mill scripts like the one above. More information can be found in
+the `Batch Compilation`_ section.
 
 Running the Interpreter
 -----------------------
@@ -12241,64 +12217,74 @@ skip these initializations.
 Batch Compilation
 =================
 
-The interpreter's :option:`-c` option provides a means to turn Pure scripts
-into standalone executables. This feature is still a bit experimental. In
-particular, note that the compiled executable is essentially a *static
-snapshot* of your program which is executed on the "bare metal", without a
-hosting interpreter. Only a minimal runtime system is provided. This
-considerably reduces startup times, but also implies some quirks and
-limitations as detailed below.
+The interpreter's :option:`-c` option provides a means to quickly turn Pure
+scripts into standalone executables. The compiled executable is essentially a
+*static snapshot* of your program which is executed on the "bare metal",
+without a hosting interpreter and with just a minimal runtime system. This
+considerably reduces startup times, but also implies some limitations (mostly
+related to meta-programming capabilities) which will be discussed in the
+following subsection, where we give a detailed account on the batch
+compilation process.
 
-First and foremost, the batch compiler always reorders the code so that all
-toplevel expressions and :keyword:`let` bindings are evaluated *after* all
-functions have been defined. This is done to reduce the size of the output
-executable, so that there's only a *single* snapshot of each function which
-will be used by all toplevel expressions and global variable definitions
-invoking the function. Therefore you should avoid code like the following::
+Compile Time Versus Run Time
+----------------------------
+
+The batch compiler processes most of the script at compile time as usual. The
+only exception are plain toplevel expressions which are *not* executed during
+batch compilation, but of course they are compiled and become part of the
+output code. Your program will normally have to include at least one of these
+so that it does something useful. That is, the toplevel expressions play the
+role of the "main program" in your script. They are best placed after all the
+function and variable definitions, at the end of your program.
+
+All other items (macro, type, function, constant and variable definitions) are
+executed *at compile time* as usual. This might first seem a bit weird, but it
+paves the way for the powerful programming technique of `partial evaluation`_
+(more about that later). In any case, compile-time execution can't really be
+avoided in a highly dynamic language like Pure. Recall that even constants can
+be defined by evaluating arbitrary expressions, and using :func:`eval` a
+program can easily modify itself in even more unforeseeable ways.
+
+.. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
+
+Thus it is important to keep in mind that if :keyword:`const` and
+:keyword:`let` bindings involve any code to be executed, that code will be run
+also during batch compilation. What this means is that permanent side-effects
+such as creating or removing files should be avoided in these definitions;
+stuff like reading files in order to initialize constants and variables should
+be ok, though. Other side-effects should be confined to the toplevel
+expressions making up your main program. (The compiler has no way of checking
+these policies, so they are the programmer's responsibility.)
+
+In the case of :keyword:`const`, the code needed to construct these values
+will normally be run *only* during batch compilation and the resulting values
+are then either inlined in other definitions or stored as read-only variables,
+see `Constant Definitions`_ for details. In contrast, the code for
+:keyword:`let`-bound variables will actually be executed *twice*, once during
+batch compilation, and then again when the compiled program runs.
+
+.. note:: There's one corner case in which :keyword:`const` is treated pretty
+   much the same as :keyword:`let`, namely if a constant involves run time
+   data such as pointers and closures. In such cases the constant value has to
+   be recomputed at run time and effectively becomes a (read-only) variable.
+   (The same applies if the :option:`--noconst` option is used to force
+   computation of constant values at run time, see `Options Affecting Code
+   Size`_.)
+
+The batch compiler always reorders the output code so that all toplevel
+expressions and :keyword:`let` bindings are evaluated *after* all functions
+have been defined. This is done to reduce the size of the output executable,
+so that there's only a *single* snapshot of each function which will be used
+by all toplevel expressions and global variable definitions invoking the
+function. Therefore you should avoid code like the following, which changes
+the function ``foo`` on the fly between invocations::
 
   let x = foo 99;
   foo x = x+1;
   let y = foo 99;
 
-Note that if you run this through the interpreter, ``x`` and ``y`` are bound
-to ``foo 99`` and ``100``, respectively, because expressions and variable
-definitions are executed immediately, as the program is being processed. In
-contrast, if the same program is batch-compiled, *both* variables will be
-defined *after* the definition of ``foo`` and thus refer to the same value
-``100`` instead. This will rarely be a problem in practice (the above example
-is really rather pathological and won't usually occur in real-world programs),
-but to avoid these semantic differences, you'll have to make sure that
-expressions are evaluated *after* all functions used in the evaluation have
-been defined completely. (However, the batch compiler currently doesn't check
-this condition and will happily generate code for programs which violate it.)
-
-Plain toplevel expressions won't be of much use in a batch-compiled program,
-unless, of course, they are evaluated for their side-effects. Your program
-will have to include at least one of these to play the role of the "main
-program" in your script. In most cases these expressions are best placed after
-all the function and variable definitions, at the end of your program.
-
-Also note that during a batch compilation, the compiled program is actually
-executed as usual, i.e., the script is also run *at compile time*. This might
-first seem to be a big annoyance, but it actually opens the door for some
-powerful programming techniques like `partial evaluation`_. It is also a
-necessity because of Pure's highly dynamic nature. For instance, Pure allows
-you to define constants by evaluating an arbitrary expression (cf. `Constant
-Definitions`_), and using :func:`eval` a program can easily modify itself in
-even more unforeseeable ways. Therefore pretty much anything in your program
-can actually depend on previous computations performed while the program is
-being executed. To make this work in batch-compiled scripts, the batch
-compiler thus executes the script as usual. The :var:`compiling` variable can
-be used to check whether the script is being batch-compiled, so you can adjust
-to that by selectively enabling or disabling parts of the code. For instance,
-you will usually want to skip execution of the "main program" during batch
-compilation.
-
-.. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
-
-Last but not least, note that some parts of Pure's metaprogramming
-capabilities and other compile time features are disabled in batch-compiled
-programs:
+Last but not least, some parts of Pure's meta-programming capabilities and
+other compile time features are disabled in batch-compiled programs:
 
 * The :func:`eval` function can only be used to evaluate plain toplevel
   expressions. You can define local functions and variables in :keyword:`with`
@@ -12307,8 +12293,8 @@ programs:
   anything which changes the executing program is "verboten". Moreover, the
   introspective capabilities provided by :func:`evalcmd` and similar
   operations (discussed under Reflection_ in the Macros_ section) are all
-  disabled. If you need any of these capabilities, you have to run your
-  program with the interpreter.
+  disabled. If you need any of these capabilities at run time, you have to run
+  your program with the interpreter.
 
 * Constant and macro definitions, being compile time features, aren't
   available in the compiled program. If you need to use these with
@@ -12320,31 +12306,31 @@ programs:
   pragma can be used to avoid this, see `Options Affecting Code
   Size`_ below.)
 
-* Code which gets executed to compute constant values at compile time will
-  generally *not* be executed in the compiled executable, so your program
-  shouldn't rely on side-effects of such computations (this would be bad
-  practice anyway). There is an exception to this rule, however, namely if a
-  constant value contains run time data such as pointers and local functions
-  which requires an initialization at run time, then the batch compiler will
-  generate code for that. (The same happens if the :option:`--noconst` option
-  is used to force computation of constant values at run time, see `Options
-  Affecting Code Size`_.)
-
 What this boils down to is that in the batch-compiled program you will have to
 avoid anything which requires the compile time or interactive facilities of
-the interpreter. These restrictions only apply at run time, of course. At
-compile time the program *is* being executed by the full version of the
-interpreter so you can use :func:`eval` and :func:`evalcmd` in any desired
-way.
+the interpreter. These restrictions only apply at run time, of course. During
+batch compilation the program *is* being executed by the interpreter, so you
+can use :func:`eval` and :func:`evalcmd` in any desired way. You just need to
+make sure that the corresponding code actually gets executed at compile time
+(remember that plain toplevel expressions aren't). This can be done most
+conveniently by wrapping it up in a :keyword:`const` or :keyword:`let`
+construct, omitting the left-hand side (cf. `Simple Rules`_)::
 
-For most kinds of scripts, the above restrictions aren't really that much of
-an obstacle, or can easily be worked around. For the few scripts which
-actually need the full dynamic capabilities of Pure you'll just have to run
-the script with the interpreter. This isn't a big deal either, only the
-startup will be somewhat slower because the script is compiled on the
-fly. Once the JIT has done its thing the "interpreted" script will run every
-bit as fast as the "compiled" one, since in fact *both* are compiled (only at
-different times) to exactly the same code!
+  const eval "fancy compile time code goes here";
+
+The same approach works with the other inspection operations discussed in
+Reflection_, and also comes in handy if external C code requires
+initialization at compile time. In some cases it may be necessary to execute
+the same code *both* at compile and at run time, which can be achieved by
+using ``let`` in lieu of ``const``.
+
+Most kinds of scripts will work fine when batch-compiled, using the tricks we
+discussed above to work around the little kinks and limitations. For the few
+scripts which actually need the full dynamic capabilities of Pure you'll just
+have to run the script with the interpreter, which shouldn't usually be a big
+impediment either. Once the JIT has done its thing the "interpreted" script
+will run every bit as fast as the "compiled" one, since in fact *both* are
+compiled (only at different times) to exactly the same code!
 
 Example
 -------
@@ -12388,21 +12374,14 @@ desired output file name::
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
 Next suppose that we'd like to supply the value ``n`` at *compile* rather than
-run time. To these ends we want to turn the value passed to the ``main``
-function into a compile time constant, which can be done as follows::
+run time. This is what `partial evaluation`_ is all about. In Pure we can just
+turn the value passed to the ``main`` function into a compile time constant as
+follows::
 
   const n = if argc>1 then sscanf (argv!1) "%d" else 10;
 
 (Note that we provide ``10`` as a default if ``n`` isn't specified on the
 command line.)
-
-Moreover, in such a case we usually want to skip the execution of the main
-function at compile time. To these ends, the predefined :var:`compiling`
-variable holds a truth value indicating whether the program is actually
-running under the auspices of the batch compiler, so that it can adjust
-accordingly. In our example, the evaluation of ``main`` becomes::
-
-  if compiling then () else main n;
 
 Our program now looks as follows::
 
@@ -12413,7 +12392,7 @@ Our program now looks as follows::
   main n = do puts ["Hello, world!", str (map fact (1..n))];
 
   const n = if argc>1 then sscanf (argv!1) "%d" else 10;
-  if compiling then () else main n;
+  main n;
 
 This script "specializes" ``n`` to the first (compile time) parameter when
 being batch-compiled, and it still works as before when we run it through the
@@ -12438,26 +12417,27 @@ interpreter in both batch and interactive mode, too::
   Hello, world!
   [1,2,6,24,120,720,5040]
 
-In addition, there's also a *compile time* check analogous to the
-:var:`compiling` variable, which indicates whether the source script is being
-run normally or in a batch compilation; see `Conditional Compilation`_. We
-might employ this as follows, replacing the last line of the script with
-this::
+Finally, there's also a compile time check which comes in handy if we want to
+execute different code depending on whether a script is batch-compiled or not;
+see `Conditional Compilation`_. We might employ this as follows, replacing the
+last line of the script with this::
 
   #! --if compiled
-  if compiling then () else main n;
+  if argc>1 then main (sscanf (argv!1) "%d") else main n;
   #! --else
   if argc>1 then main n else puts "Try 'main n' where n is a number.";
   #! --endif
 
-The code in the ``--if compiled`` section, which is the same as before, is now
-only executed during batch compilation and in the compiled executable. If we
-run the script normally, in the interpreter, the code in the ``--else``
-section, which just prints a welcome message if no arguments are given on the
-command line, is executed instead. So we now actually have *four* different
-code paths, depending on whether the script is run normally, with or without
-arguments, or in a batch compilation, or as a native executable. This kind of
-setup is useful if the script is to be run both interactively and
+The code in the ``--if compiled`` section is only executed in the compiled
+script. It now also checks whether there is a parameter specified on the
+command line at run time, using that as the value of ``n`` if present, and
+falling back to the static ``n`` value (specified on the command line during
+compilation, or 10 by default) otherwise. If we run the script normally, in
+the interpreter, the code in the ``--else`` section is executed instead, which
+just prints a welcome message if no arguments are given on the command line.
+So we now actually have *four* different code paths, depending on whether the
+script is run normally or batch-compiled, with or without arguments. This kind
+of setup is useful if the script is to be run both interactively and
 non-interactively in the interpreter while developing it, but once the script
 is finished it gets compiled and installed as a native executable.
 
@@ -12481,6 +12461,10 @@ is finished it gets compiled and installed as a native executable.
   Hello, world!
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
+  $ ./hello 8
+  Hello, world!
+  [1,2,6,24,120,720,5040,40320]
+
 You'll rarely need an elaborate setup like this, most of the time something
 like our simple first example will do the trick. But, as you've seen, Pure can
 easily do it.
@@ -12494,15 +12478,15 @@ option, in which case the output code includes *all* functions defined in the
 compiled program, the prelude and any other module imported with a
 :keyword:`using` clause, even if they don't seem to be used anywhere. This
 considerably increases compilation times and makes the compiled executable
-much larger. For instance, on a 64 bit Linux systems with ELF binaries the
-executable of our hello.pure example is about thrice as large:
+much larger. For instance, on my 64 bit Linux systems with ELF binaries the
+executable of our hello.pure example is about twice as large:
 
 .. code-block:: none
 
   $ pure -o hello -c -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 178484 2010-01-12 06:21 hello
+  -rwxr-xr-x 1 ag ag 337304 Apr 10 19:24 hello
   $ pure -o hello -c -u -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 541941 2010-01-12 06:21 hello
+  -rwxr-xr-x 1 ag ag 664112 Apr 10 19:24 hello
 
 (Note that even the stripped executable is fairly large when compared to
 compiled C code, as it still contains the symbol table of the entire program,
@@ -12545,16 +12529,16 @@ variable). For instance::
   using system;
   puts $ str $ sum xs;
 
-On my 64 bit Linux system this produces a 187115 bytes executable. Without
-:option:`--noconst` the code becomes almost an order of magnitude larger in
-this case (1788699 bytes). On the other hand, the smaller executable also
-takes a little longer to run since it must first recompute the value of the
-list constant at startup. So you have to consider the tradeoffs in a given
-situation. Usually big executables aren't much of a problem on modern
-operating systems, but if your program contains a lot of big constants then
-this may become an important consideration. However, if a constant value takes
-a long time to compute then you'll be better off with the default behaviour of
-precomputing the value at compile time.
+On my 64 bit Linux system this produces a 240 KB executable. Without
+:option:`--noconst` the code becomes almost an order of magnitude larger (some
+1800 KB). On the other hand, the smaller executable also takes a little longer
+to run since it must first recompute the value of the list constant at
+startup. So you have to consider the tradeoffs in a given situation. Usually
+big executables aren't much of a problem on modern operating systems, but if
+your program contains a lot of big constants then this may become an important
+consideration. However, if a constant value takes a long time to compute then
+you'll be better off with the default behaviour of precomputing the value at
+compile time.
 
 Other Output Code Formats
 -------------------------
@@ -12646,24 +12630,27 @@ this will be good enough, but if it isn't, you can just add options to the
 linker command as needed to pull in additional required libraries.
 
 As this last example shows, you can also create shared libraries from Pure
-modules. However, on some systems (most notably x86_64), this requires that
-you pass the :option:`-fPIC` option when batch-compiling the module, so that
-position-independent code is generated::
+modules. However, on some systems you may have to pass the :option:`-fPIC`
+option when batch-compiling the module, so that position-independent code is
+generated::
 
   $ pure -c -fPIC pure-odbc/examples/menagerie.pure -o menagerie.o
 
-Note that even when building a shared module, you'll have to supply an
-initialization routine which calls ``__pure_main__`` somewhere.
+.. note:: On most systems it shouldn't be necessary to specify :option:`-fPIC`
+   explicitly any more, since the compiler will add that option automatically
+   on platforms known to require it. Also note that even when building a
+   shared module, you'll have to supply an initialization routine which calls
+   ``__pure_main__`` somewhere.
 
-Also note that since Pure doesn't support separate compilation in the present
-implementation, if you create different shared modules like this, each will
-contain their own copy all the required Pure functions from the prelude and
-other imported Pure modules. This becomes a problem when trying to link
-several separate batch-compiled modules into the same executable or library,
-because you'll get many name clashes for routines present in different modules
-(including the ``__pure_main__`` entry point). To prevent this, the batch
-compiler can be invoked with the :option:`--main` option to explicitly set a
-name for the main entry point. For instance::
+Since Pure doesn't support separate compilation in the present implementation,
+if you create different shared modules like this, each will contain their own
+copy of all the required Pure functions from the prelude and other imported
+Pure modules. This becomes a problem when trying to link several separate
+batch-compiled modules into the same executable or library, because you'll get
+many name clashes for routines present in different modules (including the
+``__pure_main__`` entry point). To prevent this, the batch compiler can be
+invoked with the :option:`--main` option to explicitly set a name for the main
+entry point. For instance::
 
   $ pure -c hello.pure -o hello.o --main __hello_main__
 
@@ -12948,6 +12935,18 @@ option; please see `Invoking Pure`_ for details. Pure 0.58 also adds two new
 code generation options :option:`--symbolic` and :option:`--nosymbolic` to set
 the default evaluation mode of global functions; these are discussed in
 `Defined Functions`_ below.
+
+Pure 0.66 fixed the treatment of unary/binary minus in custom namespaces. The
+compiler now handles this by manufacturing a corresponding unary minus
+operator and an accompanying ``neg`` function symbol in the same namespace, so
+that the overloaded ``-`` operator works in exactly the same manner as the
+default one.
+
+Pure 0.68 changed the batch compiler so that plain toplevel expressions are
+not evaluated during batch compilation any more. Thus the :var:`compiling`
+variable is obsolete now. It is still supported for backward compatibility,
+but the compiler will flag it as "deprecated" when run with the :option:`-w
+<pure -w>` option. Please check `Batch Compilation`_ for details.
 
 Error Recovery
 --------------
