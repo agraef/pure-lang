@@ -53,15 +53,15 @@ end;
 
 let have_synth, have_midi = false, true;
 
-#! --if compiled
+#! --ifnot interactive
 // Parse the command line. Check whether we got a synth in argv!1.
 let have_synth = argc>=2 && any (==argv!1) synths;
 // Check whether we got a MIDI file as well.
 let have_midi = argc~=2 || ~have_synth;
 // In the compiled script, allow the user to pick a synth (and, optionally, a
 // preset) from the command line.
-let synth_name = if compiling || ~have_synth then synth_name else argv!1;
-let preset_name = if compiling || ~have_synth || argc<=3 then "" else argv!2;
+let synth_name = if ~have_synth then synth_name else argv!1;
+let preset_name = if ~have_synth || argc<=3 then "" else argv!2;
 // Print a short usage message and the list of available synth units if we're
 // invoked without arguments.
 let USAGE = "Usage: %s [synth-name [preset-name]] midifile\n\
@@ -69,7 +69,7 @@ Or use %s synth-name to get a list of all presets for the given synth.\n\
 E.g., if you have the Calf Organ installed, try something like:\n\
 %s 'Calf Organ' Shamrock prelude3.mid\n\
 \nAvailable synth units:\n%s\n";
-compiling || argc>=2 ||
+argc>=2 ||
 (fprintf stderr USAGE (prog,prog,prog,join ", " synths) $$ exit 1 when
    prog = head argv;
  end);
@@ -84,8 +84,9 @@ using namespace audio;
 let devs = devices;
 let outdev = output;
 
-// Sample rate.
-let SR = devs!outdev!4;
+// Sample rate. (The device list may be empty, provide a reasonable default in
+// that case.)
+let SR = catch (cst 44100) (devs!outdev!4);
 
 /* Some magic numbers, the block size for running the synth, and the buffer
    size for the audio playback. The latter (size) must be a multiple (m) of
@@ -190,16 +191,16 @@ let presets = record {name=>uri | name,uri = lilv::presets world synth};
 ~stringp preset_name || null preset_name || ~member presets preset_name ||
 lilv::load_preset world (presets!preset_name) synth;
 
-#! --if compiled
+#! --ifnot interactive
 // Print the name of the synth that was chosen and the preset.
-compiling || printf "Synth: %s\n" synth_name;
+printf "Synth: %s\n" synth_name;
 let have_preset = stringp preset_name && ~null preset_name;
-compiling || ~have_preset || printf "Preset: %s\n" preset_name;
+~have_preset || printf "Preset: %s\n" preset_name;
 // If no MIDI file or preset was given, print the available presets.
-compiling || have_preset || have_midi || null presets ||
+have_preset || have_midi || null presets ||
 printf "Available presets:\n%s\n" (join ", " (list (keys presets)));
 // If we were invoked with just the synth name, bail out now.
-compiling || have_midi || exit 1;
+have_midi || exit 1;
 #! --endif
 
 // Create buffers.
@@ -258,8 +259,8 @@ end;
 
 // Main program, lets you specify a midi file on the command line.
 
-#! --if compiled
+#! --ifnot interactive
 main = play seq if listp seq when seq = load (last argv) end;
 = fprintf stderr "bad MIDI file: %s\n" (last argv) $$ exit 1 otherwise;
-compiling || catch (\_->exit 1) main;
+catch (\_->exit 1) main;
 #! --endif
