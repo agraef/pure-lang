@@ -601,8 +601,8 @@ the suggested linker command (including all the dynamic modules loaded by the
 script, which also have to be linked in to create a working executable), to
 which you only have to add the options describing the desired output file.
 
-Tagging Scripts
----------------
+Tagging and Checking Scripts
+----------------------------
 
 Pure programs often have declarations and definitions of global symbols
 scattered out over many different source files. The :option:`--ctags` and
@@ -631,6 +631,21 @@ pathnames, while scripts outside this hierarchy (such as included scripts from
 the standard library) are denoted with absolute pathnames. This scheme makes
 it possible to move an entire directory together with its tags file and have
 the tags information still work in the new location.
+
+In a similar fashion, the :option:`--check` option can be used to check
+scripts for syntax errors; no output files will be produced in this case.
+This is often used in combination with :option:`-w <pure -w>` to get warnings
+about implicit symbol declarations and the like. On-the-fly syntax checkers
+such as flycheck_ can employ this facility to check a program while it is
+being edited (the distribution actually includes a Pure module for flycheck,
+see :doc:`install` for details).
+
+.. _flycheck: http://www.flycheck.org
+
+.. note: If :option:`--check` is used along with :option:`-w <pure -w>` then,
+   in contrast to the tagging options, the syntax checker will execute global
+   constant and variable definitions. This is necessary in order to give
+   proper diagnostics about undeclared symbols.
 
 Running Interactively
 ---------------------
