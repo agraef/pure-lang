@@ -555,6 +555,14 @@ deb: $(debsrc) dist
 $(debsrc):
 	wget -nv https://github.com/agraef/pure-lang/releases/download/$(dist)/$(dist).tar.gz -O $@
 
+# Special rule to build the pcre variant.
+
+pcre-deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist)/debian && mkdir pcre  && (sed -e 's/libreadline-dev/libreadline-dev, libpcre3-dev/g' control > pcre/control) && (sed -e 's/dh_auto_configure --/dh_auto_configure -- --with-pcre/g' rules > pcre/rules) && chmod a+x pcre/rules && mv -f pcre/* . && rmdir pcre
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
 # test logs, make check
 
 tests = $(wildcard $(srcdir)/test/test*.pure)
