@@ -4558,7 +4558,15 @@ void interpreter::define(rule *r)
   if (nerrs > 0) {
     delete r; return;
   } else if (tags) {
-    add_tags(r->lhs); delete r; return;
+    add_tags(r->lhs);
+    // XXXFIXME: For --check in combination with -w we need to go on here and
+    // actually execute some code, in order to avoid spurious warnings about
+    // symbols being defined as a side-effect of executing the rhs (typically
+    // in C code, cf. pure_sys_vars et al). Otherwise we can just bail out at
+    // this point.
+    if (tags > 0 || !compat) {
+      delete r; return;
+    }
   }
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
@@ -4590,7 +4598,11 @@ void interpreter::define_const(rule *r)
   if (nerrs > 0) {
     delete r; return;
   } else if (tags) {
-    add_tags(r->lhs); delete r; return;
+    add_tags(r->lhs);
+    // Handle --check in combination with -w (cf. comments in define() above).
+    if (tags > 0 || !compat) {
+      delete r; return;
+    }
   }
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
