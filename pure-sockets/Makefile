@@ -1,7 +1,7 @@
 
 # Package name and version number:
 pkgname = pure-sockets
-version = 0.7
+version = 0.8
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
