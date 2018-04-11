@@ -555,13 +555,20 @@ deb: $(debsrc) dist
 $(debsrc):
 	wget -nv https://github.com/agraef/pure-lang/releases/download/$(dist)/$(dist).tar.gz -O $@
 
-# Special rule to build the pcre variant.
+# Special rule to build the pcre variant (libpure only). This creates a
+# libpure-pcre package which can be used as a drop-in replacement for the
+# libpure package to get Perl regex support.
 
-pcre-deb: $(debsrc) dist
+pcre-debsrc = $(shell echo $(dist) | sed -e 's/pure/libpure-pcre/' -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+pcre-deb: $(pcre-debsrc) dist
 	tar xfz $(dist).tar.gz
-	cd $(dist)/debian && mkdir pcre  && (sed -e 's/libreadline-dev/libreadline-dev, libpcre3-dev/g' control > pcre/control) && (sed -e 's/dh_auto_configure --/dh_auto_configure -- --with-pcre/g' rules > pcre/rules) && chmod a+x pcre/rules && mv -f pcre/* . && rmdir pcre
+	cd $(dist)/debian && rm -f docs *.install && test -d pcre && sed -e 's/pure/libpure-pcre/g' -e '/^ -- /q' changelog > pcre/changelog && cp pcre/* .
 	cd $(dist) && debuild $(DEBUILD_FLAGS)
 	rm -rf $(dist)
+
+$(pcre-debsrc):
+	wget -nv https://github.com/agraef/pure-lang/releases/download/$(dist)/$(dist).tar.gz -O $@
 
 # test logs, make check
 
