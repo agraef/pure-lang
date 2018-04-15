@@ -1589,19 +1589,19 @@ Some other important ways to invoke the interpreter are summarized below.
 \item[\rm\texttt{pure -g}] Runs the interpreter interactively, with debugging support.
 \item[\rm\texttt{pure -b} \nt{script} \ldots] Runs the given scripts in batch mode.
 \item[\rm\texttt{pure -i} \nt{script} \ldots] Runs the given scripts in batch mode as above, but then enters the interactive command loop. (Add \texttt{-g} to also get debugging support, and \texttt{-q} to suppress the sign-on message.)
-\item[\rm\texttt{pure -c} \nt{script} {[\texttt{-o} \nt{prog}]}] Batch compilation: Compiles the given script to a native executable \nt{prog} (\texttt{a.out} by default).
-\item[\rm\texttt{pure} \nt{script} {[\nt{arg} \ldots]}] Runs the given script with the given parameters. The script name and command line arguments are available in the global \verb|argv| variable.
+\item[\rm\texttt{pure -c} \nt{script} \ldots\ {[\texttt{-o} \nt{prog}]}] Batch compilation: Compiles the given scripts to a native executable \nt{prog} (\texttt{a.out} by default).
+\item[\rm\texttt{pure} {[\texttt{-x}]} \nt{script} {[\nt{arg} \ldots]}] Runs the given script with the given parameters. The script name and command line arguments are available in the global \verb|argv| variable. (You can omit the \verb|-x| option unless it is combined with other options such as \verb|-c|.)
 \end{description}
 
 \index{shebang}
-The latter form of invocation is useful, in particular, in ``shebangs'' which allow you to run a script directly from the shell, with additional command line parameters being passed to the script. To these ends, simply add a line like the following at the beginning of your main script and make the script file executable. (This only works in Unix shells.)
+The latter form of invocation allows you to run a script directly from the shell, with additional command line parameters being passed to the script. To these ends, simply add a ``shebang'' line like the following at the beginning of your main script and make the script file executable. (This only works in Unix shells.)
 
 \begin{lstlisting}
-#!/usr/local/bin/pure
+#!/usr/bin/env pure
 \end{lstlisting}
 
 \index{LLVM}\index{batch compilation}\index{compilation}
-With the \verb|-c| option, you can also compile a script to a native executable which can be run without the interpreter. This needs the basic LLVM toolchain (specifically, \texttt{opt} and \texttt{llc}). It is also possible to create native assembler (\texttt{.s}) and object (\texttt{.o}) files which can be linked into other programs and libraries, or LLVM assembler (\texttt{.ll}) and bitcode (\texttt{.bc}) files which can be processed with the LLVM toolchain. Please refer to the Pure manual for details.
+With the \verb|-c| option, you can also compile a script to a native executable which can be run without the interpreter. This needs the basic LLVM toolchain (specifically, \texttt{opt} and \texttt{llc}). It is also possible to create native assembler (\texttt{.s}) and object (\texttt{.o}) files which can be linked into other programs and libraries, or LLVM assembler (\texttt{.ll}) and bitcode (\texttt{.bc}) files which can be processed with the LLVM toolchain. Please refer to the \href{https://agraef.github.io/pure-docs/pure.html#batch-compilation}{Pure manual} for details.
 
 \index{debugger}
 When running interactively, \verb|-g| enables the built-in symbolic debugger. See Section \ref{Debugging} below for details.
@@ -1624,7 +1624,7 @@ Syntax highlighting support is available for a number of other popular text edit
 \index{tags}\index{etags}\index{ctags}
 The Pure interpreter has support for ``tags'' files in both emacs (``etags'') and vi (``ctags'') format, which can be used to quickly locate the global declarations and definitions of a Pure script in editors and other utilities like the \verb|less| program which provide this feature. Tags files can be created with the \verb|--etags| and \verb|--ctags| options of the interpreter, please see the Pure manual for details. Emacs Pure mode also provides the ``Make Tags'' command to create a tags file in Emacs.
 
-Current versions of the interpreter also offer the \verb|--check| option which does a quick syntax check of a script without executing code or producing output files. This option is particularly useful with ``\href{http://www.flycheck.org/}{flycheck},'' the Emacs on-the-fly syntax checker. Details can be found in the \href{https://agraef.github.io/pure-docs/install.html#emacs-pure-mode}{Emacs section} of the installation manual.
+The latest versions of the interpreter also offer the \verb|--check| option which does a quick syntax check of a script without producing output files. This option is particularly useful with ``\href{http://www.flycheck.org/}{flycheck},'' the Emacs on-the-fly syntax checker. Details can be found in the \href{https://agraef.github.io/pure-docs/install.html#emacs-pure-mode}{Emacs section} of the installation manual.
 
 \subsection{Interactive Commands}
 \label{Interactive}
@@ -1646,8 +1646,7 @@ A convenience for interactive usage is the \verb|ans| function which gives acces
 \end{lstlisting}
 
 \index{interactive commands}
-The interpreter also understands the following special commands for interactive usage. These have to be typed on a line by themselves, starting with the command keyword in column one.%
-\footnote{Thus you can ``escape'' normal Pure code by indenting a line with one or more spaces; this is necessary if an expression starts with an identifier which looks like a command word. Recent versions of the Pure interpreter also provide an alternative command syntax in which interactive commands are escaped by prefixing them with a special character at the very beginning of the line; please check the corresponding section in the Pure manual for details.} A closer description of the commands is available in the Pure manual, which can be invoked in the interpreter with the \verb|help| command.
+The interpreter also understands the following special commands for interactive usage. These have to be typed on a line by themselves, starting with the command keyword in column one. A closer description of the commands is available in the Pure manual, which can be invoked in the interpreter with the \verb|help| command.
 
 \index{help command}\index{interactive commands!help}\index{BROWSER variable}\index{PURE\_HELP variable}
 \begin{description}
@@ -1723,6 +1722,43 @@ fibs  var  fibs = [0,1,1,2,3,5,8,13,21,34,55];
 
 \index{PURE\_MORE variable}\index{PURE\_LESS variable}
 Note that some of the options (in particular, \verb|-d|) may produce excessive amounts of information. By setting the \texttt{PURE\_MORE} environment variable accordingly, you can specify a shell command to be used for paging, usually \texttt{more(1)} or \texttt{less(1)}. \texttt{PURE\_LESS} does the same for evaluation results printed by the interpreter.
+
+\subsection{Command Syntax}
+\label{Syntax}
+
+Note that all interactive commands start with a command keyword at the beginning of a line. These are only recognized in interactive mode. A common pitfall for beginners is that the parser may mistake an expression to be evaluated for an interactive command if it starts with an identifier that's also a command keyword, usually causing an error message. E.g. (assuming that your program defines a function \verb:show:):
+
+\begin{lstlisting}
+> show (x+y);
+show: unknown symbol '(x+y);'
+\end{lstlisting}
+
+In such a case it will be necessary to ``escape'' the expression by indenting a line with one or more spaces:
+
+\begin{lstlisting}
+>   show (x+y);
+\end{lstlisting}
+
+If you prefer, you can also employ an alternative command syntax in which interactive commands are escaped by prefixing them with a special character at the very beginning of the line. This mode can be enabled with the \verb:--escape: option of the interpreter. It takes the desired prefix character (which must be one of the 7-bit ASCII characters \verb?!$%&*,:<>@\|? in the current implementation) as an argument. For instance:
+
+\begin{lstlisting}
+$ pure -q --escape=:
+> show (x+y);
+show (x+y)
+> :show foldl
+foldl f a x::matrix = __C::matrix_foldl f a x;
+foldl f a s::string = foldl f a (chars s);
+foldl f a [] = a;
+foldl f a (x:xs) = foldl f (f a x) xs;
+\end{lstlisting}
+
+Now, interactive commands will only be recognized if they are prefixed with the given character. Obviously, this mode works best if you pick an escape character which is unlikely to occur at the very beginning of a line of ordinary Pure code. Please check the \href{https://agraef.github.io/pure-docs/pure.html#command-syntax}{Command Syntax} section of the Pure manual for further information.
+
+While the default command syntax is a bit less effort to type, many Pure programmers prefer this mode. You can set the the \verb:PURE_ESCAPE: environment variable in your shell's initialization files to have it enabled by default, as follows (assuming Bourne shell syntax):
+
+\begin{verbatim}
+export PURE_ESCAPE=":"
+\end{verbatim}
 
 \subsection{Definition Levels}
 \label{Levels}
@@ -1893,7 +1929,7 @@ Hello, world!
 \end{verbatim}
 
 \index{batch compilation}
-Other options of the interpreter program are explained in Section \ref{Interpreter}. In particular, you can compile the program to a native executable as follows:
+Other options of the interpreter program are explained in Section \ref{Interpreter}. In particular, on Unix systems you can add a shebang like \verb:#!/usr/bin/env pure: to the beginning of the script and make it executable from the shell. Or you can compile the program to a native executable as follows (this works on all supported systems):
 
 \begin{verbatim}
 $ pure -c hello.pure -o hello
@@ -1901,7 +1937,7 @@ $ ./hello
 Hello, world!
 \end{verbatim}
 
-Pure's batch compiler has some unusual properties. In particular, it will evaluate constant and variable definitions \emph{at compile time}. This enables some powerful programming techniques such as partially evaluating the program at compile time; please see the Pure manual for details.
+Pure's batch compiler has some unusual properties. In particular, it evaluates constant and variable definitions \emph{at compile time}, which enables some powerful programming techniques such as \href{http://en.wikipedia.org/wiki/Partial_evaluation}{\emph{partial evaluation}}; please see the \href{https://agraef.github.io/pure-docs/pure.html#batch-compilation}{Pure manual} for more information and some instructive examples.
 
 \subsection{Fibonacci Numbers}
 \label{Fibonacci}
