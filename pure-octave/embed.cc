@@ -90,6 +90,7 @@ static int my_octave_main(int argc, char **argv, int embedded)
     embedded_interpreter = new octave::interpreter();
     embedded_interpreter->execute();
   }
+  return 0;
 }
 
 static void my_clean_up_and_exit(int exit_status, bool safe_to_return)
