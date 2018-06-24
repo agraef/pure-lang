@@ -20,6 +20,7 @@ module Language.C.Pretty (
 ) where
 import Data.List (partition,nub,isSuffixOf)
 import qualified Data.Set as Set
+import Prelude hiding ((<>))
 import Text.PrettyPrint.HughesPJ
 import Debug.Trace {- for warnings -}
 
