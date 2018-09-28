@@ -17,6 +17,9 @@ fsynth_dsp name instance chan::int nvoices::int =
   // write writes the current control values as MIDI and OSC controller
   // messages to the special "midiout" and "oscout" receivers.
   fsynth write = () when
+    // Also output scribble strips to the special "midistrip" receiver.
+    do (pd_send "midistrip") $
+    catmap (\(id=>ptr) -> stripvals id $ get_control ptr) (get ctrls!0);
     do (pd_send "midiout") $
     catmap (\(id=>ptr) -> midivals id $ get_control ptr) (get ctrls!0);
     do (pd_send "oscout") $
@@ -233,6 +236,9 @@ fsynth_dsp name instance chan::int nvoices::int =
   = [ctl (rmap_ctrl args val) n ch | n,args = get rctrlmap!id;
      ch = 1..16; ch~=10];
   oscvals id val = [p val | p = get roscmap!id];
+  // scribble strip descriptions
+  stripvals id val =
+    [strip id (ctrl_min args) (ctrl_max args) (ctrl_step args) (rmap_ctrl args val) n chan | n,args = get rctrlmap!id];
 
   // Special 'init' control.
   fsynth (id@_ val) = () when

@@ -179,7 +179,24 @@ rmap_ctrl args val = case args of
   _ (init,min,max,step) |
   _ (min,max) =
     (::max 0 . ::min 127) $ round ((val-min)/(max-min)*128);
-  _ = if val~=0 then 64 else 0;
+  _ = if val~=0 then 127 else 0;
+end;
+
+// Parameter ranges and step sizes.
+ctrl_min args = case args of
+  _ (init,min,max,step) |
+  _ (min,max) = min;
+  _ = 0;
+end;
+ctrl_max args = case args of
+  _ (init,min,max,step) |
+  _ (min,max) = max;
+  _ = 127;
+end;
+ctrl_step args = case args of
+  _ (init,min,max,step) = step;
+  _ (min,max) |
+  _ = 0;
 end;
 
 // Compare controller values. Returns true iff the given values are identical
