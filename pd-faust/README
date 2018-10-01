@@ -338,8 +338,6 @@ A ``faust~`` object always responds to the following messages:
 
 * ``reload`` reloads the Faust unit. This also reloads the shared library or
   bitcode file if the unit was recompiled since the object was last loaded.
-  (Instead of feeding a ``reload`` message to the control inlet of a Faust
-  unit, you can also just send a ``bang`` to the ``reload`` receiver.)
 
 * ``addr value`` changes the control indicated by the OSC address ``addr``.
   This is also used internally for communication with the Pd GUI and for
@@ -366,6 +364,25 @@ object.
 
 .. _sclsyx: https://bitbucket.org/agraef/sclsyx
 .. _pd-smmf: https://bitbucket.org/agraef/pd-smmf
+
+Finally, each ``faust~`` object subscribes to the following three global
+receivers which enable you to send various kinds of messages to all ``faust~``
+objects in a patch:
+
+* ``faustdsp`` receives arbitrary messages. This is commonly used to
+  distribute MIDI or OSC data to all Faust units in a patch, but can in fact
+  be used to send *any* message recognized by ``faust~`` objects.
+
+* ``oscplay`` listens for OSC messages. In contrast to ``faustdsp``, this
+  receiver *only* recognizes OSC data, and is used, in particular, by the
+  ``midiosc`` abstraction for OSC automation, see `MIDI and OSC Sequencing`_
+  below.
+
+* ``reload`` can be used to reload all ``faust~`` objects in a patch, like
+  sending the ``reload`` message discussed above. This receiver accepts any
+  input message, so just sending a ``bang`` will do. (This receiver is
+  provided for backward compatibility. Instead, you can also send a ``reload``
+  message to the ``faustdsp`` receiver.)
 
 GUI Subpatches
 --------------
@@ -605,17 +622,16 @@ When an object is in write mode, it also *outputs* MIDI and OSC controller
 data in response to both automation data and the manual operation of the Pd
 GUI elements, again according to the controller mappings defined in the Faust
 source, so that it can drive an external device, e.g., in order to provide
-feedback to a MIDI fader box or a multitouch OSC controller. This works with
+feedback to motorized MIDI or multitouch OSC controllers. This works with
 both *active* and *passive* Faust controls.
 
-.. note:: One pitfall in the current implementation is that, for better or
-   worse, the output is *not* emitted directly on the object's control outlet,
-   but instead goes to special ``midiout`` and ``oscout`` receivers provided
-   by the ``midiosc`` abstraction which then takes care of outputting the
-   data. Thus, if you're *not* using ``midiosc``, you will have to provide
-   these receivers yourself if you want to process the generated MIDI and/or
-   OSC data in some way (the included simple.pd example shows how to do this
-   for MIDI data).
+.. note:: For better or worse, the output is *not* emitted directly on the
+   object's control outlet, but instead goes to special ``midiout`` and
+   ``oscout`` receivers provided by the ``midiosc`` abstraction which then
+   takes care of outputting the data. Thus, if you're *not* using ``midiosc``,
+   you will have to provide these receivers yourself if you want to process
+   the generated MIDI and/or OSC data in some way (the included simple.pd
+   example shows how to do this for MIDI data).
 
 To configure MIDI controller assignments, the labels of the Faust control
 elements have to be marked up with the special ``midi`` attribute in the Faust
@@ -775,11 +791,13 @@ implementation:
   ``gate``) are currently hard-coded, as are the names of the ``midi``,
   ``osc`` and ``dsp`` subfolders used to locate various kinds of files.
 
-* Polyphonic aftertouch and channel pressure messages are not supported in the
-  MIDI interface right now, so you'll have to use ordinary MIDI controllers
-  for these parameters instead. Coarse/fine pairs of MIDI controllers aren't
-  directly supported either, so you'll have to implement these yourself as two
-  separate Faust controls.
+* Only control change, note and pitch bend messages are supported in the MIDI
+  interface right now, so you'll have to use, e.g., control changes as a
+  replacement for unsupported types of messages such as key and channel
+  pressure if needed. (You might also consider using the author's midizap_
+  program to do any required remapping.) Coarse/fine pairs of MIDI controllers
+  aren't directly supported either, so you'll have to implement these yourself
+  as two separate Faust controls.
 
 * There's no translation of OSC values. pd-faust thus always assumes that the
   controls of an external OSC device have the ranges specified in the Faust
@@ -787,6 +805,7 @@ implementation:
   controller setup or the control ranges in the Faust program, or use an
   external tool like OSCulator_ to translate the messages.
 
+.. _midizap: https://github.com/agraef/midizap
 .. _OSCulator: http://www.osculator.net/
 
 Also, please check the TODO file included in the distribution for other issues
