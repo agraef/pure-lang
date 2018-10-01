@@ -34,6 +34,7 @@ let width,height = 0,0;
 let radio_sliders = 0;
 let fake_buttons_flag = false;
 let slider_nums_flag = true;
+let hide_passive = false;
 
 /* Control symbols. This maps a faustui control name (possibly including a
    path) to the corresponding Pd symbol, which is used to send and receive
@@ -130,7 +131,8 @@ add_widget path (x,y) item
 		      check_flag (hidden s name) (control_meta item) "hidden" ||
 		      nvoices > 0 &&
 		      // exclude passive and voice controls of synths
-		      (any (===control_type item) [hbargraph,vbargraph] ||
+		      (hide_passive &&
+		       any (===control_type item) [hbargraph,vbargraph] ||
 		       any ((==)name) ["freq","gain","gate"])
 		    when
 		      name = control_label item;

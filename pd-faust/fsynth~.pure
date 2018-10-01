@@ -42,13 +42,17 @@ fsynth_dsp name instance chan::int nvoices::int =
     dsp = load_dsp name samplerate; dsp_source name;
     put syn {faust_clone dsp | i = 1..nvoices};
     // Reinitialize the GUI and grab the control variables.
-    zipwith put [vctrls,ctrls,defaults,ctrlmap,oscmap] [vc,c,df,cm,om] when
-      vc,c,df,cm,om = create_gui {faust_info s!2 | s = get syn};
+    zipwith put [vctrls,ctrls,octrls,defaults,ctrlmap,oscmap] [vc,c,oc,df,cm,om] when
+      vc,c,oc,df,cm,om = create_gui {faust_info s!2 | s = get syn};
     end;
     clear devctrls;
     do (\(id=>ptr) -> insert devctrls (id=>())) (get ctrls!0);
     put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
     put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
+    put ctrlmap $ ordmdict
+    [c | c@(n=>(id,args)) = get ctrlmap; ~member (get octrls) id];
+    put oscmap $ ordmdict
+    [c | c@(p=>id) = get oscmap; ~member (get octrls) id];
     // Reset all voices.
     put voc initvoc;
     put active 1;
@@ -61,13 +65,41 @@ fsynth_dsp name instance chan::int nvoices::int =
   fsynth (reload _) = fsynth reload; // reload receiver
 
   // The dsp loop.
-  fsynth in::matrix = sum when
+  fsynth in::matrix = sum,cout when
     // render all the voices
     do (\(syn,out) -> faust_compute syn in out) (zip (get syn) out);
     // mix down to a single stereo signal
     //sum = foldl1 (zipwith (+)) out;
     mix out sum;
+    cout = if get active then control_out else ();
   end;
+
+  // Update the passive controls. (Doing this for each dsp cycle is a cpu hog,
+  // so we only update the controls after some given time has passed.) Note
+  // that for compatibility with older pd-faust versions you can also set
+  // pdfaust::hide_passive to disable this.
+  control_out = () when
+    do (\(id=>ptr) -> pd_send id (control_val ptr)) (get octrls);
+    // Also update external MIDI/OSC controllers in write mode, for passive
+    // controls which have a MIDI or OSC controller assigned to them.
+    ~get writing ||
+    (do (pd_send "midiout") $
+     catmap (\(id=>ptr) -> midivals id $ control_val ptr) (get octrls));
+    ~get writing ||
+    (do (pd_send "oscout") $
+     catmap (\(id=>ptr) -> oscvals id $ control_val ptr) (get octrls));
+  end if ~hide_passive && do_controls with
+    do_controls = put lasttime time $$ true
+      if time >= get lasttime + update_time when time = pd_time end;
+    = false otherwise;
+  end;
+  = () otherwise;
+  // Aggregation of passive controller values. We don't know what these values
+  // are, so we simply output the maximum value of all voices for each passive
+  // control here. This should give sensible readings independently of how the
+  // values are calculated and what ranges they cover.
+  control_val (p:ptrs) = foldl (\x p -> max x (get_control p))
+    (get_control p) ptrs;
 
   // Respond to note messages.
   fsynth (note num vel ch) = () if ~get active;
@@ -324,6 +356,8 @@ end when
   init_sym = control_sym instance "init";
   active_sym = control_sym instance "active";
   record_sym = control_sym instance "record";
+  // Last time for passive controller update.
+  lasttime = ref pd_time;
   // Load the Faust dsp.
   dsp = load_dsp name samplerate; dsp_source name;
   // Initialize the synth voices.
@@ -332,12 +366,24 @@ end when
   // Get the number of inputs and outputs (these can't be changed later).
   k,l,_ = faust_info (get syn!0);
   // Initialize the GUI and grab the control variables.
-  vctrls,ctrls,defaults,ctrlmap,oscmap = ref vc,ref c,ref df,ref cm,ref om when
-    vc,c,df,cm,om = create_gui {faust_info s!2 | s = get syn};
+  vctrls,ctrls,octrls,defaults,ctrlmap,oscmap = ref vc,ref c,ref oc,ref df,ref cm,ref om when
+    vc,c,oc,df,cm,om = create_gui {faust_info s!2 | s = get syn};
   end;
   devctrls = orddict [id=>() | id=>ptr = get ctrls!0];
-  rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
-  roscmap = ref $ ordmdict [id=>p | p=>id = get oscmap];
+  rctrlmap = ref $ ordmdict
+    [id=>(n,args) | n=>(id,args) = get ctrlmap;
+     ~hide_passive || ~member (get octrls) id];
+  roscmap = ref $ ordmdict
+    [id=>p | p=>id = get oscmap;
+     ~hide_passive || ~member (get octrls) id];
+  // Remove the passive controls from the MIDI and OSC controller maps. Only
+  // the active controls can be set from incoming MIDI and OSC messages. Note
+  // that we do this after computing the reverse mappings, as we normally want
+  // the passive controls to be included there.
+  put ctrlmap $ ordmdict
+  [c | c@(n=>(id,args)) = get ctrlmap; ~member (get octrls) id];
+  put oscmap $ ordmdict
+  [c | c@(p=>id) = get oscmap; ~member (get octrls) id];
   // Create the signal buffers.
   n = blocksize;
   out = smatrix [dmatrix (l,n) | i = 1..nvoices];
@@ -384,11 +430,15 @@ end with
   end;
 
   // Create the GUI.
-  create_gui ui = vctrls,ctrls,defaults,ctrlmap,oscmap when
+  create_gui ui = vctrls,ctrls,octrls,defaults,ctrlmap,oscmap when
     // Get a map with the fully qualified names of the controls for each voice.
     pctrls = map (control_map.pcontrols) ui;
     // The metadata will be the same for each voice.
     ctrl_descr = pcontrols (ui!0);
+    ctrl_refs = transpose $ map (map control_ref.pcontrols) $ list ui with
+      transpose [] = [];
+      transpose xs@(x:_) = foldr (zipwith (:)) [[] | i = 1..#x] xs;
+    end;
     pmeta = control_metamap ctrl_descr;
     /* Extract the "voice" controls. These are the freq, gain and gate
        controls which may differ depending on which note is being played on a
@@ -418,6 +468,17 @@ end with
     meta = adjust_controls pmeta;
     // Get the default values of the auxiliary controls.
     defaults = {id => get_control ptr | id=>ptr = ctrls!0};
+    // Extract the active (input) and passive (output) controls.
+    ictrls,octrls =
+      {control_label c => control_ref c | c = ctrl_descr;
+       ~is_passive_control c && ~is_voice_control (control_label c)},
+      {control_label c => r | c,r = zip ctrl_descr ctrl_refs;
+       is_passive_control c && ~is_voice_control (control_label c)}
+    with
+      is_passive_control c = any (===control_type c) [hbargraph,vbargraph];
+    end;
+    ictrls = adjust_controls ictrls;
+    octrls = adjust_controls octrls;
     // Construct the MIDI and OSC controller maps.
     ctrlargs = adjust_controls
       {control_label c => control_type c (control_args c) | c = ctrl_descr};
@@ -454,8 +515,8 @@ end with
     do (pd_send gui) objs;
     // Initialize the GUI elements.
     do (\(id=>ptr) -> pd_send id (get_control ptr)) (ctrls!0);
-    // Install receivers for the GUI elements.
-    do (\(id=>ptr) -> pd_receive id) (ctrls!0);
+    // Install receivers for the active GUI elements.
+    do (\(id=>ptr) -> pd_receive id) ictrls;
     // Install receivers for the special init, active and record controls.
     pd_receive (control_sym instance "init");
     pd_receive (control_sym instance "active");
