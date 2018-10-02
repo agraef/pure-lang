@@ -11,6 +11,7 @@
 
 #include <pure/runtime.h>
 #include <m_pd.h>
+#include <g_canvas.h>
 
 #ifndef PD
 #define PD "pd"
@@ -479,13 +480,16 @@ typedef struct _pure {
   /* control inlets and outlets */
   int n_in, n_out;		/* number of extra inlets and outlets */
   struct _px **in;		/* extra inlet proxies, see t_px below */
-  t_outlet **out;		/* outlets */
+  t_inlet **inl;		/* inlets */
+  t_outlet **outl;		/* outlets */
   /* receivers */
   int n_recv;			/* number of receiver proxies */
   struct _px **recvin;		/* receiver proxies */
   t_symbol **recvsym;		/* receiver symbols */
   /* signal inlets and outlets */
   int n_dspin, n_dspout;	/* number of signal inlets and outlets */
+  t_inlet **dspinl;		/* signal inlets */
+  t_outlet **dspoutl;		/* signal outlets */
   t_sample **dspin, **dspout;	/* signal data */
   gsl_matrix *sig;		/* GSL matrix holding the input signal */
   t_float sr;			/* The samplerate. */
@@ -495,6 +499,7 @@ typedef struct _pure {
   char *args;			/* creation arguments */
   void *tmp, *tmpst;		/* temporary storage */
   bool save;			/* enables the pd_save/pd_restore feature */
+  bool is_dsp;			/* indicates a tilde object */
   pure_expr *sigx;		/* Pure expression holding the input signal */
   char *open_filename;		/* menu-open filename (script by default) */
   /* asynchronous messaging */
@@ -574,7 +579,7 @@ static const char *fun_name_s(const char *name)
       strncpy(buf, name, 1023);
       buf[1023] = 0;
     } else {
-      strncpy(buf, name, l-1);
+      strcpy(buf, name);
       strcpy(buf+l-1, "_dsp");
     }
     return buf;
@@ -908,6 +913,16 @@ extern void pd_unreceive(const char *sym)
   unbind_receiver(actx, s);
 }
 
+/* Reconfigure the number of inlets and outlets. */
+
+static void pure_reconfigure(t_pure *x, int n_in, int n_out);
+
+extern void pd_configure(int n_in, int n_out)
+{
+  if (!actx) return;
+  pure_reconfigure(actx, n_in, n_out);
+}
+
 /* Set the filename to be opened for the actx object on menu-open (instead of
    the Pure source of the object). NOTE: This must be called during object
    initialization or a method call, otherwise actx will be undefined. */
@@ -926,7 +941,6 @@ extern void pd_setfile(const char *name)
 
 extern pure_expr *pd_getfile(void)
 {
-  t_canvas *canvas;
   if (actx) {
     if (actx->open_filename)
       return pure_cstring_dup(actx->open_filename);
@@ -985,7 +999,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
       for (i = 0; i < argc; i++)
 	create_atom(&argv[i], args[i]);
     }
-    outlet_list(x->out[k], &s_list, argc, argv);
+    outlet_list(x->outl[k], &s_list, argc, argv);
     goto errexit;
   }
   /* get arguments */
@@ -995,7 +1009,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
     if (!check_outlet(x, k)) goto errexit;
     if (argc == 0)
       /* single symbol value */
-      outlet_anything(x->out[k], gensym(sval), 0, NULL);
+      outlet_anything(x->outl[k], gensym(sval), 0, NULL);
     else {
       t_symbol *t = gensym(sval);
       if (argc > 0) {
@@ -1004,13 +1018,13 @@ static void send_message(t_pure *x, int k, pure_expr *y)
       }
       for (i = 0; i < argc; i++)
 	create_atom(&argv[i], args[i]);
-      outlet_anything(x->out[k], t, argc, argv);
+      outlet_anything(x->outl[k], t, argc, argv);
     }
   } else if (is_double(f, &dval)) {
     if (!check_outlet(x, k)) goto errexit;
     if (argc == 0)
       /* single double value */
-      outlet_float(x->out[k], dval);
+      outlet_float(x->outl[k], dval);
     else {
       /* create a list message with the double value in front */
       argv = malloc((argc+1)*sizeof(t_atom));
@@ -1018,7 +1032,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
       create_atom(&argv[0], f);
       for (i = 0; i < argc; i++)
 	create_atom(&argv[i+1], args[i]);
-      outlet_list(x->out[k], &s_list, argc+1, argv);
+      outlet_list(x->outl[k], &s_list, argc+1, argv);
     }
   } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != get_void_sym()) {
     /* manufacture a message with the given symbol as selector */
@@ -1033,7 +1047,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
       }
       for (i = 0; i < argc; i++)
 	create_atom(&argv[i], args[i]);
-      outlet_anything(x->out[k], t, argc, argv);
+      outlet_anything(x->outl[k], t, argc, argv);
     }
   }
  errexit:
@@ -1370,7 +1384,10 @@ static inline bool is_double_matrix(pure_expr *x, gsl_matrix **y)
 static inline void zero_samples(int k, int n, t_sample **out)
 {
   int i, j;
-  for (i = 0; i < k; i++)
+  for (i = 0; i < k; i++) {
+    // A null pointer here indicates a new sample buffer which hasn't
+    // been set up yet. We just skip these.
+    if (!out[i]) continue;
 #ifdef __STDC_IEC_559__
     /* IEC 559 a.k.a. IEEE 754 floats can be initialized faster like this */
     memset(out[i], 0, n*sizeof(t_sample));
@@ -1378,6 +1395,7 @@ static inline void zero_samples(int k, int n, t_sample **out)
     for (j = 0; j < n; j++)
       out[i][j] = 0.0f;
 #endif
+  }
 }
 
 static t_int *pure_perform(t_int *w)
@@ -1391,8 +1409,18 @@ static t_int *pure_perform(t_int *w)
     /* get the input data */
     size_t i, j, m = x->n_dspin, tda = x->sig->tda;
     for (i = 0; i < m; i++)
-      for (j = 0; j < n; j++)
-	x->sig->data[i*tda+j] = (double)x->dspin[i][j];
+      // XXXNOTE: A null pointer here indicates a new sample buffer which
+      // hasn't been set up yet. Most likely this is due to an increase in the
+      // number of signal inlets after a Pure object got reloaded, but before
+      // the pure_dsp callback had a chance to be invoked (which happens
+      // lazily as soon as some input gets connected to the new inlet). In
+      // this case we pretend that we have an input with all samples zero.
+      if (x->dspin[i])
+	for (j = 0; j < n; j++)
+	  x->sig->data[i*tda+j] = (double)x->dspin[i][j];
+      else
+	for (j = 0; j < n; j++)
+	  x->sig->data[i*tda+j] = 0.0;
     /* Invoke the object function. This should return a double matrix with
        numbers of rows and columns corresponding to the number of signal
        outlets and the block size, respectively. Optionally, it may also
@@ -1418,8 +1446,12 @@ static t_int *pure_perform(t_int *w)
       }
       /* get the output data */
       for (i = 0; i < m; i++)
-	for (j = 0; j < n; j++)
-	  x->dspout[i][j] = (t_sample)sig->data[i*tda+j];
+	// XXXNOTE: As with the signal inlets (see above), a null pointer here
+	// indicates a new sample buffer which hasn't been set up yet. Here we
+	// can just ignore the data for this outlet, as it isn't used anyway.
+	if (x->dspout[i])
+	  for (j = 0; j < n; j++)
+	    x->dspout[i][j] = (t_sample)sig->data[i*tda+j];
     } else {
       zero_samples(x->n_dspout, n, x->dspout);
     }
@@ -1547,12 +1579,13 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   if (!c->interp) xappend(x);
 
   x->cls = c;
+  x->is_dsp = is_dsp;
   x->interp = c->interp;
   x->canvas = canvas;
   x->foo = 0;
   x->n_in = 0; x->n_out = 1;
   x->in = 0;
-  x->out = 0;
+  x->inl = 0; x->outl = 0;
   x->n_recv = 0;
   x->recvin = 0;
   x->recvsym = 0;
@@ -1565,6 +1598,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     x->n_dspin = x->n_dspout = 1;
   else
     x->n_dspin = x->n_dspout = 0;
+  x->dspinl = 0; x->dspoutl = 0;
   x->dspin = x->dspout = 0;
   x->sig = 0;
   x->sigx = 0;
@@ -1577,7 +1611,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->clock = clock_new(x, (t_method)timeout);
   x->msg = 0;
   /* initialize the object function and determine the number of inlets and
-     outlets (these cannot be changed later) */
+     outlets */
   if (x->args != 0) {
     int n_in = 1, n_out = 1;
     pure_expr *f = parse_expr(x, x->args);
@@ -1639,40 +1673,46 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   }
   if (x->foo != 0) {
     /* allocate memory for control inlets and outlets */
-    if (x->n_in > 0)
+    if (x->n_in > 0) {
       x->in = malloc(x->n_in*sizeof(t_px*));
+      x->inl = malloc(x->n_in*sizeof(t_inlet*));
+    }
     if (x->n_out > 0)
-      x->out = malloc(x->n_out*sizeof(t_outlet*));
-    if ((x->n_in > 0 && x->in == 0) ||
-	(x->n_out > 0 && x->out == 0))
+      x->outl = malloc(x->n_out*sizeof(t_outlet*));
+    if ((x->n_in > 0 && (!x->in || !x->inl)) ||
+	(x->n_out > 0 && !x->outl))
       pd_error(x, "pd-pure: memory allocation failed");
-    if (!x->in) x->n_in = 0;
-    if (!x->out) x->n_out = 0;
+    if (!x->in || !x->inl) x->n_in = 0;
+    if (!x->outl) x->n_out = 0;
     /* initialize the proxies for the extra control inlets */
     for (i = 0; i < x->n_in; i++) {
       x->in[i] = (t_px*)pd_new(px_class);
       x->in[i]->x = x;
       x->in[i]->ix = i+1;
-      inlet_new(&x->x_obj, &x->in[i]->obj.ob_pd, 0, 0);
+      x->inl[i] = inlet_new(&x->x_obj, &x->in[i]->obj.ob_pd, 0, 0);
     }
     /* initialize the control outlets */
     for (i = 0; i < x->n_out; i++)
-      x->out[i] = outlet_new(&x->x_obj, 0);
+      x->outl[i] = outlet_new(&x->x_obj, 0);
     /* allocate memory for signal inlets and outlets */
-    if (x->n_dspin > 0)
+    if (x->n_dspin > 0) {
+      x->dspinl = malloc(x->n_dspin*sizeof(t_inlet*));
       x->dspin = malloc(x->n_dspin*sizeof(t_sample*));
-    if (x->n_dspout > 0)
+    }
+    if (x->n_dspout > 0) {
+      x->dspoutl = malloc(x->n_dspout*sizeof(t_outlet*));
       x->dspout = malloc(x->n_dspout*sizeof(t_sample*));
-    if ((x->n_dspin > 0 && x->dspin == 0) ||
-	(x->n_dspout > 0 && x->dspout == 0))
+    }
+    if ((x->n_dspin > 0 && (!x->dspin || !x->dspinl)) ||
+	(x->n_dspout > 0 && (!x->dspout || !x->dspoutl)))
       pd_error(x, "pd-pure: memory allocation failed");
-    if (!x->dspin) x->n_dspin = 0;
-    if (!x->dspout) x->n_dspout = 0;
+    if (!x->dspin || !x->dspinl) x->n_dspin = 0;
+    if (!x->dspout || !x->dspoutl) x->n_dspout = 0;
     /* initialize signal inlets and outlets */
     for (i = 0; i < x->n_dspin; i++)
-      inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
+      x->dspinl[i] = inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
     for (i = 0; i < x->n_dspout; i++)
-      outlet_new(&x->x_obj, &s_signal);
+      x->dspoutl[i] = outlet_new(&x->x_obj, &s_signal);
   } else {
     x->n_in = x->n_out = 0;
     x->n_dspin = x->n_dspout = 0;
@@ -1700,9 +1740,12 @@ static void pure_fini(t_pure *x)
       pd_free((t_pd*)x->recvin[i]);
     }
   if (x->in) free(x->in);
-  if (x->out) free(x->out);
+  if (x->inl) free(x->inl);
+  if (x->outl) free(x->outl);
   if (x->recvin) free(x->recvin);
   if (x->recvsym) free(x->recvsym);
+  if (x->dspinl) free(x->dspinl);
+  if (x->dspoutl) free(x->dspoutl);
   if (x->dspin) free(x->dspin);
   if (x->dspout) free(x->dspout);
   if (x->sigx) pure_free(x->sigx);
@@ -1761,14 +1804,183 @@ static void pure_refini(t_pure *x)
   }
 }
 
+static void pure_reconfigure(t_pure *x, int n_in, int n_out)
+{
+  int n_dspin = 0, n_dspout = 0;
+  int k = !x->is_dsp, count = 0;
+  int const redraw = (x->canvas && glist_isvisible(x->canvas) &&
+		      !x->canvas->gl_isdeleting &&
+		      glist_istoplevel(x->canvas) && x->foo);
+  if (redraw) {
+    gobj_vis((t_gobj *)x, x->canvas, 0);
+  }
+  // Update the numbers of inlets and outlets.
+  if (n_in < k) {
+    pd_error(x, "pd-pure: bad number %d of inlets, must be >= %d",
+	     n_in, k);
+    n_in = k;
+  }
+  if (n_out < 0) {
+    pd_error(x, "pd-pure: bad number %d of outlets, must be >= 0",
+	     n_out);
+    n_out = 0;
+  }
+  if (x->is_dsp) {
+    n_dspin = n_in;
+    n_dspout = n_out;
+    n_in = 0;
+    n_out = 1;
+  } else {
+    n_dspin = 0;
+    n_dspout = 0;
+    n_in = n_in-1;
+    n_out = n_out;
+  }
+  if (x->foo) {
+    int i;
+    if (x->n_in != n_in) {
+      // Update the control inlets.
+      for (i = n_in; i < x->n_in; i++) {
+	// XXXFIXME: This walks through all connections in the canvas. There
+	// must be a more efficient way to do this?
+        canvas_deletelinesforio(x->canvas, (t_text*)x, x->inl[i], 0);
+	inlet_free(x->inl[i]);
+	pd_free((t_pd*)x->in[i]);
+      }
+      if (n_in > 0) {
+	x->in = realloc(x->in, n_in*sizeof(t_px*));
+	x->inl = realloc(x->inl, n_in*sizeof(t_inlet*));
+	if (!x->in || !x->inl) {
+	  pd_error(x, "pd-pure: memory allocation failed");
+	  n_in = 0;
+	} else {
+	  for (i = x->n_in; i < n_in; i++) {
+	    x->in[i] = (t_px*)pd_new(px_class);
+	    x->in[i]->x = x;
+	    x->in[i]->ix = i+1;
+	    x->inl[i] = inlet_new(&x->x_obj, &x->in[i]->obj.ob_pd, 0, 0);
+	  }
+	}
+      } else {
+	if (x->in) free(x->in);
+	if (x->inl) free(x->inl);
+	x->in = 0; x->inl = 0;
+      }
+      x->n_in = n_in;
+      count++;
+    }
+    if (x->n_out != n_out) {
+      // Update the control outlets.
+      for (i = n_out; i < x->n_out; i++) {
+	// XXXFIXME: This walks through all connections in the canvas. There
+	// must be a more efficient way to do this? Also, apparently the main
+	// inlet matches 0, which will kill any incoming connection to the
+	// main inlet, so we must use a dummy t_inlet pointer here. We use
+	// (intptr_t)-1 for this purpose here, which will hopefully never
+	// match an inlet.
+        canvas_deletelinesforio(x->canvas, (t_text*)x,
+				(t_inlet*)(intptr_t)-1, // dummy!!!
+				x->outl[i]);
+	outlet_free(x->outl[i]);
+      }
+      if (n_out > 0) {
+	x->outl = realloc(x->outl, n_out*sizeof(t_outlet*));
+	if (!x->outl) {
+	  pd_error(x, "pd-pure: memory allocation failed");
+	  n_out = 0;
+	} else {
+	  for (i = x->n_out; i < n_out; i++) {
+	    x->outl[i] = outlet_new(&x->x_obj, 0);
+	  }
+	}
+      } else {
+	if (x->outl) free(x->outl);
+	x->outl = 0;
+      }
+      x->n_out = n_out;
+      count++;
+    }
+    if (x->n_dspin != n_dspin) {
+      // Update the signal inlets.
+      for (i = n_dspin; i < x->n_dspin; i++) {
+        canvas_deletelinesforio(x->canvas, (t_text*)x, x->dspinl[i], 0);
+	inlet_free(x->dspinl[i]);
+      }
+      if (n_dspin > 0) {
+	x->dspinl = realloc(x->dspinl, n_dspin*sizeof(t_inlet*));
+	x->dspin = realloc(x->dspin, n_dspin*sizeof(t_sample*));
+	if (!x->dspin || !x->dspinl) {
+	  pd_error(x, "pd-pure: memory allocation failed");
+	  n_dspin = 0;
+	} else {
+	  for (i = x->n_dspin; i < n_dspin; i++) {
+	    x->dspinl[i] = inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal,
+				     &s_signal);
+	    // XXXNOTE: We set the newly added sample buffers to zero pointers
+	    // here, they will get initialized properly later when pure_dsp is
+	    // invoked.
+	    x->dspin[i] = 0;
+	  }
+	}
+      } else {
+	if (x->dspinl) free(x->dspinl);
+	if (x->dspin) free(x->dspin);
+        x->dspinl = 0; x->dspin = 0;
+      }
+      x->n_dspin = n_dspin;
+      count++;
+    }
+    if (x->n_dspout != n_dspout) {
+      // Update the signal outlets.
+      for (i = n_dspout; i < x->n_dspout; i++) {
+        canvas_deletelinesforio(x->canvas, (t_text*)x,
+				(t_inlet*)(intptr_t)-1, // dummy!!!
+				x->dspoutl[i]);
+	outlet_free(x->dspoutl[i]);
+      }
+      if (n_dspout > 0) {
+	x->dspoutl = realloc(x->dspoutl, n_dspout*sizeof(t_outlet*));
+	x->dspout = realloc(x->dspout, n_dspout*sizeof(t_sample*));
+	if (!x->dspout || !x->dspoutl) {
+	  pd_error(x, "pd-pure: memory allocation failed");
+	  n_dspout = 0;
+	} else {
+	  for (i = x->n_dspout; i < n_dspout; i++) {
+	    x->dspoutl[i] = outlet_new(&x->x_obj, &s_signal);
+	    // XXXNOTE: We set the newly added sample buffers to zero pointers
+	    // here, they will get initialized properly later when pure_dsp is
+	    // invoked.
+	    x->dspout[i] = 0;
+	  }
+	}
+      } else {
+	if (x->dspoutl) free(x->dspoutl);
+	if (x->dspout) free(x->dspout);
+        x->dspoutl = 0; x->dspout = 0;
+      }
+      x->n_dspout = n_dspout;
+      count++;
+    }
+  }
+  if (redraw) {
+    gobj_vis((t_gobj *)x, x->canvas, 1);
+    canvas_fixlinesfor(x->canvas, (t_text*)x);
+    if (count) {
+      //canvas_resortinlets(x->canvas);
+      canvas_dirty(x->canvas, 1);
+    }
+  }
+}
+
 static void pure_reinit(t_pure *x)
 {
   if (x->interp) return; /* preloaded module */
   if (x->args != 0) {
-    int n_in = 1, n_out = 1;
+    int n_in = 1, n_out = 1, n_dspin = 0, n_dspout = 0;
     pure_expr *f = parse_expr(x, x->args);
     x->foo = f;
     if (f) {
+      int k = !x->is_dsp;
       size_t n;
       pure_expr **xv = 0, *g;
       pure_new(f);
@@ -1785,8 +1997,6 @@ static void pure_reinit(t_pure *x)
       if (pure_is_tuplev(f, &n, &xv) && n == 3 &&
 	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
 	x->foo = pure_new(xv[2]); pure_free(f);
-	/* FIXME: Number of inlets and outlets are initialized at object
-	   creation time, can't change them here. */
       }
       if (xv) free(xv);
       {
@@ -1796,6 +2006,8 @@ static void pure_reinit(t_pure *x)
 	if (x->save) pure_clear_sentry(y);
       }
     }
+    // Update the inlets and outlets.
+    pure_reconfigure(x, n_in, n_out);
   }
   if (x->tmp) {
     /* Restore pending timer callback. */
