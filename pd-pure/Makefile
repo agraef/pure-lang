@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pd-pure-$(version)
-version = 0.25
+version = 0.26
 
 # Here are some variables you can specify when invoking 'make', besides the
 # usual CXXFLAGS, CPPFLAGS etc.:

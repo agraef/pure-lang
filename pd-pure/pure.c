@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2009-2017 by Albert Graef <aggraef@gmail.com>.  Distributed
+/* Copyright (c) 2009-2018 by Albert Graef <aggraef@gmail.com>.  Distributed
    under the new BSD license, see the accompanying COPYING file for details. */
 
 #include <stdlib.h>
@@ -2451,7 +2451,7 @@ extern void pure_setup(void)
     pure_expr *x = pure_symbol(pure_sym("version"));
     char *pure_version = 0;
     pure_is_cstring_dup(x, &pure_version);
-    post("pd-pure %s (pure-%s) (c) 2009-2017 Albert Graef <aggraef@gmail.com>", VERSION, pure_version);
+    post("pd-pure %s (pure-%s) (c) 2009-2018 Albert Graef <aggraef@gmail.com>", VERSION, pure_version);
 #ifdef PD_L2ORK_VERSION
     /* The latest Purr Data (a.k.a. Pd-l2ork 2.x) versions have a proper
        version number now, which is different from the vanilla compatibility
