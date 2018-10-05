@@ -60,7 +60,7 @@
   "A Pure syntax checker using the Pure interpreter.
 
 See URL `https://agraef.github.io/pure-lang/'."
-  :command ("pure" "--check" (option-flag "-w" flycheck-pure-warnings) source)
+  :command ("pure" "--check" "-I." (option-flag "-w" flycheck-pure-warnings) source)
   :error-patterns
   ((warning line-start (file-name) ", line " line ": warning: " (message) line-end)
    (error line-start (file-name) ", line " line ": " (message) line-end))
