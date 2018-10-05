@@ -464,6 +464,11 @@ static inline int get_varargs_sym(void)
     return pure_sym("varargs");
 }
 
+static inline int get_reload_sym(void *x)
+{
+  return pure_sym("__reload");
+}
+
 /* The Pure object class. */
 
 typedef struct _pure {
@@ -736,7 +741,7 @@ static void pure_errmsgs(t_pure *x)
 
 /* Create an application, with error checking. */
 
-static pure_expr *pure_appxx(t_pure *x, pure_expr *y, pure_expr *z)
+static pure_expr *pure_appxx(t_pure *x, pure_expr *y, pure_expr *z, bool *flg)
 {
   actx = x;
   pure_expr *e = 0, *u = pure_appx(y, z, &e);
@@ -744,10 +749,15 @@ static pure_expr *pure_appxx(t_pure *x, pure_expr *y, pure_expr *z)
   if (!u) {
     pure_errmsgs(x);
     if (e) {
-      char *s = str(e);
-      if (s) {
-	pd_error(x, "pd-pure: unhandled exception '%s'", s);
-	free(s);
+      int sym;
+      if (flg && pure_is_symbol(e, &sym) && sym == get_reload_sym(x)) {
+	*flg = 1;
+      } else {
+	char *s = str(e);
+	if (s) {
+	  pd_error(x, "pd-pure: unhandled exception '%s'", s);
+	  free(s);
+	}
       }
       pure_freenew(e);
     }
@@ -923,6 +933,15 @@ extern void pd_configure(int n_in, int n_out)
   pure_reconfigure(actx, n_in, n_out);
 }
 
+/* Recreate an object. This never returns, it raises an exception which causes
+   the calling object to be recreated later when it's safe to do so. */
+
+extern void pd_reload(void)
+{
+  if (!actx) return;
+  pure_throw(pure_symbol(get_reload_sym(actx)));
+}
+
 /* Set the filename to be opened for the actx object on menu-open (instead of
    the Pure source of the object). NOTE: This must be called during object
    initialization or a method call, otherwise actx will be undefined. */
@@ -1086,7 +1105,7 @@ static inline void delay_message(t_pure *x, double t, pure_expr *msg)
    milliseconds) do not cause any output, but are scheduled to be delivered to
    the object after the given time interval (see timeout below). */
 
-static void receive_message(t_pure *x, t_symbol *s, int k,
+static bool receive_message(t_pure *x, t_symbol *s, int k,
 			    int argc, t_atom *argv)
 {
   size_t i, j, n, m;
@@ -1094,9 +1113,10 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   pure_expr *f = x->foo, *y, *z, *msg;
   pure_expr **xv = 0, **yv = 0;
   int ix;
+  bool reload = false;
 
   /* check whether we have something to evaluate */
-  if (!f) return;
+  if (!f) return false;
 
   /* Build the parameter expression from the message. Floats, lists and
      symbols get special treatment, other kinds of objects are passed using
@@ -1121,7 +1141,7 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
 	for (j = 0; j < i; j++)
 	  pure_freenew(xv[j]);
 	free(xv);
-	return;
+	return false;
       }
     }
     y = pure_listv(argc, xv);
@@ -1139,11 +1159,11 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
 	z = pure_cstring_dup(buf);
       }
       if (z) {
-	y = pure_appxx(x, y, z);
-	if (!y) return;
+	y = pure_appxx(x, y, z, 0);
+	if (!y) return false;
       } else {
 	pure_freenew(y);
-	return;
+	return false;
       }
     }
   }
@@ -1160,7 +1180,9 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   if (x->n_in > 0)
     y = pure_tuplel(2, pure_int(k>=0?k:0), y);
   /* apply the object function */
-  y = pure_appxx(x, f, y);
+  // XXXNOTE: If the reload flag returns true here, this indicates a special
+  // exception which subsequently causes the object to be recreated.
+  y = pure_appxx(x, f, y, &reload);
   if (!y) goto err;
   pure_new(y);
   /* process the results and route them through the appropriate outlets */
@@ -1185,11 +1207,15 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   if (xv) free(xv);
   if (yv) free(yv);
   if (y) pure_free(y);
+  return reload;
 }
 
 /* Timer callback. This works similar to receive_message above, but is called
    when a scheduled clock event arrives. Here, the object function is applied
    to the pending message, and the results are then processed as usual. */
+
+static void pure_refini(t_pure *x, bool rebind);
+static void pure_reinit(t_pure *x);
 
 static void timeout(t_pure *x)
 {
@@ -1199,14 +1225,18 @@ static void timeout(t_pure *x)
   pure_expr **xv = 0, **yv = 0;
   int ix;
   pure_interp *x_interp;
+  bool reload = false;
 
   /* check whether we have something to evaluate */
   if (!f || !y) return;
   /* apply the object function */
   x_interp = pure_push_interp(x);
-  y = pure_appxx(x, f, y);
+  y = pure_appxx(x, f, y, &reload);
   if (!y) {
     pure_pop_interp(x_interp);
+    if (reload) {
+      pure_refini(x, false); pure_reinit(x);
+    }
     return;
   }
   pure_new(y);
@@ -1303,8 +1333,11 @@ static void pure_menu_open(t_pure *x)
 static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 {
   pure_interp *x_interp = pure_push_interp(x);
-  receive_message(x, s, 0, argc, argv);
+  bool reload = receive_message(x, s, 0, argc, argv);
   pure_pop_interp(x_interp);
+  if (reload) {
+    pure_refini(x, false); pure_reinit(x);
+  }
 }
 
 /* Handle messages to secondary inlets (these are routed through proxies,
@@ -1314,8 +1347,11 @@ static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
 {
   pure_interp *x_interp = pure_push_interp(px->x);
-  receive_message(px->x, s, px->ix, argc, argv);
+  bool reload = receive_message(px->x, s, px->ix, argc, argv);
   pure_pop_interp(x_interp);
+  if (reload) {
+    pure_refini(px->x, false); pure_reinit(px->x);
+  }
 }
 
 /* Configuring receivers. FIXME: We should really use a doubly linked list
@@ -1425,7 +1461,7 @@ static t_int *pure_perform(t_int *w)
        numbers of rows and columns corresponding to the number of signal
        outlets and the block size, respectively. Optionally, it may also
        return other (control) messages to be routed to the control outlet. */
-    y = pure_appxx(x, x->foo, x->sigx);
+    y = pure_appxx(x, x->foo, x->sigx, 0);
     if (y) pure_new(y);
     if (y && pure_is_tuplev(y, &m, &xv) && m == 2 &&
 	is_double_matrix(xv[0], &sig)) {
@@ -1625,7 +1661,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       if (pure_is_appv(f, &g, &n, &xv)) {
 	int32_t sym;
 	if (n>0 && pure_is_symbol(g, &sym) && sym==get_varargs_sym()) {
-	  pure_expr *xs = pure_listv(n-1, xv+1), *y = pure_appxx(x, xv[0], xs);
+	  pure_expr *xs = pure_listv(n-1, xv+1), *y = pure_appxx(x, xv[0], xs, 0);
 	  if (y) {
 	    x->foo = pure_new(y); pure_free(f); f = x->foo;
 	  }
@@ -1756,25 +1792,31 @@ static void pure_fini(t_pure *x)
 
 /* Reinitialize Pure objects in a new interpreter context. */
 
-static void pure_refini(t_pure *x)
+static void pure_refini(t_pure *x, bool rebind)
 {
   int i;
-  if (x->interp) return; /* preloaded module */
-  /* Get rid of receivers. */
-  for (i = 0; i < x->n_recv; i++)
-    if (x->recvsym[i]) {
-      pd_unbind(&x->recvin[i]->obj.ob_pd, x->recvsym[i]);
-      pd_free((t_pd*)x->recvin[i]);
-    }
-  if (x->recvin) free(x->recvin);
-  if (x->recvsym) free(x->recvsym);
-  x->n_recv = 0;
-  x->recvin = 0;
-  x->recvsym = 0;
+  pure_interp *x_interp = pure_push_interp(x);
+  if (rebind) {
+    /* Get rid of the current receivers. We only need to do this if we're
+       about to reload some scripts or create a completely new interpreter
+       instance. In this case the collection of receivers may actually change
+       when we reinvoke the creation function, so we want to start from a
+       clean slate. */
+    for (i = 0; i < x->n_recv; i++)
+      if (x->recvsym[i]) {
+	pd_unbind(&x->recvin[i]->obj.ob_pd, x->recvsym[i]);
+	pd_free((t_pd*)x->recvin[i]);
+      }
+    if (x->recvin) free(x->recvin);
+    if (x->recvsym) free(x->recvsym);
+    x->n_recv = 0;
+    x->recvin = 0;
+    x->recvsym = 0;
+  }
   if (x->foo) {
     if (x->save) {
       /* Record object state, if available. */
-      pure_expr *st = pure_appxx(x, x->foo, pure_quoted_symbol(save_sym));
+      pure_expr *st = pure_appxx(x, x->foo, pure_quoted_symbol(save_sym), 0);
       pure_expr *g, *y;
       int32_t sym;
       if (st) {
@@ -1802,6 +1844,7 @@ static void pure_refini(t_pure *x)
     free(x->open_filename);
     x->open_filename = 0;
   }
+  pure_pop_interp(x_interp);
 }
 
 static void pure_reconfigure(t_pure *x, int n_in, int n_out)
@@ -1974,7 +2017,7 @@ static void pure_reconfigure(t_pure *x, int n_in, int n_out)
 
 static void pure_reinit(t_pure *x)
 {
-  if (x->interp) return; /* preloaded module */
+  pure_interp *x_interp = pure_push_interp(x);
   if (x->args != 0) {
     int n_in = 1, n_out = 1, n_dspin = 0, n_dspout = 0;
     pure_expr *f = parse_expr(x, x->args);
@@ -1987,7 +2030,7 @@ static void pure_reinit(t_pure *x)
       if (pure_is_appv(f, &g, &n, &xv)) {
 	int32_t sym;
 	if (n>0 && pure_is_symbol(g, &sym) && sym==get_varargs_sym()) {
-	  pure_expr *xs = pure_listv(n-1, xv+1), *y = pure_appxx(x, xv[0], xs);
+	  pure_expr *xs = pure_listv(n-1, xv+1), *y = pure_appxx(x, xv[0], xs, 0);
 	  if (y) {
 	    x->foo = pure_new(y); pure_free(f); f = x->foo;
 	  }
@@ -2020,7 +2063,7 @@ static void pure_reinit(t_pure *x)
     pure_expr *st;
     if (x->foo && (st = parse_blob(x->tmpst))) {
       pure_expr *y =
-	pure_appxx(x, x->foo, pure_app(pure_quoted_symbol(restore_sym), st));
+	pure_appxx(x, x->foo, pure_app(pure_quoted_symbol(restore_sym), st), 0);
       if (y) pure_freenew(y);
     }
     free(x->tmpst); x->tmpst = 0;
@@ -2029,6 +2072,7 @@ static void pure_reinit(t_pure *x)
     x->sig = create_double_matrix(x->n_dspin, x->n);
     x->sigx = pure_new(pure_double_matrix(x->sig));
   }
+  pure_pop_interp(x_interp);
 }
 
 /* Setup for a Pure object class with the given name. */
@@ -2251,7 +2295,7 @@ static void pure_restart(void)
 {
   t_pure *x;
   for (x = xhead; x; x = x->next)
-    pure_refini(x);
+    pure_refini(x, true);
   pure_delete_interp(interp);
   interp = pure_create_interp(argc, argv);
   pure_switch_interp(interp);
@@ -2281,7 +2325,7 @@ static void pure_reload(void)
 {
   t_pure *x;
   for (x = xhead; x; x = x->next)
-    pure_refini(x);
+    pure_refini(x, true);
   pure_evalcmd("clear");
 #ifdef VERBOSE
   printf("pd-pure: reloading, please wait...\n");
