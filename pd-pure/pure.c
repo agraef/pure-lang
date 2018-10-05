@@ -505,6 +505,7 @@ typedef struct _pure {
   void *tmp, *tmpst;		/* temporary storage */
   bool save;			/* enables the pd_save/pd_restore feature */
   bool is_dsp;			/* indicates a tilde object */
+  bool reloading;		/* object is currently being reloaded */
   pure_expr *sigx;		/* Pure expression holding the input signal */
   char *open_filename;		/* menu-open filename (script by default) */
   /* asynchronous messaging */
@@ -1116,7 +1117,7 @@ static bool receive_message(t_pure *x, t_symbol *s, int k,
   bool reload = false;
 
   /* check whether we have something to evaluate */
-  if (!f) return false;
+  if (!f || x->reloading) return false;
 
   /* Build the parameter expression from the message. Floats, lists and
      symbols get special treatment, other kinds of objects are passed using
@@ -1616,6 +1617,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 
   x->cls = c;
   x->is_dsp = is_dsp;
+  x->reloading = false;
   x->interp = c->interp;
   x->canvas = canvas;
   x->foo = 0;
@@ -1813,6 +1815,8 @@ static void pure_refini(t_pure *x, bool rebind)
     x->recvin = 0;
     x->recvsym = 0;
   }
+  // Make sure that we don't receive anything during reload.
+  x->reloading = true;
   if (x->foo) {
     if (x->save) {
       /* Record object state, if available. */
@@ -2073,6 +2077,7 @@ static void pure_reinit(t_pure *x)
     x->sigx = pure_new(pure_double_matrix(x->sig));
   }
   pure_pop_interp(x_interp);
+  x->reloading = false;
 }
 
 /* Setup for a Pure object class with the given name. */
