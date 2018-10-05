@@ -29,6 +29,10 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
   end;
 
   // reload reloads the Faust dsp.
+#! --ifdef oldreload
+  // This is the old reload mechanism, which is rather complicated and can't
+  // deal with changes in the inlet/outlet configuration. You only want to use
+  // this if you're still running an older pd-pure version.
   fdsp reload = catch (cst ().error) (() when
     // Uninstall receivers for the previous GUI elements.
     do (\(id=>ptr) -> pd_unreceive id) (get ctrls);
@@ -53,6 +57,11 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
     pd_post $ sprintf "%s (%s): %d inputs, %d outputs *** reloaded ***"
     (instance,name,k,l);
   end);
+#! --else
+  // With the latest pd-pure, we can now just reload ourselves and be done
+  // with it.
+  fdsp reload = pd_reload;
+#! --endif
 
   fdsp (reload _) = fdsp reload; // reload receiver
 

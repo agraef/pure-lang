@@ -33,6 +33,10 @@ fsynth_dsp name instance chan::int nvoices::int =
   end;
 
   // reload reloads the Faust synth.
+#! --ifdef oldreload
+  // This is the old reload mechanism, which is rather complicated and can't
+  // deal with changes in the inlet/outlet configuration. You only want to use
+  // this if you're still running an older pd-pure version.
   fsynth reload = catch (cst ().error) (() when
     // Uninstall receivers for the previous GUI elements.
     do (\(id=>ptr) -> pd_unreceive id) (get ctrls!0);
@@ -61,6 +65,11 @@ fsynth_dsp name instance chan::int nvoices::int =
     pd_post $ sprintf "%s (%s): %d inputs, %d outputs, %d voices *** reloaded ***"
     (instance,name,k,l,nvoices);
   end);
+#! --else
+  // With the latest pd-pure, we can now just reload ourselves and be done
+  // with it.
+  fsynth reload = pd_reload;
+#! --endif
 
   fsynth (reload _) = fsynth reload; // reload receiver
 

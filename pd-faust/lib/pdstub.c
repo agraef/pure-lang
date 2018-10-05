@@ -44,6 +44,10 @@ void pd_unreceive(char* s)
 {
 }
 
+void pd_reload(void)
+{
+}
+
 void pd_post(char* s)
 {
   puts(s);
