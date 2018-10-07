@@ -2,6 +2,8 @@
 using pdfaust;
 using namespace pdfaust;
 
+public create destroy;
+
 // Lexicographic order of tuples so that they can be used as dictionary keys.
 (x1,y1) < (x2,y2) = x1<x2 || x1==x2 && y1<y2;
 
@@ -67,8 +69,9 @@ fsynth_dsp name instance chan::int nvoices::int =
   end);
 #! --else
   // With the latest pd-pure, we can now just reload ourselves and be done
-  // with it.
-  fsynth reload = pd_reload;
+  // with it. Note the extra instance argument; this is needed to keep the
+  // variable around, which has a sentry on it to detect garbage collection.
+  fsynth reload = pd_reload instance;
 #! --endif
 
   fsynth (reload _) = fsynth reload; // reload receiver
@@ -410,9 +413,13 @@ end when
   active = ref 1;
   // Writing and recording flags.
   writing = ref 0; recording = ref 0;
+  // Sentry to detect that we're being garbage-collected. This must be placed
+  // on a variable which exists for the entire lifetime of the object.
+  sentry (notify.destroy) instance;
   // Give some feedback that we're up and running.
   pd_post $ sprintf "%s (%s): %d inputs, %d outputs, %d voices"
   (instance,name,k,l,nvoices);
+  notify (create instance);
 end with
 
   // Convert controller symbols to the corresponding OSC pathname.

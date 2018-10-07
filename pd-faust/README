@@ -365,9 +365,9 @@ object.
 .. _sclsyx: https://bitbucket.org/agraef/sclsyx
 .. _pd-smmf: https://bitbucket.org/agraef/pd-smmf
 
-Finally, each ``faust~`` object subscribes to the following three global
-receivers which enable you to send various kinds of messages to all ``faust~``
-objects in a patch:
+Each ``faust~`` object also subscribes to the following three global receivers
+which enable you to send various kinds of messages to all ``faust~`` objects
+in a patch:
 
 * ``faustdsp`` receives arbitrary messages. This is commonly used to
   distribute MIDI or OSC data to all Faust units in a patch, but can in fact
@@ -382,6 +382,14 @@ objects in a patch:
   receiver accepts any input message, so just sending a ``bang`` will do.
   (This is provided for backward compatibility with older pd-faust versions.
   You can also just send a ``reload`` message to the ``faustdsp`` receiver.)
+
+Finally, ``faust~`` objects also *send* a message of the form ``create
+instance`` or ``destroy instance`` to the global ``faust-notify`` receiver
+whenever they are created and destroyed, respectively. The argument indicates
+the instance name of the object being created or destroyed. This receiver
+isn't used by pd-faust itself in any way, but applications may receive this
+symbol if they need to be notified about changes in the collection of loaded
+Faust units.
 
 GUI Subpatches
 --------------

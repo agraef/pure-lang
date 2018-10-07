@@ -2,6 +2,8 @@
 using pdfaust;
 using namespace pdfaust;
 
+public create destroy;
+
 #! --required fdsp_dsp
 fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
 
@@ -59,8 +61,9 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
   end);
 #! --else
   // With the latest pd-pure, we can now just reload ourselves and be done
-  // with it.
-  fdsp reload = pd_reload;
+  // with it. Note the extra instance argument; this is needed to keep the
+  // variable around, which has a sentry on it to detect garbage collection.
+  fdsp reload = pd_reload instance;
 #! --endif
 
   fdsp (reload _) = fdsp reload; // reload receiver
@@ -248,8 +251,12 @@ end when
   switch = {control_map (controls (faust_info xf!2))!"switch" | xf = xfade};
   // Writing and recording flags.
   writing = ref 0; recording = ref 0;
+  // Sentry to detect that we're being garbage-collected. This must be placed
+  // on a variable which exists for the entire lifetime of the object.
+  sentry (notify.destroy) instance;
   // Give some feedback that we're up and running.
   pd_post $ sprintf "%s (%s): %d inputs, %d outputs" (instance,name,k,l);
+  notify (create instance);
 end with
 
   // Convert controller symbols to the corresponding OSC pathname.

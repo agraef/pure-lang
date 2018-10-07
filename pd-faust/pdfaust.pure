@@ -103,6 +103,10 @@ let xfade = faust_init "lib/xfade" samplerate;
 // Handle exceptions in objects.
 error msg = pd_error_s msg $$ cst ();
 
+// Signal pd-faust applications about changes in the collection of Faust
+// objects (object creation or destruction).
+notify x = pd_send "faust-notify" x;
+
 // Helper functions to dissect a filename.
 filename "" = "";
 filename name = join "/" $ init path +
