@@ -107,6 +107,18 @@ maintainer-build:
 	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
 	rm -rf cabal language-c/dist
 
+# Same as above, but without using cabal, which won't work on Launchpad where
+# we don't have a working Internet connection.
+deb-maintainer-build:
+# Install locally into the build directory.
+	cd language-c && mkdir -p $(shell pwd)/cabal && HOME=$(shell pwd)/cabal runhaskell Setup.hs configure --ghc --prefix=$(shell pwd)/cabal && HOME=$(shell pwd)/cabal runhaskell Setup.hs build && HOME=$(shell pwd)/cabal runhaskell Setup.hs install --user
+# Make sure to do a static build here, since the locally installed language-c
+# will be gone once we're finished.
+	$(MAKE) GHCFLAGS=-static HOME=$(shell pwd)/cabal
+# Clean up.
+	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
+	rm -rf cabal language-c/dist
+
 # Minimal test suite:
 
 check:
