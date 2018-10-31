@@ -113,10 +113,10 @@ class interpreter;
 };
 
 %{
-// Work around undefined symbols in C++ parsers generated with Bison 3.0.
+// Work around undefined symbols in C++ parsers generated with Bison 3.
 // NOTE: This setting should be determined automatically when the parser is
 // regenerated.
-#if HAVE_BISON30
+#if HAVE_BISON3
 #define yychar yyla.type
 #define yylloc yyla.location
 #define yyloc yylhs.location

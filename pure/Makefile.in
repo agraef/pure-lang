@@ -291,9 +291,9 @@ $(srcdir)/lexer.cc: lexer.ll
 
 $(srcdir)/parser.cc: parser.yy
 	$(BISON) -v -o $(srcdir)/parser.cc $<
-# Detect Bison 3.0, so that we can work around some bugs in the generated C++
-# parsers.
-	if test "`cat parser.cc | sed -n 1p | sed -e 's/^.*GNU Bison \([0-9][.][0-9]\).*$$/\1/'`" = "3.0"; then echo "#define HAVE_BISON30 1" >> $(srcdir)/parser.hh; fi
+# Detect Bison 3, so that we can work around some incompatibilities in the
+# generated C++ parsers (cf. https://stackoverflow.com/questions/23685843).
+	if test "`cat parser.cc | sed -n 1p | sed -e 's/^.*GNU Bison \([0-9]\)[.][0-9].*$$/\1/'`" = "3"; then echo "#define HAVE_BISON3 1" >> $(srcdir)/parser.hh; fi
 
 parser.hh location.hh position.hh stack.hh: parser.cc
 
