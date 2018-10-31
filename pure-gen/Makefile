@@ -76,7 +76,7 @@ pure-gen: pure-gen.pure
 # If a suitable language-c version is not readily available, you can run this
 # to install the included language-c 0.5.0 locally using cabal.
 cabal-install:
-	cd language-c && cabal update && cabal install
+	cd language-c && cabal v1-update && cabal v1-install
 
 # These options work around quirks with various ghc versions.
 GHCXFLAGS += -XTypeSynonymInstances -XFlexibleInstances
@@ -99,7 +99,7 @@ dump-ast: dump-ast.hs
 
 maintainer-build:
 # Install locally into the build directory.
-	cd language-c && HOME=$(shell pwd)/cabal cabal update && HOME=$(shell pwd)/cabal cabal install
+	cd language-c && HOME=$(shell pwd)/cabal cabal v1-update && HOME=$(shell pwd)/cabal cabal v1-install
 # Make sure to do a static build here, since the cabal-installed language-c
 # will be gone once we're finished.
 	$(MAKE) GHCFLAGS=-static HOME=$(shell pwd)/cabal

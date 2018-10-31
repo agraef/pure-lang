@@ -137,7 +137,7 @@ splitIdentDecls :: Bool -> Map Ident IdentDecl -> (Map Ident Decl,
                                                 ( Map Ident Enumerator,
                                                   Map Ident ObjDef,
                                                   Map Ident FunDef ) )
-splitIdentDecls include_all = Map.foldWithKey (if include_all then deal else deal') (Map.empty,(Map.empty,Map.empty,Map.empty))
+splitIdentDecls include_all = Map.foldrWithKey (if include_all then deal else deal') (Map.empty,(Map.empty,Map.empty,Map.empty))
   where
   deal ident entry (decls,defs) = (Map.insert ident (declOfDef entry) decls, addDef ident entry defs)
   deal' ident (Declaration d) (decls,defs) = (Map.insert ident d decls,defs)

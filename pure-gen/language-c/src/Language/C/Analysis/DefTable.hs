@@ -108,7 +108,7 @@ emptyDefTable = DefTable nameSpaceMap nameSpaceMap nameSpaceMap nameSpaceMap Int
 
 -- | get the globally defined entries of a definition table
 globalDefs :: DefTable -> GlobalDecls
-globalDefs deftbl = Map.foldWithKey insertDecl (GlobalDecls e gtags e) (globalNames $ identDecls deftbl)
+globalDefs deftbl = Map.foldrWithKey insertDecl (GlobalDecls e gtags e) (globalNames $ identDecls deftbl)
     where
     e = Map.empty
     (_fwd_decls,gtags) = Map.mapEither id $ globalNames (tagDecls deftbl)
