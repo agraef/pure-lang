@@ -1,0 +1,99 @@
+
+// continued fraction examples
+
+using math;
+
+const eps = 1e-8; // small value for "approximately zero" test used below
+
+// Compute a simple finite continued fraction [b0,b1,...,bn] with up to n
+// partial denominators b1, ..., bn, starting with b0 = int x. The partial
+// denominators have the same sign as the input value x (i.e., they will be
+// negative for negative inputs), and thus the absolute values of the
+// convergents for x and -x are the same.
+
+contfrac n x = c n [] x with
+  c n xs x = if n <= 0 || abs (a-x) < eps then reverse (a:xs)
+	     else c (n-1) (a:xs) (1/(x-a)) when a = int x end;
+end;
+
+// Same as above, but compute a *regular* continued fraction whose partial
+// denominators are all positive, even if x is negative. This is more commonly
+// used in math, but produces different absolute values for the convergents of
+// x and -x.
+
+rcontfrac n x = c n [] x with
+  c n xs x = if n <= 0 || abs (a-x) < eps then reverse (a:xs)
+	     else c (n-1) (a:xs) (1/(x-a)) when a = int (floor x) end;
+end;
+
+// Compute the convergent of [b0,b1,...,bn], i.e., b0 + 1/(b1+(1/(b2+...))).
+
+convergent [b] = b;
+convergent (b:bs) = b + 1 / convergent bs;
+
+// Use this if you want more precise (multiprecision float a.k.a. mpfr)
+// numbers as results. You will also want to set the precision with the
+// mpfr_set_default_prec function as needed (see example below).
+
+using mpfr;
+mconvergent [b] = mpfr b;
+mconvergent (b:bs) = b + 1 / mconvergent bs;
+
+// Use this to get exact (rational) numbers instead.
+
+xconvergent [b] = b;
+xconvergent (b:bs) = b + 1 % xconvergent bs;
+
+// Compute all convergents in one go.
+
+convergents  bs = map convergent  [take k bs | k = 1..#bs];
+mconvergents bs = map mconvergent [take k bs | k = 1..#bs];
+xconvergents bs = map xconvergent [take k bs | k = 1..#bs];
+
+// Try to compute a suitable value for the number of partial denominators n
+// given a maximum error for the approximation. NOTE: This might not terminate
+// (due to rounding errors in the approximation) if the given threshold err is
+// too small. Therefore the function allows you to specify a maximum number of
+// iterations nmax. The maximum return value will thus be nmax, even if the
+// error is still above the threshold. Use nmax = inf if you want to keep
+// going in any case until the threshold is met (this really only makes sense
+// with mguess and xguess).
+
+// Double precision version.
+guess nmax err x = #takewhile (\(n,y) -> n < nmax && abs (x-y) > err)
+  [n,convergent (contfrac n x) | n = 0..inf];
+
+// Multiprecision (mpfr) version.
+mguess nmax err x = #takewhile (\(n,y) -> n < nmax && abs (x-y) > err)
+  [n,mconvergent (contfrac n x) | n = 0..inf];
+
+// Exact (rational) version. We use mpfrs to do the error calculations here,
+// so the results won't actually be all that different from mguess.
+xguess nmax err x = #takewhile (\(n,y) -> n < nmax && abs (x-mpfr y) > err)
+  [n,xconvergent (contfrac n x) | n = 0..inf];
+
+// Example: the continued fraction of sqrt 2 (1,2,2,2,...). We want an
+// approximation with an error of at most 1e-12.
+
+let n = guess 100 1e-12 (sqrt 2);
+let cf = contfrac n (sqrt 2); cf;
+convergents cf;
+
+// The partial denominators of pi will be accurate up to the 12th term when
+// computing with doubles.
+
+let cf = contfrac 12 pi; cf;
+convergents cf;
+
+// More partial denominators and higher precision in the convergents can be
+// obtained when doing the calculation with mpfr (multiprecision float)
+// numbers.
+
+mpfr_set_default_prec 128; // 128 bit mantissa for extra precision
+
+let Pi = 4*atan (mpfr 1);
+let cf = contfrac 19 Pi; cf;
+mconvergents cf;
+
+// Use this to get exact (rational) convergents.
+xconvergents cf;
