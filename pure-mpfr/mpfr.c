@@ -267,7 +267,8 @@ double mpfr_to_double(mpfr_ptr x)
 
 int mpfr_to_int(mpfr_ptr x)
 {
-  return mpfr_get_si(x, mpfr_get_default_rounding_mode());
+  // we always round towards zero here, to be consistent with the int built-in
+  return mpfr_get_si(x, MPFR_RNDZ);
 }
 
 pure_expr *mpfr_to_bigint(mpfr_ptr x)
@@ -276,7 +277,8 @@ pure_expr *mpfr_to_bigint(mpfr_ptr x)
     pure_expr *y;
     mpz_t z;
     mpz_init(z);
-    (void)mpfr_get_z(z, x, mpfr_get_default_rounding_mode());
+    // we always round towards zero here, like the bigint built-in
+    (void)mpfr_get_z(z, x, MPFR_RNDZ);
     y = pure_mpz(z);
     mpz_clear(z);
     return y;
