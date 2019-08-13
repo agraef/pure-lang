@@ -61,7 +61,9 @@ extern "C" void octave_restore_signal_mask (void);
 #define octave_interrupt_exception octave::interrupt_exception
 #define octave_execution_exception octave::execution_exception
 #if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=3
+#if OCTAVE_MAJOR<=4
 #define eval_string octave::eval_string
+#endif
 #define feval octave::feval
 #endif
 #endif
@@ -237,7 +239,12 @@ int octave_eval(const char *cmd)
     // XXXFIXME: eval_string() just always segfaults with Octave 4.2.0+. No
     // workaround for this is known yet. Octave 4.0 and 4.3 seem to be ok,
     // though, so just stick to one of these until this is fixed.
+#if OCTAVE_MAJOR>4
+    const std::string cmd_s = cmd;
+    embedded_interpreter->eval_string(cmd_s, false, parse_status, 0);
+#else
     eval_string(cmd, false, parse_status, 0);
+#endif
   } catch (octave_interrupt_exception) {
     recover ();
     std::cout << "\n";

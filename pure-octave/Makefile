@@ -34,8 +34,11 @@ octversion = $(shell $(mkoctfile) --version 2>&1 | sed -e 's/^mkoctfile, version
 octversionflag = -DOCTAVE_MAJOR=$(word 1,$(octversion)) -DOCTAVE_MINOR=$(word 2,$(octversion))
 
 # Add the -rpath flag so that the dynamic linker finds liboctave.so etc. when
-# Pure loads the module.
+# Pure loads the module. NOTE: This doesn't seem to be needed any more.
 RLD_FLAG=$(shell $(mkoctfile) -p RLD_FLAG)
+
+# Octave 5.1 doesn't automatically include these linker options any more.
+OCT_FLAGS=-L$(shell $(mkoctfile) -p OCTLIBDIR) $(shell $(mkoctfile) -p LIBOCTINTERP) $(shell $(mkoctfile) -p LIBOCTAVE)
 
 DISTFILES = COPYING Makefile README embed.cc embed.h \
 gsl_structs.h gnuplot.pure octave.pure debian/* examples/*.pure
@@ -68,7 +71,7 @@ octave_embed$(DLL): embed.cc embed.h
 else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
-	$(mkoctfile) -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG)
+	$(mkoctfile) -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG) $(OCT_FLAGS)
 	if test -f $@.oct; then mv $@.oct $@; fi
 endif
 endif
