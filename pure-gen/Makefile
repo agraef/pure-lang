@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gen-$(version)
-version = 0.21
+version = 0.22
 
 # Installation goes into the following directories. You can also set these
 # directly instead of $(prefix). In addition, packagers may want to set the
