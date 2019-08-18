@@ -80,7 +80,7 @@ class interpreter;
 
 // Enable parser tracing and verbose error messages.
 %debug
-%error-verbose
+%define parse.error verbose
 
 // Symbols.
 
