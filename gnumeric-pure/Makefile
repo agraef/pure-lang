@@ -147,6 +147,10 @@ examples/*/*.pure examples/*/*.dsp examples/*/*.gnumeric \
 examples/*/Makefile examples/*/config.guess
 SEDFILES = README
 
+obsolete:
+	@echo "WARNING: This add-on module won't build with the latest GOffice versions."
+	@echo "WARNING: If you still want to try, run 'make all'."
+
 ifneq "$(GLDEPS)" ""
 all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml pure-glfunc/plugin.xml
 	$(MAKE) -C pure-gnm

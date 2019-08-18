@@ -30,6 +30,17 @@ csource = bonjour.c
 puresource = $(patsubst %.c, %.pure, $(csource))
 objects = $(patsubst %.c, %$(DLL), $(csource))
 
+ifeq ($(DLL),.so)
+# We don't build this module on Linux by default any more, you should use
+# pure-avahi there instead. If you want to force the build anyway, run 'make
+# all' instead.
+default:
+	@echo "WARNING: We don't build this module on Linux by default; use pure-avahi instead."
+	@echo "WARNING: If you still want to try, run 'make all'."
+else
+default: all
+endif
+
 all: $(objects)
 
 %$(DLL): %.c

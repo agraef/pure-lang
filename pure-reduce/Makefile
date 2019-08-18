@@ -41,7 +41,20 @@ objects = arith01.o arith02.o arith03.o arith04.o arith05.o arith06.o arith07.o 
 # NOTE: The reduce.img and reduce$(DLL) subtargets must be executed
 # sequentially, in this order, to make parallel builds (-j) work.
 all:
+	test -d reduce-algebra || $(MAKE) reduce-algebra
 	$(MAKE) reduce.img && $(MAKE) reduce$(DLL)
+
+# Make sure that we have our Reduce snapshot in the reduce-algebra directory.
+# If not then download the tarball and unpack it.
+
+reduce_rev = 2204
+
+reduce-algebra: reduce-algebra-csl-r$(reduce_rev).tar.bz2
+	rm -f reduce-algebra
+	tar xf $<
+
+reduce-algebra-csl-r$(reduce_rev).tar.bz2:
+	wget https://bitbucket.org/purelang/pure-lang/downloads/reduce-algebra-csl-r$(reduce_rev).tar.bz2
 
 # NOTE: The following requires that the Reduce sources are in the
 # reduce-algebra subdirectory (this may also be a symbolic link pointing to

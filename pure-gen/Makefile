@@ -55,6 +55,10 @@ DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
 dump-ast.hs dump-ast-old.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests \
 debian/* examples/*.templ language-c/*
 
+# Always just do the maintainer build by default now. If you want the old
+# default build target, run 'make all' instead.
+default: maintainer-build
+
 all: pure-gen dump-ast
 
 # NOTE: This requires Pure 0.21 or later.
@@ -102,7 +106,7 @@ maintainer-build:
 	cd language-c && HOME=$(shell pwd)/cabal cabal v1-update && HOME=$(shell pwd)/cabal cabal v1-install
 # Make sure to do a static build here, since the cabal-installed language-c
 # will be gone once we're finished.
-	$(MAKE) GHCFLAGS=-static HOME=$(shell pwd)/cabal
+	$(MAKE) all GHCFLAGS=-static HOME=$(shell pwd)/cabal
 # Clean up.
 	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
 	rm -rf cabal language-c/dist
@@ -114,7 +118,7 @@ deb-maintainer-build:
 	cd language-c && mkdir -p $(shell pwd)/cabal && HOME=$(shell pwd)/cabal runhaskell Setup.hs configure --ghc --prefix=$(shell pwd)/cabal && HOME=$(shell pwd)/cabal runhaskell Setup.hs build && HOME=$(shell pwd)/cabal runhaskell Setup.hs install --user
 # Make sure to do a static build here, since the locally installed language-c
 # will be gone once we're finished.
-	$(MAKE) GHCFLAGS=-static HOME=$(shell pwd)/cabal
+	$(MAKE) all GHCFLAGS=-static HOME=$(shell pwd)/cabal
 # Clean up.
 	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
 	rm -rf cabal language-c/dist
