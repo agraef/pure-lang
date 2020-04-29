@@ -32,7 +32,9 @@ void ffi_defs(void)
   pure_def(pure_sym("FFI_STDCALL"), pure_int(FFI_STDCALL));
 #else
 #if (defined(__i386__) || defined(__x86_64__)) && !defined(__MINGW64__)
+#ifdef FFI_SYSV
   pure_def(pure_sym("FFI_SYSV"), pure_int(FFI_SYSV));
+#endif
   pure_def(pure_sym("FFI_UNIX64"), pure_int(FFI_UNIX64));
 #endif
 #endif
