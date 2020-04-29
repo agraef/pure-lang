@@ -22,7 +22,7 @@
    changed several times, and the newer versions are not compatible with bison
    2.1 and earlier. :( */
 %skeleton "lalr1.cc"
-%require "2.1a"
+%require "2.2"
 %defines
 
 /* The operator section syntax causes a number of shift/reduce conflicts, we
