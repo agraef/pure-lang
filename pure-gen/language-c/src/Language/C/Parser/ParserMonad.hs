@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.C.Syntax.ParserMonad
@@ -48,6 +49,9 @@ import Language.C.Parser.Tokens (CToken(CTokEof))
 
 import Control.Applicative (Applicative(..))
 import Control.Monad (liftM, ap)
+#if MIN_VERSION_base(4,9,0)
+import Control.Monad.Fail (MonadFail (..))
+#endif
 import Data.Set  (Set)
 import qualified Data.Set as Set (fromList, insert, member, delete)
 
@@ -82,8 +86,14 @@ instance Applicative P where
 instance Monad P where
   return = returnP
   (>>=) = thenP
+#if !MIN_VERSION_base(4,13,0)
   fail m = getPos >>= \pos -> failP pos [m]
+#endif
 
+#if MIN_VERSION_base(4,9,0)
+instance MonadFail P where
+  fail m = getPos >>= \pos -> failP pos [m]
+#endif
 
 -- | execute the given parser on the supplied input stream.
 --   returns 'ParseError' if the parser failed, and a pair of
