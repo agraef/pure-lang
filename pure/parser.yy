@@ -117,7 +117,12 @@ class interpreter;
 // NOTE: This setting should be determined automatically when the parser is
 // regenerated.
 #if HAVE_BISON3
-#define yychar yyla.type
+// NOTE: This API keeps changing throughout Bison 3.x. type/type_get() is
+// apparently being phased out in favour of kind(), so we might have to change
+// this again in the future. For now (as of Bison 3.6.2), type_get() is still
+// supported for backward compatibility, and this should hopefully work for
+// all earlier 3.x releases of Bison (fingers crossed).
+#define yychar yyla.type_get()
 #define yylloc yyla.location
 #define yyloc yylhs.location
 #endif
