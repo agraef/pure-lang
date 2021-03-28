@@ -19,7 +19,7 @@
   "Start a pdsend process to communicate with Pd via UDP port 4711."
   (interactive)
   (start-process "pdsend" nil "pdsend" "4711" "localhost" "udp")
-  (process-kill-without-query (get-process "pdsend")))
+  (set-process-query-on-exit-flag (get-process "pdsend") nil))
 
 (defun pd-send-stop-process ()
   "Stops a previously started pdsend process."
