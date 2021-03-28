@@ -874,7 +874,7 @@ Commands
   "Starts a pdsend process to communicate with Pd via UDP port 4711."
   (interactive)
   (start-process "pdsend" nil "pdsend" "4711" "localhost" "udp")
-  (process-kill-without-query (get-process "pdsend")))
+  (set-process-query-on-exit-flag (get-process "pdsend") nil))
 
 (defun pd-pure-send-stop-process ()
   "Stops a previously started pdsend process."
@@ -1421,7 +1421,7 @@ sending input, manipulating the command history, etc."
 	    pure-last-dir dir)
       (set-process-sentinel (get-process "pure-eval") 'pure-eval-sentinel)
       (if (not pure-query-before-kill)
-	  (process-kill-without-query (get-process "pure-eval")))
+	  (set-process-query-on-exit-flag (get-process "pure-eval") nil))
       ;; switch to and go to the end of the eval buffer
       (pop-to-buffer "*pure-eval*")
       (goto-char (point-max))
