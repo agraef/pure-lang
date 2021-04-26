@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = pure-octave-$(version)
-version = 0.12
+version = 0.13
 
 # platform-specific setup
 
