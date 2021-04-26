@@ -1057,7 +1057,7 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 		free(xs);
 		if (n != 1)
 		  error("pure: invalid return value #%d in call to function '%s'",
-			i+1, name.c_str());
+			(int)i+1, name.c_str());
 		else
 		  error("pure: invalid return value in call to function '%s'",
 			name.c_str());
