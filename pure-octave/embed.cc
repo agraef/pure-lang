@@ -25,6 +25,9 @@
 #else
 #include "octave/config.h"
 #endif
+// Octave changes the API all the time and leaves those pesky deprecation
+// warnings everywhere, just ignore these until stuff actually breaks.
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #include <iostream>
 #include "octave.h"
@@ -246,17 +249,29 @@ int octave_eval(const char *cmd)
     eval_string(cmd, false, parse_status, 0);
 #endif
   } catch (octave_interrupt_exception) {
+#if OCTAVE_MAJOR>5
+    embedded_interpreter->recover ();
+#else
     recover ();
+#endif
     std::cout << "\n";
     error_state = -2;
 #if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
   } catch (octave_execution_exception) {
+#if OCTAVE_MAJOR>5
+    embedded_interpreter->recover ();
+#else
     recover ();
+#endif
     std::cout << "\n";
     error_state = -1;
 #endif
   } catch (std::bad_alloc) {
+#if OCTAVE_MAJOR>5
+    embedded_interpreter->recover ();
+#else
     recover ();
+#endif
     std::cout << "\n";
     error_state = -3;
   }
