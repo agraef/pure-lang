@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION < 42
+#if GLP_MAJOR_VERSION < 4 || (GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION < 42)
 #error GLPK version 4.42 or higher required
 #endif
 
@@ -1959,7 +1959,7 @@ static inline pure_expr *kkt_quality(int quality)
   return pure_cstring_dup(c);
 }
 
-#if GLP_MINOR_VERSION <= 48
+#if GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION <= 48
 pure_expr *glpx_check_kkt(pure_expr *ptr, int scaled)
 {
   // Check Karush-Kuhn-Tucker conditions
@@ -2011,7 +2011,7 @@ pure_expr *glpx_check_kkt(pure_expr *ptr, int scaled)
 }
 #endif
 
-#if GLP_MINOR_VERSION > 48
+#if GLP_MAJOR_VERSION > 4 || GLP_MINOR_VERSION > 48
 pure_expr *glpk_check_kkt(pure_expr *ptr, int sol, int cond)
 {
   double ae_max, re_max;
@@ -4093,7 +4093,7 @@ pure_expr *glpk_mem_usage()
 {
   // Get memory usage information
 
-#if GLP_MINOR_VERSION < 48
+#if GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION < 48
   glp_long total, tpeak;
   mpz_t totlo, tothi, tplo, tphi;
   int count, cpeak;
