@@ -523,16 +523,16 @@ process:
 7.  If the solution you got is not what you wanted, just use `Revert` to
     revert to the original version of the scale and start over.
 
-  [report]: http://www.musikwissenschaft.uni-mainz.de/Musikinformatik/schriftenreihe/nr45/scale.pdf
-  [Pure]: http://purelang.bitbucket.org/
-  [Gnocl]: http://www.gnocl.org/
-  [VTK]: http://www.vtk.org/
-  [Scala]: http://www.huygens-fokker.org/scala/
+  [report]: http://www.musikinformatik.uni-mainz.de/schriftenreihe/nr45/scale.pdf
+  [Pure]: https://github.com/agraef/pure-lang
+  [Gnocl]: https://dr-baum.net/gnocl/
+  [VTK]: https://www.vtk.org/
+  [Scala]: https://www.huygens-fokker.org/scala/
   [sclsyx]: https://bitbucket.org/agraef/sclsyx
-  [Octave]: http://www.octave.org/
-  [Tcl/Tk]: http://www.tcl.tk/
-  [MIDI Tuning Standard]: http://www.midi.org/techspecs/midituning.php
-  [Fluidsynth]: http://www.fluidsynth.org/
-  [Qsynth]: http://qsynth.sourceforge.net
-  [Simple Sysexxer]: http://www.christeck.de/wp/products/simple-sysexxer/
+  [Octave]: https://www.octave.org/
+  [Tcl/Tk]: https://www.tcl.tk/
+  [MIDI Tuning Standard]: https://www.midi.org/specifications/midi1-specifications/midi-1-addenda/midi-tuning-updated
+  [Fluidsynth]: https://www.fluidsynth.org/
+  [Qsynth]: https://qsynth.sourceforge.io
+  [Simple Sysexxer]: https://github.com/Manuel-K/SimpleSysexxer
   [Midi-Ox]: http://www.midiox.com/
