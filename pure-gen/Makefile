@@ -101,6 +101,10 @@ dump-ast: dump-ast.hs
 # /usr/share/ghc-pristine/bin comes first on PATH to make this work.
 # Cf. https://wiki.archlinux.org/index.php/haskell#Static_linking.
 
+# On Arch you want to have ghc-pristine installed and its ghc needs to be on
+# the path, to make static builds work.
+maintainer-build: export PATH := /usr/share/ghc-pristine/bin:$(PATH)
+
 maintainer-build:
 # Install locally into the build directory.
 	cd language-c && HOME=$(shell pwd)/cabal cabal v1-update && HOME=$(shell pwd)/cabal cabal v1-install
