@@ -140,7 +140,7 @@ $white+         ;
 -- * allows further ints after the file name a la GCC; as the GCC CPP docu
 --   doesn't say how many ints there can be, we allow an unbound number
 --
-\#$space*@int$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
+\#$space*@digits$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
   { \pos len str -> setPos (adjustLineDirective len (takeChars len str) pos) >> lexToken' False }
 
 -- #pragma directive (K&R A12.8)
