@@ -615,26 +615,26 @@ Example
 =======
 
 For the sake of a substantial, real-world example, here is how you can wrap
-the entire GNU Scientific Library in a single Pure module mygsl.pure, with the
-accompanying C module in mygsl.c:
+the entire GNU Scientific Library (GSL) in a single Pure module mygsl.pure,
+with the accompanying C module in mygsl.c:
 
 .. code-block:: sh
 
-  rm -f mygsl.pure mygsl.c
-  DEFS=-DGSL_DISABLE_DEPRECATED
-  for x in /usr/include/gsl/gsl_*.h; do
-    pure-gen $DEFS -N -fc-auto -s "$x::" $x -o mygsl.pure -c mygsl.c
-  done
+  rm -f mygsl.pure mygsl.c mygsl.h
+  (for x in /usr/include/gsl/*.h; do echo "#include \"$x\""; done) > mygsl.h
+  pure-gen -w0 -fc-auto -s '/usr/include/gsl/*::' mygsl.h
 
 The C module can then be compiled with:
 
 .. code-block:: sh
 
-  gcc $DEFS -shared -o mygsl.so mygsl.c -lgsl
+  gcc -shared -o mygsl.so mygsl.c -lgsl -lgslcblas -lcblas
 
-Note that the ``GSL_DISABLE_DEPRECATED`` symbol must be defined here to avoid
-some botches with constants being defined in incompatible ways in different
-GSL headers. Also, some GSL versions have broken headers lacking some system
+This has been tested and is known to work with GSL version 2.7; your mileage
+may vary. With some older GSL versions you may have to add
+`-DGSL_DISABLE_DEPRECATED` to the pure-gen and gcc commands to avoid some
+botches with constants being defined in incompatible ways in different GSL
+headers. Also, some GSL versions have broken headers lacking some system
 includes which causes hiccups in pure-gen's C parser. Fixing those errors or
 working around them through some appropriate cpp options should be a piece of
 cake, though.
