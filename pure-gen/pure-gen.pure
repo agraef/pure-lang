@@ -87,7 +87,7 @@ nonfix CTypedef;
 nonfix CConstQual;
 // basic C types
 nonfix CVoidType CCharType CShortType CIntType CLongType CFloatType
-  CDoubleType CSignedType CUnsigType CBoolType;
+  CFloat128Type CDoubleType CSignedType CUnsigType CBoolType;
 // struct/union types (these aren't used right now)
 nonfix CStructTag CUnionTag;
 // constant expressions, we evaluate these
@@ -99,7 +99,7 @@ nonfix CPlusOp CMinOp CNegOp CAddOp CSubOp CMulOp CDivOp CRmdOp CShlOp
 nonfix unsupported_t void_t uint8_t sint8_t uint16_t sint16_t
   uint32_t sint32_t uint64_t sint64_t
   uchar_t schar_t ushort_t sshort_t uint_t sint_t ulong_t slong_t
-  float_t double_t longdouble_t pointer_t string_t;
+  float_t double_t longdouble_t float128_t pointer_t string_t;
 // special pure_expr and GSL matrix types
 nonfix expr_t;
 nonfix dmatrix_t cmatrix_t imatrix_t;
@@ -118,6 +118,7 @@ to_ffi_type x fname =
   CIntType      = sint_t;
   CLongType     = slong_t;
   CFloatType    = float_t;
+  CFloat128Type = float128_t;
   CDoubleType   = double_t;
   CSignedType   = sint_t;
   CUnsigType    = uint_t;
@@ -168,9 +169,9 @@ case t of
   uint64_t   = "int64";
   sint64_t   = "int64";
   float_t    = "float";
-  // Pure doesn't support long double, just map it to double. This works fine
-  // with -fc, otherwise we catch this elsewhere.
-  longdouble_t |
+  // Pure doesn't support long double or __float128, just map it to double.
+  // This works fine with -fc, otherwise we catch this elsewhere.
+  longdouble_t | float128_t |
   double_t   = "double";
   pointer_t  = "void*";
   uchar_t    = "char";
@@ -189,6 +190,7 @@ case t of
   const_type t = pure_type t;
   ptr_type (const_type t) = pure_type (ptr_type t);
   ptr_type longdouble_t = "void/*long double*/*";
+  ptr_type float128_t = "void/*__float128*/*";
   ptr_type (func_type _ _ _) = "void*";
   ptr_type (struct_or_union n) =
     /* NOTE: We map 'struct id' to just 'id' here. This seems more useful than
@@ -225,6 +227,7 @@ case t of
   slong_t    = "long";
   const_type t = c_basetype t+" const";
   ptr_type longdouble_t = "long double*";
+  ptr_type float128_t = "__float128*";
   ptr_type (func_type _ _ _) = "void*";
   ptr_type t = c_basetype t + "*";
   struct_or_union n = n;
@@ -287,6 +290,7 @@ complete_ffi_type x =
   (long (slong_t))     = sint64_t;
   (long (long sint_t)) = sint64_t;
   float_t  = float_t;
+  float128_t  = float128_t;
   double_t = double_t;
   signed schar_t    = schar_t;
   signed sshort_t   = sshort_t;
@@ -729,7 +733,7 @@ is_struct (const_type t) = is_struct t;
 is_struct (struct_or_union _) = true;
 is_struct _ = false;
 
-needs_wrapper t = t === longdouble_t || is_struct t;
+needs_wrapper t = t === longdouble_t || t === float128_t || is_struct t;
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
@@ -741,6 +745,9 @@ pure_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
 = warning 0 $
   sprintf "%s: long double argument or return type, try -fc-auto" name $$ ()
     if any ((===) longdouble_t) (ret:args);
+= warning 0 $
+  sprintf "%s: __float128 argument or return type, try -fc-auto" name $$ ()
+    if any ((===) float128_t) (ret:args);
 = "extern "+pure_type ret+" "+name+"("+arg_str args va+")"+
   (if alias == name then "" else " = "+alias)+";"
 when alias = strip_prefix pfx name end
@@ -788,6 +795,9 @@ ffi_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
 = warning 0 $
   sprintf "%s: long double argument or return type, try -fc-auto" name $$ ()
     if any ((===) longdouble_t) (ret:args);
+= warning 0 $
+  sprintf "%s: __float128 argument or return type, try -fc-auto" name $$ ()
+    if any ((===) float128_t) (ret:args);
 = "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
   name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+" ("+arg_str args+");"
 with
