@@ -226,6 +226,13 @@ case t of
   ulong_t    = "unsigned long";
   slong_t    = "long";
   const_type t = c_basetype t+" const";
+  // These two need special treatment, since otherwise they'll be caught by
+  // the 'const_type t' rule which translates the base type to just 'double'
+  // before we even know that we're dealing with a pointer type here. We'd
+  // thus end up with an incompatible pointer type, making the compiler spit
+  // out a (completely harmless, but nevertheless disconcerting) warning.
+  ptr_type (const_type longdouble_t) = "long double const*";
+  ptr_type (const_type float128_t) = "__float128 const*";
   ptr_type longdouble_t = "long double*";
   ptr_type float128_t = "__float128*";
   ptr_type (func_type _ _ _) = "void*";
