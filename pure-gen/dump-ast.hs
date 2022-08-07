@@ -514,6 +514,7 @@ instance Dump CTypeSpec where
       CIntType     _ -> "CIntType"
       CLongType    _ -> "CLongType"
       CFloatType   _ -> "CFloatType"
+      CFloat128Type _ -> "CFloat128Type"
       CDoubleType  _ -> "CDoubleType"
       CSignedType  _ -> "CSignedType"
       CUnsigType   _ -> "CUnsigType"
