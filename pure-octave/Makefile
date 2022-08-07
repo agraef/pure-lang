@@ -52,7 +52,7 @@ ifeq ($(DLL),.dylib)
 embed.o: embed.cc embed.h
 	rm -f $@
 	$(mkoctfile) -v $(octversionflag) -o $@ -c $<
-MKOCT_LDCXX = $(shell $(mkoctfile) -p LD_CXX)
+MKOCT_LDCXX = $(shell $(mkoctfile) -p CXXLD)
 MKOCT_LDFLAGS = $(shell $(mkoctfile) -p LFLAGS) $(shell $(mkoctfile) -p OCTAVE_LIBS) $(shell $(mkoctfile) -p LDFLAGS)
 octave_embed$(DLL): embed.o
 	rm -f $@
