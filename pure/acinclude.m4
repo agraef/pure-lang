@@ -258,7 +258,7 @@ main()
   set_signal_handler(SIGINT, sigint);
   kill((int)getpid(), SIGINT);
   kill((int)getpid(), SIGINT);
-  exit(nsigint != 2);
+  return (nsigint != 2);
 }
 ], q_cv_must_reinstall_sighandlers=no, q_cv_must_reinstall_sighandlers=yes,
 if test "$q_cv_signal_vintage" = svr3; then
