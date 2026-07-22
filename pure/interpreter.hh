@@ -37,6 +37,7 @@
 #include <llvm/Transforms/Scalar.h>
 
 #include <time.h>
+#include <pthread.h>
 #include <set>
 #include <unordered_map>
 #include <string>
@@ -1222,6 +1223,12 @@ public:
   bool LoadBitcode(bool priv, const char *name, string *msg);
   // Handle inline code.
   void inline_code(bool priv, string &code);
+  // Per-interpreter reentrancy lock (formerly the global interpreter
+  // lock). Recursive so a thread already holding it can re-enter (e.g. a
+  // Pure callback from C that re-invokes the same interpreter). Only
+  // serializes access to *this* interpreter; distinct interpreters run
+  // concurrently. See pure_lock_interp in runtime.cc.
+  pthread_mutex_t lock;
   // Global context switching for interpreters.
   inline void save_context()
   {
@@ -1371,10 +1378,16 @@ public:
   // Global data, saved and restored by the run method.
   static uint8_t g_verbose;
   static bool g_interactive;
-  static interpreter* g_interp;
+  // The active interpreter and the C-stack context are thread-local: each
+  // OS thread has its own current interpreter and stack base, so distinct
+  // interpreters run concurrently on distinct threads without a global
+  // lock (removing the GIL). Within a single interpreter, its own lock
+  // still serializes reentrant access. See DESIGN-XTC-RUNTIME.md.
+  static thread_local interpreter* g_interp;
   // not saved
-  static int brkflag, brkmask;
-  static char *baseptr;
+  static thread_local int brkflag, brkmask;
+  static thread_local char *baseptr;
+  // Genuinely global, read-only after startup.
   static int stackmax;
   static int stackdir;
 

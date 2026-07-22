@@ -4051,28 +4051,64 @@ void pure_switch_interp(pure_interp *interp)
     interpreter::g_interp = (interpreter*)interp;
     if (interpreter::g_interp) interpreter::g_interp->restore_context();
   }
-  /* Check our base pointer to see whether it still looks valid. If we're
-     wildly off from the calculated base pointer, chances are that we're being
-     invoked from a new context with its own stack. In this case we update the
-     base pointer and proceed with fingers crossed. XXXFIXME: This is only
-     guesswork. A better way to deal with this situation would be to turn
-     interpreter::baseptr into a thread-local variable, but this isn't cheap
-     and we want the switching between interpreters to be as efficient as
-     possible. */
-  long d = &base - interpreter::baseptr;
-  if (d < -100000 || d > 100000) interpreter::baseptr = &base;
+  /* baseptr is now thread-local, so a fresh thread (or a fiber with its
+     own stack) that has not yet run this interpreter starts with a null
+     baseptr; initialize it to the current frame. We also refresh it if the
+     current frame is wildly far from the saved base, which indicates we
+     were resumed on a different stack. */
+  long d = interpreter::baseptr ? (&base - interpreter::baseptr) : 0;
+  if (!interpreter::baseptr || d < -100000 || d > 100000)
+    interpreter::baseptr = &base;
 }
 
 #include <pthread.h>
 
-// Global interpreter lock. This is evil, but may be needed in multithreaded
-// code as long as the internals of the Pure interpreter are not thread-safe.
-static pthread_mutex_t GIL = PTHREAD_MUTEX_INITIALIZER;
+/* GIL removal (see DESIGN-XTC-RUNTIME.md).
+
+   The old global interpreter lock is gone. The active interpreter and the
+   C-stack context (g_interp, baseptr, brkflag, brkmask) are now
+   thread-local, so distinct interpreters on distinct threads never contend
+   for them. pure_lock_interp/pure_unlock_interp now take that
+   interpreter's *own* recursive lock, serializing only reentrant access to
+   the same interpreter -- exactly what modules such as pure-lv2 and
+   pure-plugr need (one lock per plugin instance instead of one lock for
+   the whole process).
+
+   A separate global compile lock guards the LLVM/ORC-JIT machinery, which
+   remains process-global (one LLVMContext shared across interpreters); it
+   is taken only during code generation and symbol resolution, never on the
+   evaluation hot path. */
+
+static pthread_mutex_t g_compile_lock;
+static pthread_once_t g_compile_lock_once = PTHREAD_ONCE_INIT;
+
+static void init_compile_lock(void)
+{
+  pthread_mutexattr_t attr;
+  pthread_mutexattr_init(&attr);
+  /* Recursive: the parse region holds this lock and codegen inside it
+     re-enters via lookup_symbol/define_symbol. */
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init(&g_compile_lock, &attr);
+  pthread_mutexattr_destroy(&attr);
+}
+
+extern "C" void pure_compile_lock()
+{
+  pthread_once(&g_compile_lock_once, init_compile_lock);
+  pthread_mutex_lock(&g_compile_lock);
+}
+
+extern "C" void pure_compile_unlock()
+{
+  pthread_mutex_unlock(&g_compile_lock);
+}
 
 extern "C"
 pure_interp *pure_lock_interp(pure_interp *interp)
 {
-  pthread_mutex_lock(&GIL);
+  interpreter *_interp = (interpreter*)interp;
+  if (_interp) pthread_mutex_lock(&_interp->lock);
   pure_interp *s_interp = pure_current_interp();
   pure_switch_interp(interp);
   return s_interp;
@@ -4083,7 +4119,8 @@ pure_interp *pure_unlock_interp(pure_interp *interp)
 {
   pure_interp *s_interp = pure_current_interp();
   pure_switch_interp(interp);
-  pthread_mutex_unlock(&GIL);
+  interpreter *_interp = (interpreter*)interp;
+  if (_interp) pthread_mutex_unlock(&_interp->lock);
   return s_interp;
 }
 
