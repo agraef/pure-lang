@@ -1425,15 +1425,24 @@ bool interpreter::is_enabled(const string& optname)
       string version = PACKAGE_VERSION;
       string vers = optname.substr(strlen("version-"));
       int act_major = 0, act_minor = 0, want_major = 0, want_minor = 0;
-      char mode = 0;
+      // The %[+-] conversion needs a buffer sized for the matched
+      // character PLUS a NUL terminator, so it must be a char array, not
+      // a bare char: sscanf writes up to two bytes here, and passing the
+      // address of a single char overflows by one, corrupting whichever
+      // stack variable happens to sit adjacent to it. This is undefined
+      // behavior whose visible effect depends on stack layout, compiler,
+      // and optimization level -- harmless on some targets, a wrong
+      // version comparison on others. The %1 width also caps the match
+      // at one character explicitly.
+      char mode[2] = { 0, 0 };
       int res1 = sscanf(version.c_str(), "%d.%d", &act_major, &act_minor);
-      int res2 = sscanf(vers.c_str(), "%d.%d%[+-]",
-			&want_major, &want_minor, &mode);
+      int res2 = sscanf(vers.c_str(), "%d.%d%1[+-]",
+			&want_major, &want_minor, mode);
       if (res1 == 2 && res2 >= 2) {
-	if (mode == '+')
+	if (mode[0] == '+')
 	  flag = act_major > want_major ||
 	    (act_major == want_major && act_minor >= want_minor);
-	else if (mode == '-')
+	else if (mode[0] == '-')
 	  flag = act_major < want_major ||
 	    (act_major == want_major && act_minor <= want_minor);
 	else
