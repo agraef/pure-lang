@@ -246,14 +246,6 @@ void interpreter::init()
 
   __baseptr_save = 0;
   nwrapped = 0; fptr = 0; __fptr_save = 0;
-  sstk_sz = 0; sstk_cap = 0x10000; // 64K
-  sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
-  __sstk_save = 0;
-  assert(sstk);
-
-  ap = (pure_aframe*)malloc(ASTACKSZ*sizeof(pure_aframe));
-  assert(ap); aplist.push_back(ap);
-  abp = ap; aep = ap+ASTACKSZ; afreep = 0;
 
   // Initialize ORC JIT v2
 
@@ -545,11 +537,8 @@ void interpreter::init()
   StrExprPtrTy = PointerType::get(*Context, 0);
   PtrExprPtrTy = PointerType::get(*Context, 0);
 
-  sstkvar = global_variable
-    (module, ExprPtrPtrTy, false, GlobalVariable::InternalLinkage,
-     ConstantPointerNull::get(ExprPtrPtrTy),
-     "$$sstk$$");
-  define_symbol(sstkvar->getName().str(), &sstk);
+  sstkvar = declare_extern((void*)pure_get_sstk, "pure_get_sstk",
+			   "void*", 0);
   fptrvar = global_variable
     (module, VoidPtrTy, false, GlobalVariable::InternalLinkage,
      ConstantPointerNull::get(VoidPtrTy),
@@ -875,7 +864,7 @@ interpreter::interpreter(int _argc, char **_argv)
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0),
     specials_only(false), module(0), module_dirty(false),
-    JIT(), astk(0), sstk(__sstk),
+    JIT(),
     stoplevel(0), tracelevel(-1), debug_skip(false), trace_skip(false),
     fptr(__fptr), tags(0), line(0), column(0), tags_init(false),
     declare_op(false)
@@ -905,18 +894,18 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0),
     specials_only(false), module(0), module_dirty(false),
-    JIT(), astk(0), sstk(*_sstk),
+    JIT(),
     stoplevel(0), tracelevel(-1), debug_skip(false), trace_skip(false),
     fptr(*(Env**)_fptr), tags(0), line(0), column(0), tags_init(false),
     declare_op(false)
 {
   using namespace llvm;
   init();
-  // In a batch-compiled module, there is only a single global instance of the
-  // fptr and sstk variables. When switching interpreters, these values have
-  // to be saved somewhere.
+  // In a batch-compiled module, there is only a single global instance of
+  // the fptr variable. When switching interpreters, this value has to be
+  // saved somewhere. (The corresponding sstk save/restore is gone --
+  // sstk lives in pure_ectx now, see save_context()/restore_context().)
   __fptr_save = (Env**)malloc(sizeof(Env*));
-  __sstk_save = (pure_expr***)malloc(sizeof(pure_expr**));
   string s_syms = syms, s_externs;
   size_t p = s_syms.find("%%\n");
   if (p != string::npos) {
@@ -1020,26 +1009,19 @@ interpreter::~interpreter()
     g_interp = s_interp;
     if (s_interp) s_interp->restore_context();
   }
-  // free the shadow stack
-  if (!was_active && __sstk_save)
-    free(*__sstk_save);
-  else
-    free(sstk);
-  // free the activation stack
-  for (list<pure_aframe*>::iterator it = aplist.begin(); it != aplist.end();
-       ++it) free(*it);
-  // Free this thread's expression arena for this interpreter (the
-  // pure_ectx destructor walks and frees the block chain). Per the
-  // documented contract (see the `id` and `ectx()` comments in
-  // interpreter.hh), pure_delete_interp is called from the interpreter's
-  // own controlling thread, so this is the only thread that can have an
-  // arena for `id` in the common (single-thread-per-interpreter)
-  // embedding pattern. If a caller violates that contract by running an
-  // interpreter on several threads and deleting it from only one, the
-  // other threads' cached arenas are freed when those threads' own
-  // ectx_cache is destroyed at thread exit -- a benign delay, not a
-  // leak across the process lifetime, and never a use-after-free since
-  // `id` is never reused.
+  // Free this thread's expression arena, shadow stack, and
+  // activation-frame pool for this interpreter (pure_ectx's destructor
+  // walks and frees the expression-memory block chain, the sstk buffer,
+  // and every aframe block). Per the documented contract (see the `id`
+  // and `ectx()` comments in interpreter.hh), pure_delete_interp is
+  // called from the interpreter's own controlling thread, so this is
+  // the only thread that can have an arena for `id` in the common
+  // (single-thread-per-interpreter) embedding pattern. If a caller
+  // violates that contract by running an interpreter on several threads
+  // and deleting it from only one, the other threads' cached arenas are
+  // freed when those threads' own ectx_cache is destroyed at thread
+  // exit -- a benign delay, not a leak across the process lifetime, and
+  // never a use-after-free since `id` is never reused.
   purge_ectx();
   // ORC JIT v2 resources are automatically cleaned up by unique_ptr destructors
   // JIT, TSCtx, PB, LAM, FAM, CGAM, MAM all managed automatically
@@ -1353,19 +1335,21 @@ void interpreter::init_sys_vars(const string& version,
 
 pure_aframe *interpreter::push_aframe(size_t sz)
 {
-  pure_aframe *a = get_aframe();
+  pure_ectx& e = ectx();
+  pure_aframe *a = get_aframe(e);
   assert(a); a->e = 0; a->sz = sz;
   a->fp = 0; a->n = a->m = a->count = 0; a->argv = 0;
-  a->prev = astk; astk = a;
+  a->prev = e.astk; e.astk = a;
   return a;
 }
 
 void interpreter::pop_aframe()
 {
-  pure_aframe *a = astk;
+  pure_ectx& e = ectx();
+  pure_aframe *a = e.astk;
   assert(a);
-  astk = a->prev;
-  free_aframe(a);
+  e.astk = a->prev;
+  free_aframe(e, a);
 }
 
 // Errors and warnings.
@@ -11172,7 +11156,13 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
   args.push_back(b.CreateGEP(varity->getValueType(), varity, mkidxs(idx, idx+2)));
   args.push_back(b.CreateBitCast(b.CreateGEP(vexterns->getValueType(), vexterns, mkidxs(idx, idx+2)),
 				 VoidPtrTy));
-  args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
+  // sstkvar is now the pure_get_sstk() Function*, not an address to bind
+  // an interpreter member to (Phase 1b Slice B) -- the AOT constructor
+  // no longer uses the _sstk parameter at all (sstk lives in pure_ectx,
+  // reached the same way for both JIT and AOT-compiled code). Pass a
+  // null placeholder to keep pure_interp_main's argument count/order
+  // unchanged.
+  args.push_back(NullPtr);
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
   b.CreateCall(initfun, args);
   // Initialize runtime type tag information.
@@ -13615,17 +13605,18 @@ pure_expr *interpreter::const_value_invoke(expr x, pure_expr*& e, bool quote)
 {
   // Wrapper around const_value which catches possible exceptions while
   // evaluating lists and tuples.
-  pure_aframe *ex = push_aframe(sstk_sz);
+  pure_ectx& ec = ectx();
+  pure_aframe *ex = push_aframe(ec.sstk_sz);
   if (setjmp(ex->jmp)) {
     // caught an exception
     size_t sz = ex->sz;
     e = ex->e;
     pop_aframe();
     if (e) pure_new(e);
-    for (size_t i = sstk_sz; i-- > sz; )
-      if (sstk[i] && sstk[i]->refc > 0)
-	pure_free(sstk[i]);
-    sstk_sz = sz;
+    for (size_t i = ec.sstk_sz; i-- > sz; )
+      if (ec.sstk[i] && ec.sstk[i]->refc > 0)
+	pure_free(ec.sstk[i]);
+    ec.sstk_sz = sz;
     return 0;
   } else {
     pure_expr *res = const_value(x, quote);
@@ -13874,7 +13865,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
     if (rt) EvalSymbols.erase(rt.get());
   }
   fptr = save_fptr;
-  if (!astk) {
+  if (!ectx().astk) {
     // collect garbage
     pure_expr *t = ectx().tmps;
     while (t) {
@@ -14094,7 +14085,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
       }
     }
   }
-  if (!astk) {
+  if (!ectx().astk) {
     // collect garbage
     pure_expr *t = ectx().tmps;
     while (t) {
@@ -15905,7 +15896,7 @@ Value *interpreter::vref(int32_t tag, uint32_t v)
 {
   // environment proxy
   Env &e = act_env();
-  Value *sstkptr = e.builder.CreateLoad(sstkvar->getValueType(), sstkvar);
+  Value *sstkptr = e.CreateCall(sstkvar, vector<Value*>());
   return e.CreateLoadGEP(ExprPtrTy, sstkptr, e.builder.CreateAdd(e.envs, UInt(v)));
 }
 
@@ -16471,7 +16462,7 @@ void interpreter::fun_body(matcher *pm, matcher *mxs, bool nodefault)
     // failed match is non-fatal, instead we return a "thunk" (literal fbox)
     // of ourself applied to our arguments as the result
     vector<Value*> x(f.m);
-    Value *sstkptr = f.builder.CreateLoad(sstkvar->getValueType(), sstkvar);
+    Value *sstkptr = f.CreateCall(sstkvar, vector<Value*>());
     for (size_t i = 0; i < f.m; i++) {
       x[i] = f.CreateLoadGEP(ExprPtrTy, sstkptr, f.builder.CreateAdd(f.envs, UInt(i)));
       assert(x[i]->getType() == ExprPtrTy);

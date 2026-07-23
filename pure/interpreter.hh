@@ -39,6 +39,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <atomic>
+#include <list>
 #include <set>
 #include <unordered_map>
 #include <string>
@@ -577,23 +578,73 @@ struct cvector_data {
 // Holds the expression-memory block chain, the free list, the
 // temporaries list, and the allocation counters -- the state
 // new_expr()/free_expr()/pure_new_internal()/pure_free_internal() in
-// runtime.cc mutate on every single expression allocation. Before this,
-// these fields lived directly on `interpreter`, so two threads running
-// the same interpreter's compiled code would race on the free list and
-// corrupt the heap (this is the barrier the design's §5.1 identifies as
-// blocking intra-interpreter parallelism). Now each (interpreter,
-// thread) pair gets its own pure_ectx, allocated lazily on first use and
-// cached thread-locally, so the allocation hot path stays lock-free.
+// runtime.cc mutate on every single expression allocation -- plus the
+// shadow (GC root) stack and the activation-frame arena used by
+// pure_catch/pure_throw and the tail-call trampoline. Before this, all
+// of these lived directly on `interpreter`, so two threads running the
+// same interpreter's compiled code would race on the free list, the
+// shadow stack, and the exception-frame pool, corrupting the heap (this
+// is the barrier the design's §5.1 identifies as blocking
+// intra-interpreter parallelism). Now each (interpreter, thread) pair
+// gets its own pure_ectx, allocated lazily on first use and cached
+// thread-locally, so the allocation hot path stays lock-free.
 struct pure_ectx {
   pure_mem *mem = 0;    // runtime expression memory (block chain)
   pure_expr *exps = 0;  // head of the free list
   pure_expr *tmps = 0;  // temporaries list (collected after exceptions)
   size_t freectr = 0;   // size of the free list
   size_t memctr = 0;    // low-water free-list mark since last stats reset
+  // Shadow (GC root) stack: the JIT-generated code's view of "the
+  // current call's argument/environment slots", read via the
+  // pure_get_sstk() runtime accessor (interpreter.cc's codegen for
+  // vref()/envptr() calls it instead of loading the old process-global
+  // $$sstk$$ variable -- see Slice B / stage 1c in the design).
+  pure_expr **sstk = 0;
+  size_t sstk_cap = 0, sstk_sz = 0;
+  // Scratch argument-vector buffer for pure_apply()'s saturated-call
+  // path (runtime.cc). Built and consumed within a single call, never
+  // needs to persist across calls -- it was `static` purely to avoid a
+  // stack allocation, which made it a second free-list-style race
+  // between threads sharing one interpreter (the same class of bug
+  // Slice A/B fixed for mem/exps/tmps/sstk/astk). PURE_ECTX_MAXARGS
+  // must match MAXARGS in funcall.h; runtime.cc static_asserts this
+  // (funcall.h's `funcall` macro collides with interpreter::funcall(),
+  // an unrelated codegen member, so this header cannot include
+  // funcall.h itself).
+  #define PURE_ECTX_MAXARGS 64
+  pure_expr *apply_argv[PURE_ECTX_MAXARGS];
+  // Activation-frame arena for pure_catch/pure_throw and the indirect-
+  // call trampoline (see push_aframe/pop_aframe/get_aframe/free_aframe
+  // in interpreter.hh/cc). ap/abp/aep bound the current malloc'd block;
+  // afreep chains freed frames; aplist tracks every block so they can
+  // all be freed when this ectx is torn down. astk is the top of the
+  // (logical, prev-linked) activation stack.
+  pure_aframe *astk = 0;
+  pure_aframe *ap = 0, *abp = 0, *aep = 0, *afreep = 0;
+  std::list<pure_aframe*> aplist;
+  // Lazily allocate the initial shadow-stack buffer and the first
+  // aframe block on first real construction (i.e. the first time a
+  // thread touches this interpreter's ectx() -- see interpreter::ectx()
+  // in interpreter.cc). Mirrors the eager allocation the old
+  // interpreter::init_llvm_target() used to do once per interpreter;
+  // now it happens once per (interpreter, thread).
+  pure_ectx()
+  {
+    sstk_cap = 0x10000; // 64K
+    sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
+    assert(sstk);
+    ap = (pure_aframe*)malloc(ASTACKSZ*sizeof(pure_aframe));
+    assert(ap); aplist.push_back(ap);
+    abp = ap; aep = ap+ASTACKSZ;
+  }
   ~pure_ectx()
   {
     pure_mem *m = mem, *n;
     while (m) { n = m->next; delete m; m = n; }
+    if (sstk) free(sstk);
+    for (std::list<pure_aframe*>::iterator it = aplist.begin();
+	 it != aplist.end(); ++it)
+      free(*it);
   }
 };
 
@@ -1196,11 +1247,18 @@ public:
   set<llvm::Function*> always_used;
   map<int32_t,GlobalVar> globalvars;
   map<int32_t,Env> globalfuns, globaltypes;
-  pure_aframe *astk;
-  pure_expr **__sstk, ***__sstk_save;
-  pure_expr **&sstk;
-  size_t sstk_cap, sstk_sz;
-  llvm::GlobalVariable *sstkvar;
+  // astk, sstk, sstk_cap, sstk_sz moved into pure_ectx (Phase 1b Slice B,
+  // see DESIGN-XTC-RUNTIME.md): the activation-stack top pointer and the
+  // shadow (GC root) stack buffer are per-(interpreter,thread) state,
+  // reached via ectx(). The JIT no longer binds a process-global
+  // $$sstk$$ variable to a fixed interpreter member; instead generated
+  // code calls the pure_get_sstk()/pure_set_sstk() runtime accessors
+  // (see vref()/envptr() below and pure_get_sstk in runtime.cc), which
+  // resolve to the calling thread's own ectx(). sstkvar/fptrvar remain
+  // as LLVM Function* handles to those accessor declarations (renamed
+  // from "variables" in spirit, kept as members to avoid touching every
+  // call site that names them).
+  llvm::Function *sstkvar;
 #if DEBUG
   set<pure_expr*> mem_allocations;
 #endif
@@ -1271,22 +1329,22 @@ public:
   // serializes access to *this* interpreter; distinct interpreters run
   // concurrently. See pure_lock_interp in runtime.cc.
   pthread_mutex_t lock;
-  // Global context switching for interpreters.
+  // Global context switching for interpreters. The sstk half of this
+  // dance is gone (Phase 1b Slice B): sstk now lives in pure_ectx,
+  // looked up per-thread via ectx(), so there is no single
+  // interpreter-wide slot left to save/restore when switching the
+  // active interpreter on one thread. fptr is unaffected (see the
+  // comment on fptr's declaration below): it is compile-time-scoped
+  // state, still a plain interpreter member.
   inline void save_context()
   {
     __baseptr_save = interpreter::baseptr;
-    if (__sstk_save) {
-      *__sstk_save = sstk;
-      *__fptr_save = fptr;
-    }
+    if (__fptr_save) *__fptr_save = fptr;
   }
   inline void restore_context()
   {
     interpreter::baseptr = __baseptr_save;
-    if (__sstk_save) {
-      sstk = *__sstk_save;
-      fptr = *__fptr_save;
-    }
+    if (__fptr_save) fptr = *__fptr_save;
   }
   void swap_interpreters(interpreter *interp);
 private:
@@ -1294,6 +1352,13 @@ private:
   void init_llvm_target();
   char *__baseptr_save;
   int nwrapped;
+  // fptr: the Env currently being compiled for a one-off, compile-lock-
+  // protected evaluation (doeval/dodefn's temporary closure for `eval`,
+  // global-variable initializers, etc; see interpreter.cc). Unlike
+  // sstk, this is never touched by JIT'd code outside that narrow,
+  // single-threaded, immediately-executed-and-discarded window, so it
+  // stays a plain interpreter member -- moving it into pure_ectx is not
+  // needed for thread-safety.
   Env *__fptr, **__fptr_save;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;
@@ -1483,32 +1548,33 @@ private:
     }
   }
 
-  // Activation stack for handling indirect calls and exceptions.
+  // Activation stack for handling indirect calls and exceptions. Moved
+  // into pure_ectx (Phase 1b Slice B): ap/abp/aep/afreep/aplist are the
+  // per-thread aframe arena, get_aframe()/free_aframe() now take the
+  // calling thread's ectx() explicitly so they can be called from the
+  // free functions in runtime.cc as well as from interpreter methods.
 
-  pure_aframe *ap, *abp, *aep, *afreep; // TLD
-  list<pure_aframe*> aplist;
-
-  pure_aframe *get_aframe()
+  static pure_aframe *get_aframe(pure_ectx& ectx)
   {
     pure_aframe *a;
-    if (abp < aep)
-      return abp++;
-    else if ((a = afreep)) {
-      afreep = a->prev; return a;
+    if (ectx.abp < ectx.aep)
+      return ectx.abp++;
+    else if ((a = ectx.afreep)) {
+      ectx.afreep = a->prev; return a;
     } else if ((a = (pure_aframe*)malloc(ASTACKSZ*sizeof(pure_aframe)))) {
-      abp = ap = a; aep = ap+ASTACKSZ;
-      aplist.push_back(ap);
-      return abp++;
+      ectx.abp = ectx.ap = a; ectx.aep = ectx.ap+ASTACKSZ;
+      ectx.aplist.push_back(ectx.ap);
+      return ectx.abp++;
     } else
       return 0;
   }
 
-  void free_aframe(pure_aframe *a)
+  static void free_aframe(pure_ectx& ectx, pure_aframe *a)
   {
-    if (a+1 == abp)
-      abp--;
+    if (a+1 == ectx.abp)
+      ectx.abp--;
     else {
-      a->prev = afreep; afreep = a;
+      a->prev = ectx.afreep; ectx.afreep = a;
     }
   }
 
