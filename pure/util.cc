@@ -123,7 +123,13 @@ typedef int nl_item;
 
 static char *my_nl_langinfo(nl_item item)
 {
-  static char buf[16];
+  // Thread-local: the returned pointer is only ever used immediately by
+  // the caller (strcmp/iconv_open), never retained, so this doesn't
+  // need pure_ectx -- but it was `static`, racing concurrent string
+  // conversions on platforms that reach this fallback (no
+  // nl_langinfo(), i.e. not glibc/most Linux; see default_encoding()
+  // below).
+  static thread_local char buf[16];
   char *l, *p;
   
   if (item != MYCODESET)
@@ -204,9 +210,21 @@ static char *my_nl_langinfo(nl_item item)
    the cache in an automatic fashion. */
 
 #define NCACHE 10
-static char *lastalloc[NCACHE], *lastfree[NCACHE];
-static size_t lastlen[NCACHE];
-static int lasti = 0;
+// Thread-local (Phase 1b, see DESIGN-XTC-RUNTIME.md): this cache backs
+// every Pure string value's alloc/free (pure_free_internal/the string
+// constructors in runtime.cc route through my_strdup/my_strfree, and
+// MY_STRDUP above is unconditionally defined, so this is not an
+// optional fallback -- it is always on the hot path). A process-wide
+// `static` here meant two threads freeing or allocating Pure strings
+// concurrently raced on lastalloc/lastfree/lasti, and worst case could
+// hand the SAME cached buffer to two different threads at once --
+// a double-free/use-after-free generator, not just a performance bug.
+// Each thread gets its own small cache; the round-robin reuse
+// optimization this file describes still works exactly as before,
+// just scoped per-thread instead of process-wide.
+static thread_local char *lastalloc[NCACHE], *lastfree[NCACHE];
+static thread_local size_t lastlen[NCACHE];
+static thread_local int lasti = 0;
 
 //#define DEBUG_CACHE
 
@@ -549,7 +567,8 @@ char *default_encoding()
 #ifdef _WIN32
   /* Always use the OEM codepage on Windows. */
   unsigned cp = GetOEMCP();
-  static char buf[20];
+  // Thread-local for the same reason as my_nl_langinfo above.
+  static thread_local char buf[20];
   if (cp == 65001)
     // codepage 65001 is UTF-8
     strcpy(buf, "UTF-8");
@@ -843,7 +862,13 @@ my_fromutf8(const char *s, char *codeset)
 static inline wchar_t *
 ictowcs(wchar_t *t, char *s)
 {
-  static iconv_t myic[2] = { (iconv_t)-1, (iconv_t)-1 };
+  // Thread-local: iconv_t descriptors are not safe to share across
+  // threads (POSIX requires the caller to serialize access to a given
+  // descriptor, or use one per thread) -- a process-wide `static` here
+  // was undefined behavior the moment two threads converted UTF-8 to
+  // wchar_t concurrently, independent of any Pure-level memory-safety
+  // concern.
+  static thread_local iconv_t myic[2] = { (iconv_t)-1, (iconv_t)-1 };
   if (myic[1] == (iconv_t)-1)
     myic[1] = iconv_open("WCHAR_T", "UTF-8");
   if (myic[1] == (iconv_t)-1)
