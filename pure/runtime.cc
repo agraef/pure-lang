@@ -7658,8 +7658,14 @@ pure_expr *pure_double_colvect(double from, double to, double step)
    examples/sort.c, massaged slightly to be reentrant, to handle exceptions,
    and to also support Pure matrices. */
 
-static pure_expr* cmp_p; // TLD
-static unsigned cmp_pno; // TLD
+/* Comparator context for the C qsort() interface below. qsort()'s
+   comparator takes no user pointer, so the predicate and mode are passed
+   through these. They are thread-local: two threads sorting concurrently
+   (now possible without the GIL) must not clobber each other's context.
+   The save/restore nesting in the callers still handles reentrancy within
+   one thread. */
+static thread_local pure_expr* cmp_p;
+static thread_local unsigned cmp_pno;
 
 static inline int sgn(int x)
 {
@@ -17443,7 +17449,7 @@ struct MetaGlue {
 // not to break compatibility with older Faust2 versions. Eventually, the
 // global data should be replaced with the first member of the glue data
 // structure.
-static FaustMeta *__faust_metadata; // TLD
+static thread_local FaustMeta *__faust_metadata;
 #if FAUST_NEW_META
 static void declareMetaGlue(void *data, const char* key, const char* value)
 #else
@@ -17713,12 +17719,15 @@ void faust_free_ui(void *p)
    faust_float_ui or faust_double_ui, and return it as a Pure expression. This
    is analogous to the faust_info routine in the pure-faust module. */
 
-static struct stack_elem_t {
+/* Scratch state for the Faust UI-description walker (faust_make_info),
+   used within a single call. Thread-local so concurrent Faust processing
+   on different threads does not corrupt a shared stack. */
+static thread_local struct stack_elem_t {
   int i, n;
   pure_expr **xv;
-} *elem_stack = NULL; // TLD
+} *elem_stack = NULL;
 
-static int astacksz = 0, stacksz = 0; // TLD
+static thread_local int astacksz = 0, stacksz = 0; // scratch, see elem_stack
 
 static void clear()
 {

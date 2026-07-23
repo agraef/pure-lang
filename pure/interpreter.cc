@@ -101,6 +101,18 @@ bool interpreter::g_init = false;
 
 map<uint32_t, void (*)(void*)> interpreter::locals_destroy_cb;
 
+// RAII guard for the global compile lock. Releases on every scope exit,
+// including exceptions thrown during parsing or code generation (the
+// parser throws err on syntax errors, which would otherwise leak the
+// lock and deadlock the next compile). The lock is recursive, so nested
+// scopes (parse region -> compile() -> jit_now) are safe.
+namespace {
+  struct compile_lock_guard {
+    compile_lock_guard() { pure_compile_lock(); }
+    ~compile_lock_guard() { pure_compile_unlock(); }
+  };
+}
+
 // Create ArrayRef<Value*> from iterator pair (used throughout for GEP indices)
 #define mkidxs(begin, end) llvm::ArrayRef<llvm::Value*>(begin, end)
 
@@ -146,6 +158,13 @@ void interpreter::init()
     pthread_mutex_init(&lock, &attr);
     pthread_mutexattr_destroy(&attr);
   }
+  // Interpreter construction initializes process-global LLVM state
+  // (InitializeNativeTarget, the shared LLVMContext / pure_llvm_context)
+  // and the one-time g_init dlopen of auxiliary libraries, none of which
+  // is thread-safe. Serialize the whole of init() under the compile lock
+  // so several threads may construct interpreters concurrently (as an
+  // embedding host that spawns one interpreter per plugin instance does).
+  compile_lock_guard _init_guard;
   if (!g_interp) g_interp = this;
   if (!g_init) {
     stackdir = c_stack_dir();
@@ -1603,15 +1622,29 @@ static string searchdir(const string& srcdir, const string& libdir,
       perror("readlink");
   }
 #endif
-  // canonicalize the pathname
-  string dir = dirname(fname), name = basename(fname);
-  if (chdir(dir.c_str())==0 && getcwd(buf, BUFSIZE)) {
-    string dir = unixize(buf);
-    if (!dir.empty() && dir[dir.size()-1] != '/')
-      dir += "/";
-    fname = dir+name;
+  // canonicalize the pathname. Use realpath(3) rather than a
+  // chdir()/getcwd() dance: chdir mutates the process-global working
+  // directory, which is not thread-safe and races when several threads
+  // create interpreters (and thus resolve the prelude path) at once.
+  {
+    char *real = realpath(fname.c_str(), 0);
+    if (real) {
+      fname = unixize(real);
+      free(real);
+    } else {
+      // realpath fails if the file does not exist; fall back to a
+      // lexical canonicalization of the directory part, still without
+      // touching the process CWD.
+      string dir = dirname(fname), name = basename(fname);
+      char *rdir = dir.empty()?0:realpath(dir.c_str(), 0);
+      if (rdir) {
+	string d = unixize(rdir);
+	free(rdir);
+	if (!d.empty() && d[d.size()-1] != '/') d += "/";
+	fname = d+name;
+      }
+    }
   }
-  if (chdir(cwd)) perror("chdir");
 #if DEBUG>1
   std::cerr << "search '" << script << "', found as '" << fname << "'\n";
 #endif
@@ -4180,6 +4213,11 @@ void print_map(ostream& os, const Env *e)
 void interpreter::compile()
 {
   using namespace llvm;
+  // Guards the shared LLVM module/context. Recursive lock, so the parse
+  // region (which already holds it) and the standalone calls from
+  // pure_create_interp / jit_now are all safe. Scoped for exception
+  // safety during code generation.
+  compile_lock_guard _compile_guard;
   if (!dirty.empty() || !dirty_types.empty()) {
 #if DEBUG>1
     // Check for recursive invocations. This is always bad.
