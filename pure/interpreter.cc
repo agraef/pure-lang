@@ -98,6 +98,27 @@ int interpreter::stackdir = 0;
 thread_local int interpreter::brkflag = 0;
 thread_local int interpreter::brkmask = 0;
 bool interpreter::g_init = false;
+std::atomic<uint64_t> interpreter::next_id{1};
+
+// Per-thread evaluation arena cache, keyed by interpreter::id (never a
+// raw `this` pointer -- see the comment on `id` in interpreter.hh for
+// why that matters). One map per thread, so no lock is needed on the
+// lookup itself; the map is mutated only by its own thread.
+namespace {
+  thread_local std::unordered_map<uint64_t, pure_ectx> ectx_cache;
+}
+
+pure_ectx& interpreter::ectx()
+{
+  // operator[] default-constructs a fresh pure_ectx on first access from
+  // this thread for this interpreter id.
+  return ectx_cache[id];
+}
+
+void interpreter::purge_ectx()
+{
+  ectx_cache.erase(id);
+}
 
 map<uint32_t, void (*)(void*)> interpreter::locals_destroy_cb;
 
@@ -840,7 +861,7 @@ void interpreter::init()
 }
 
 interpreter::interpreter(int _argc, char **_argv)
-    : argc(_argc), argv(_argv),
+    : id(new_id()), argc(_argc), argv(_argv),
     verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false), texmacs(false),
     symbolic(true), checks(true), folding(true), consts(true),
@@ -852,7 +873,7 @@ interpreter::interpreter(int _argc, char **_argv)
     interactive_mode(false), escape_mode(0),
     source_level(0), skip_level(0), last_tag(0), logging(false),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
-    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
+    result(0), lastres(0),
     specials_only(false), module(0), module_dirty(false),
     JIT(), astk(0), sstk(__sstk),
     stoplevel(0), tracelevel(-1), debug_skip(false), trace_skip(false),
@@ -866,7 +887,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
-  : argc(0), argv(0),
+  : id(new_id()), argc(0), argv(0),
     verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false), texmacs(false),
     symbolic(true), checks(true), folding(true), consts(true),
@@ -882,7 +903,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
        time will become the smallest negative number in the 32 bit range. */
     last_tag(0x7fffffff), logging(false),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
-    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
+    result(0), lastres(0),
     specials_only(false), module(0), module_dirty(false),
     JIT(), astk(0), sstk(*_sstk),
     stoplevel(0), tracelevel(-1), debug_skip(false), trace_skip(false),
@@ -1007,13 +1028,19 @@ interpreter::~interpreter()
   // free the activation stack
   for (list<pure_aframe*>::iterator it = aplist.begin(); it != aplist.end();
        ++it) free(*it);
-  // free expression memory
-  pure_mem *m = mem, *n;
-  while (m) {
-    n = m->next;
-    delete m;
-    m = n;
-  }
+  // Free this thread's expression arena for this interpreter (the
+  // pure_ectx destructor walks and frees the block chain). Per the
+  // documented contract (see the `id` and `ectx()` comments in
+  // interpreter.hh), pure_delete_interp is called from the interpreter's
+  // own controlling thread, so this is the only thread that can have an
+  // arena for `id` in the common (single-thread-per-interpreter)
+  // embedding pattern. If a caller violates that contract by running an
+  // interpreter on several threads and deleting it from only one, the
+  // other threads' cached arenas are freed when those threads' own
+  // ectx_cache is destroyed at thread exit -- a benign delay, not a
+  // leak across the process lifetime, and never a use-after-free since
+  // `id` is never reused.
+  purge_ectx();
   // ORC JIT v2 resources are automatically cleaned up by unique_ptr destructors
   // JIT, TSCtx, PB, LAM, FAM, CGAM, MAM all managed automatically
   // if this was the global interpreter, reset it now
@@ -1426,13 +1453,14 @@ interpreter::warning(const string& m)
 void interpreter::mem_usage(size_t &used, size_t &free)
 {
   mem_usage(used);
-  free = freectr;
+  free = ectx().freectr;
   used -= free;
 }
 
 void interpreter::mem_usage(size_t &total)
 {
   total = 0;
+  pure_mem *mem = ectx().mem;
   if (!mem) return;
   total = mem->p-mem->x;
   pure_mem *m = mem->next;
@@ -1450,7 +1478,7 @@ void interpreter::begin_stats()
     clocks = clock();
     if (stats_mem) {
       mem_usage(memsize);
-      old_memctr = memctr = freectr;
+      old_memctr = ectx().memctr = ectx().freectr;
     }
   }
 }
@@ -1468,6 +1496,7 @@ void interpreter::end_stats()
 	 used memory at any one point is given by the new total amount of
 	 memory minus the old total, plus the difference between old and
 	 smallest size of the freelist. */
+      size_t memctr = ectx().memctr;
 #if 0
       // FIXME: Disable these checks for now, as these figures may not be 100%
       // accurate if "stats" got invoked through evalcmd.
@@ -13847,7 +13876,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   fptr = save_fptr;
   if (!astk) {
     // collect garbage
-    pure_expr *t = tmps;
+    pure_expr *t = ectx().tmps;
     while (t) {
       pure_expr *next = t->xp;
       if (t != res) pure_freenew(t);
@@ -14067,7 +14096,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
   }
   if (!astk) {
     // collect garbage
-    pure_expr *t = tmps;
+    pure_expr *t = ectx().tmps;
     while (t) {
       pure_expr *next = t->xp;
       if (t != res) pure_freenew(t);

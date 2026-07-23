@@ -38,6 +38,7 @@
 
 #include <time.h>
 #include <pthread.h>
+#include <atomic>
 #include <set>
 #include <unordered_map>
 #include <string>
@@ -571,6 +572,31 @@ struct cvector_data {
   }
 };
 
+// Per-thread evaluation arena, Phase 1b (see DESIGN-XTC-RUNTIME.md).
+//
+// Holds the expression-memory block chain, the free list, the
+// temporaries list, and the allocation counters -- the state
+// new_expr()/free_expr()/pure_new_internal()/pure_free_internal() in
+// runtime.cc mutate on every single expression allocation. Before this,
+// these fields lived directly on `interpreter`, so two threads running
+// the same interpreter's compiled code would race on the free list and
+// corrupt the heap (this is the barrier the design's §5.1 identifies as
+// blocking intra-interpreter parallelism). Now each (interpreter,
+// thread) pair gets its own pure_ectx, allocated lazily on first use and
+// cached thread-locally, so the allocation hot path stays lock-free.
+struct pure_ectx {
+  pure_mem *mem = 0;    // runtime expression memory (block chain)
+  pure_expr *exps = 0;  // head of the free list
+  pure_expr *tmps = 0;  // temporaries list (collected after exceptions)
+  size_t freectr = 0;   // size of the free list
+  size_t memctr = 0;    // low-water free-list mark since last stats reset
+  ~pure_ectx()
+  {
+    pure_mem *m = mem, *n;
+    while (m) { n = m->next; delete m; m = n; }
+  }
+};
+
 class interpreter
 {
 public:
@@ -670,10 +696,26 @@ public:
   env typeenv;       // global type environment
   funset dirty;      // "dirty" function entries which need a recompile
   funset dirty_types;// "dirty" type entries which need a recompile
-  pure_mem *mem;     // runtime expression memory
-  pure_expr *exps;   // head of the free list (available expression nodes)
-  pure_expr *tmps;   // temporaries list (to be collected after exceptions)
-  size_t freectr;    // size of the free list
+  // Per-thread evaluation arena (Phase 1b, see DESIGN-XTC-RUNTIME.md).
+  // mem/exps/tmps/freectr/memctr are accessed via ectx(), which returns
+  // the calling thread's private pure_ectx for *this* interpreter -- so
+  // several threads can run the same interpreter's compiled code at once,
+  // each allocating from its own arena with no locking on the hot path.
+  // The field names are preserved as ectx() members (not interpreter
+  // members), so the ~60 existing runtime.cc call sites only need
+  // `interp.mem` rewritten to `interp.ectx().mem` -- a single mechanical,
+  // grep-verified substitution, not a semantic change per site.
+  pure_ectx& ectx();
+  // Drop this thread's cached ectx for this interpreter. Called from
+  // ~interpreter() (by the destroying thread) so that if this
+  // interpreter's address is reused by a later `new interpreter`, the
+  // destroying thread does not resolve the new interpreter's ectx() to
+  // the old, now-freed arena. The existing embedding contract already
+  // requires pure_delete_interp to be called from the interpreter's own
+  // controlling thread (the create-then-run model: pd-pure, pure-lv2,
+  // and our own concurrency tests all create/use/delete on one thread),
+  // so this is not a new constraint, just documented explicitly.
+  void purge_ectx();
   map<uint32_t,void*> locals; // interpreter-local storage for applications
 
   bool defined_sym(int fno) {
@@ -1390,6 +1432,14 @@ public:
   // Genuinely global, read-only after startup.
   static int stackmax;
   static int stackdir;
+  // Monotonic, never-reused identity for ectx() lookups (interpreter.cc).
+  // A raw `this` pointer is not safe to use as the cache key: once an
+  // interpreter is deleted, a later `new interpreter` may reuse its
+  // address, and a thread-local cache entry left behind under the old
+  // address would then resolve to the wrong (or freed) arena. id is
+  // assigned once per instance and never repeats for the life of the
+  // process.
+  const uint64_t id;
 
   // Destructors for interpreter-local storage.
   static map<uint32_t, void (*)(void*)> locals_destroy_cb;
@@ -1405,6 +1455,8 @@ public:
 private:
 
   static bool g_init;
+  static std::atomic<uint64_t> next_id;
+  static uint64_t new_id() { return next_id.fetch_add(1, std::memory_order_relaxed); }
 
   // Utility functions to quickly save and restore the global state.
   struct globals {
@@ -1463,7 +1515,11 @@ private:
   // Evaluation statistics.
 
 public:
-  size_t memctr;
+  // memctr (low-water free-list mark since the last report) lives in
+  // ectx() alongside mem/exps/tmps/freectr -- it's touched on the same
+  // allocation hot path (new_expr/free_expr in runtime.cc), so it must
+  // be per-thread for the same reason. begin_stats/end_stats read it via
+  // ectx() too; see interpreter.cc.
   void begin_stats();
   void end_stats();
   void report_stats();

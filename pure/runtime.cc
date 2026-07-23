@@ -44,6 +44,7 @@ char *alloca ();
 #include <math.h>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "interpreter.hh"
 #include "util.hh"
@@ -667,50 +668,52 @@ static inline void free_sentry(pure_expr *x)
 static inline pure_expr *new_expr()
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *x = interp.exps;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr *x = ectx.exps;
   if (x) {
-    interp.exps = x->xp;
-    interp.freectr--;
-    if (interp.stats_mem && interp.freectr < interp.memctr)
-      interp.memctr = interp.freectr;
-  } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    ectx.exps = x->xp;
+    ectx.freectr--;
+    if (interp.stats_mem && ectx.freectr < ectx.memctr)
+      ectx.memctr = ectx.freectr;
+  } else if (ectx.mem && ectx.mem->p-ectx.mem->x < MEMSIZE) {
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   } else {
-    pure_mem *mem = interp.mem;
-    interp.mem = new pure_mem;
-    interp.mem->next = mem;
-    interp.mem->p = interp.mem->x;
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    pure_mem *mem = ectx.mem;
+    ectx.mem = new pure_mem;
+    ectx.mem->next = mem;
+    ectx.mem->p = ectx.mem->x;
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   }
   x->refc = 0;
-  x->xp = interp.tmps;
+  x->xp = ectx.tmps;
   x->sy = 0; // initialize the sentry
   x->data.x[1] = 0; // initialize the pointer tag
-  interp.tmps = x;
+  ectx.tmps = x;
   return x;
 }
 
 static inline pure_expr *new_ref_expr()
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *x = interp.exps;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr *x = ectx.exps;
   if (x) {
-    interp.exps = x->xp;
-    interp.freectr--;
-    if (interp.stats_mem && interp.freectr < interp.memctr)
-      interp.memctr = interp.freectr;
-  } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    ectx.exps = x->xp;
+    ectx.freectr--;
+    if (interp.stats_mem && ectx.freectr < ectx.memctr)
+      ectx.memctr = ectx.freectr;
+  } else if (ectx.mem && ectx.mem->p-ectx.mem->x < MEMSIZE) {
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   } else {
-    pure_mem *mem = interp.mem;
-    interp.mem = new pure_mem;
-    interp.mem->next = mem;
-    interp.mem->p = interp.mem->x;
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    pure_mem *mem = ectx.mem;
+    ectx.mem = new pure_mem;
+    ectx.mem->next = mem;
+    ectx.mem->p = ectx.mem->x;
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   }
   x->refc = 1;
   x->xp = 0;
@@ -721,9 +724,10 @@ static inline pure_expr *new_ref_expr()
 static inline void free_expr(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
-  x->xp = interp.exps;
-  interp.exps = x;
-  interp.freectr++;
+  pure_ectx& ectx = interp.ectx();
+  x->xp = ectx.exps;
+  ectx.exps = x;
+  ectx.freectr++;
   MEMDEBUG_FREE(x)
 }
 
@@ -731,6 +735,7 @@ static inline
 pure_expr *pure_new_internal(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   assert(x && "pure_new: null expression");
   assert((x->refc==0 || !x->xp) && "pure_new: corrupt expression data");
 #if DEBUG>2
@@ -741,11 +746,11 @@ pure_expr *pure_new_internal(pure_expr *x)
 #endif
   if (x->refc++ == 0) {
     // remove x from the list of temporaries
-    if (interp.tmps == x)
-      interp.tmps = x->xp;
+    if (ectx.tmps == x)
+      ectx.tmps = x->xp;
     else {
       // walk the list to find the place where x has to be unlinked
-      pure_expr *tmps = interp.tmps;
+      pure_expr *tmps = ectx.tmps;
       while (tmps && tmps->xp != x) tmps = tmps->xp;
       assert(tmps);
       tmps->xp = x->xp;
@@ -807,7 +812,7 @@ static inline void pure_new_vect(const size_t n, pure_expr **xs)
     rc = 0;
   else {
     interpreter& interp = *interpreter::g_interp;
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = interp.ectx().tmps;
     pure_expr *first = xs[0], *last = xs[n-1];
     rc = peek(tmps, first, last);
   }
@@ -836,7 +841,7 @@ static inline void pure_new_vect2(const size_t n, const size_t m,
     rc = 0;
   else {
     interpreter& interp = *interpreter::g_interp;
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = interp.ectx().tmps;
     pure_expr *first = xs[0], *last = xs[(n-1)*stride+m-1];
     rc = peek(tmps, first, last);
   }
@@ -1065,13 +1070,14 @@ pure_unref_internal(pure_expr *x)
   assert(x->refc > 0 && "pure_unref: unreferenced expression");
   if (--x->refc == 0 && !x->xp) {
     interpreter& interp = *interpreter::g_interp;
+    pure_ectx& ectx = interp.ectx();
     // check whether x is already on the tmps list
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = ectx.tmps;
     while (tmps && tmps != x) tmps = tmps->xp;
     if (!tmps) {
       // put x on the tmps list again
-      x->xp = interp.tmps;
-      interp.tmps = x;
+      x->xp = ectx.tmps;
+      ectx.tmps = x;
     }
   }
 }
@@ -1223,20 +1229,21 @@ pure_expr *pure_symbol(int32_t tag)
   assert(_e);						\
   pure_expr*& e = *_e;					\
   interpreter& interp = *interpreter::g_interp;		\
+  pure_ectx& ectx = interp.ectx();			\
   pure_aframe *ex = interp.push_aframe(interp.sstk_sz);	\
-  pure_expr *old_tmps = interp.tmps; interp.tmps = 0;	\
+  pure_expr *old_tmps = ectx.tmps; ectx.tmps = 0;	\
   if (setjmp(ex->jmp)) {				\
     size_t sz = ex->sz;					\
     e = ex->e;						\
     interp.pop_aframe();				\
     if (e) pure_new_internal(e);			\
-    pure_expr *tmps = interp.tmps;			\
+    pure_expr *tmps = ectx.tmps;			\
     while (tmps) {					\
       pure_expr *next = tmps->xp;			\
       pure_freenew(tmps);				\
       tmps = next;					\
     }							\
-    interp.tmps = old_tmps;				\
+    ectx.tmps = old_tmps;				\
     for (size_t i = interp.sstk_sz; i-- > sz; )		\
       if (interp.sstk[i] && interp.sstk[i]->refc > 0)	\
 	pure_free_internal(interp.sstk[i]);		\
@@ -1246,13 +1253,13 @@ pure_expr *pure_symbol(int32_t tag)
   } else {						\
     pure_expr *res = x;					\
     interp.pop_aframe();				\
-    pure_expr *tmps = interp.tmps;			\
+    pure_expr *tmps = ectx.tmps;			\
     while (tmps) {					\
       pure_expr *next = tmps->xp;			\
       if (tmps != res) pure_freenew(tmps);		\
       tmps = next;					\
     }							\
-    interp.tmps = old_tmps;				\
+    ectx.tmps = old_tmps;				\
     res->refc++; pure_unref_internal(res);		\
     e = NULL;						\
     return res;						\
@@ -4104,11 +4111,28 @@ extern "C" void pure_compile_unlock()
   pthread_mutex_unlock(&g_compile_lock);
 }
 
+// Track, per thread, which interpreter's per-interpreter lock this thread
+// currently holds via pure_lock_interp -- a stack, since pure_lock_interp
+// may be called again (reentrantly, or for a different interpreter)
+// before the matching pure_unlock_interp. This is what lets
+// pure_unlock_interp follow its documented contract of taking the *saved*
+// (previously active) interpreter as its argument -- to switch context
+// back to -- while still unlocking the interpreter that was actually
+// locked, which is not generally the same object. (A bug in the original
+// implementation unlocked the argument instead of the held lock; since
+// pure_lock_interp's own contract is to return the *previous* active
+// interpreter, which is commonly NULL on a fresh thread, that silently
+// skipped the unlock entirely -- see DESIGN-XTC-RUNTIME.md.)
+namespace {
+  thread_local std::vector<interpreter*> locked_interp_stack;
+}
+
 extern "C"
 pure_interp *pure_lock_interp(pure_interp *interp)
 {
   interpreter *_interp = (interpreter*)interp;
   if (_interp) pthread_mutex_lock(&_interp->lock);
+  locked_interp_stack.push_back(_interp);
   pure_interp *s_interp = pure_current_interp();
   pure_switch_interp(interp);
   return s_interp;
@@ -4119,7 +4143,11 @@ pure_interp *pure_unlock_interp(pure_interp *interp)
 {
   pure_interp *s_interp = pure_current_interp();
   pure_switch_interp(interp);
-  interpreter *_interp = (interpreter*)interp;
+  interpreter *_interp = 0;
+  if (!locked_interp_stack.empty()) {
+    _interp = locked_interp_stack.back();
+    locked_interp_stack.pop_back();
+  }
   if (_interp) pthread_mutex_unlock(&_interp->lock);
   return s_interp;
 }
@@ -6218,6 +6246,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
   if (x->tag >= 0 && x->data.clos && x->data.clos->n == 0 &&
       (fp = get_funptr(x)) != 0) {
     interpreter& interp = *interpreter::g_interp;
+    pure_ectx& ectx = interp.ectx();
 #if DEBUG>1
     cerr << "pure_catch: calling " << x << " -> " << fp << endl;
 #endif
@@ -6254,7 +6283,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
     // Push an exception.
     pure_aframe *ex = interp.push_aframe(oldsz);
     // Save old temporaries.
-    pure_expr *old_tmps = interp.tmps; interp.tmps = 0;
+    pure_expr *old_tmps = ectx.tmps; ectx.tmps = 0;
     // Call the function now. Catch exceptions generated by the runtime.
     if (setjmp(ex->jmp)) {
       // caught an exception
@@ -6263,7 +6292,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       interp.pop_aframe();
       if (e) pure_new_internal(e);
       // collect new garbage
-      pure_expr *tmps = interp.tmps;
+      pure_expr *tmps = ectx.tmps;
       while (tmps) {
 	pure_expr *next = tmps->xp;
 #if DEBUG>2
@@ -6273,7 +6302,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	tmps = next;
       }
       // restore the old list of temporaries
-      interp.tmps = old_tmps;
+      ectx.tmps = old_tmps;
       for (size_t i = interp.sstk_sz; i-- > sz; )
 	if (interp.sstk[i] && interp.sstk[i]->refc > 0)
 	  pure_free_internal(interp.sstk[i]);
@@ -6329,7 +6358,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       /* Collect any new garbage that might have accumulated during the
 	 call. Normally there shouldn't be any, but it might be that some
 	 badly written external function does this. */
-      pure_expr *tmps = interp.tmps;
+      pure_expr *tmps = ectx.tmps;
       while (tmps) {
 	pure_expr *next = tmps->xp;
 	if (tmps != res) {
@@ -6341,7 +6370,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	tmps = next;
       }
       // restore the old list of temporaries
-      interp.tmps = old_tmps;
+      ectx.tmps = old_tmps;
       assert(res);
       res->refc++;
       pure_free_internal(h); pure_free_internal(x);
@@ -6363,6 +6392,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
   assert(_e);
   pure_expr*& e = *_e;
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   // Cast the function pointer to the right type (takes no arguments, returns
   // a pure_expr*), so we can call it as a native function.
   pure_expr *(*fp)() = (pure_expr*(*)())f;
@@ -6373,7 +6403,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
   // Push an exception.
   pure_aframe *ex = interp.push_aframe(interp.sstk_sz);
   // Save old temporaries.
-  pure_expr *old_tmps = interp.tmps; interp.tmps = 0;
+  pure_expr *old_tmps = ectx.tmps; ectx.tmps = 0;
   // Call the function now. Catch exceptions generated by the runtime.
   size_t oldsz = interp.sstk_sz;
   if (!interp.debugging) pure_push_args(0, 0);
@@ -6394,7 +6424,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
     interp.pop_aframe();
     if (e) pure_new_internal(e);
     // collect new garbage
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = ectx.tmps;
     while (tmps) {
       pure_expr *next = tmps->xp;
 #if DEBUG>2
@@ -6404,7 +6434,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
       tmps = next;
     }
     // restore the old list of temporaries
-    interp.tmps = old_tmps;
+    ectx.tmps = old_tmps;
     for (size_t i = interp.sstk_sz; i-- > sz; )
       if (interp.sstk[i] && interp.sstk[i]->refc > 0)
 	pure_free_internal(interp.sstk[i]);
@@ -6426,7 +6456,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
     /* Collect any new garbage that might have accumulated during the
        call. Normally there shouldn't be any, but it might be that some badly
        written external function does this. */
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = ectx.tmps;
     while (tmps) {
       pure_expr *next = tmps->xp;
       if (tmps != res) {
@@ -6438,7 +6468,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
       tmps = next;
     }
     // restore the old list of temporaries
-    interp.tmps = old_tmps;
+    ectx.tmps = old_tmps;
     pure_unref_internal(res);
     if (interp.sstk_sz > oldsz) {
       // The called function didn't clean up our stack frame, do it now.
