@@ -756,7 +756,27 @@ public:
   // members), so the ~60 existing runtime.cc call sites only need
   // `interp.mem` rewritten to `interp.ectx().mem` -- a single mechanical,
   // grep-verified substitution, not a semantic change per site.
-  pure_ectx& ectx();
+  //
+  // Defined inline, here, rather than out-of-line in interpreter.cc:
+  // profiling `fib 30` showed the out-of-line version costing ~13% of
+  // total runtime (an unordered_map lookup on every hot-path call, PLUS
+  // a real cross-shared-library call at every runtime.cc/printer.cc call
+  // site, since interpreter.cc and runtime.cc are separate translation
+  // units and the function was not header-inline). The single-slot cache
+  // below turns the overwhelmingly common case (same interpreter, same
+  // thread, called millions of times in a row -- a thread only
+  // time-shares *different* interpreters in the uncommon pd-pure-style
+  // embedding pattern) into one inlined pointer comparison; the map is
+  // the correctness fallback for an actual interpreter switch on this
+  // thread, and for enumeration/purge on interpreter deletion.
+  inline pure_ectx& ectx()
+  {
+    if (id == last_ectx_id) return *last_ectx_ptr;
+    pure_ectx& e = ectx_cache[id];
+    last_ectx_id = id;
+    last_ectx_ptr = &e;
+    return e;
+  }
   // Drop this thread's cached ectx for this interpreter. Called from
   // ~interpreter() (by the destroying thread) so that if this
   // interpreter's address is reused by a later `new interpreter`, the
@@ -766,7 +786,11 @@ public:
   // controlling thread (the create-then-run model: pd-pure, pure-lv2,
   // and our own concurrency tests all create/use/delete on one thread),
   // so this is not a new constraint, just documented explicitly.
-  void purge_ectx();
+  inline void purge_ectx()
+  {
+    if (id == last_ectx_id) { last_ectx_id = 0; last_ectx_ptr = 0; }
+    ectx_cache.erase(id);
+  }
   map<uint32_t,void*> locals; // interpreter-local storage for applications
 
   bool defined_sym(int fno) {
@@ -1522,6 +1546,14 @@ private:
   static bool g_init;
   static std::atomic<uint64_t> next_id;
   static uint64_t new_id() { return next_id.fetch_add(1, std::memory_order_relaxed); }
+
+  // Per-thread ectx() cache (see the comment on ectx() above). One map
+  // per thread -- mutated only by its own thread, so no lock is needed --
+  // plus a single-slot fast path in front of it. last_ectx_id==0 means
+  // the slot is empty (0 is never a valid `id`: new_id() starts at 1).
+  static thread_local std::unordered_map<uint64_t, pure_ectx> ectx_cache;
+  static thread_local uint64_t last_ectx_id;
+  static thread_local pure_ectx *last_ectx_ptr;
 
   // Utility functions to quickly save and restore the global state.
   struct globals {

@@ -100,25 +100,15 @@ thread_local int interpreter::brkmask = 0;
 bool interpreter::g_init = false;
 std::atomic<uint64_t> interpreter::next_id{1};
 
-// Per-thread evaluation arena cache, keyed by interpreter::id (never a
-// raw `this` pointer -- see the comment on `id` in interpreter.hh for
-// why that matters). One map per thread, so no lock is needed on the
-// lookup itself; the map is mutated only by its own thread.
-namespace {
-  thread_local std::unordered_map<uint64_t, pure_ectx> ectx_cache;
-}
-
-pure_ectx& interpreter::ectx()
-{
-  // operator[] default-constructs a fresh pure_ectx on first access from
-  // this thread for this interpreter id.
-  return ectx_cache[id];
-}
-
-void interpreter::purge_ectx()
-{
-  ectx_cache.erase(id);
-}
+// Per-thread ectx() cache -- see the comment on interpreter::ectx() in
+// interpreter.hh (moved there, and made inline, after profiling showed
+// the out-of-line, cross-translation-unit version costing ~13% of total
+// runtime on a `fib 30` run: an unordered_map lookup on every hot-path
+// call, plus a real shared-library call boundary at every runtime.cc/
+// printer.cc call site).
+thread_local std::unordered_map<uint64_t, pure_ectx> interpreter::ectx_cache;
+thread_local uint64_t interpreter::last_ectx_id = 0;
+thread_local pure_ectx *interpreter::last_ectx_ptr = 0;
 
 map<uint32_t, void (*)(void*)> interpreter::locals_destroy_cb;
 
