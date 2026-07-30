@@ -11147,7 +11147,7 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
   args.push_back(b.CreateBitCast(b.CreateGEP(vexterns->getValueType(), vexterns, mkidxs(idx, idx+2)),
 				 VoidPtrTy));
   // sstkvar is now the pure_get_sstk() Function*, not an address to bind
-  // an interpreter member to (Phase 1b Slice B) -- the AOT constructor
+  // an interpreter member to -- the AOT constructor
   // no longer uses the _sstk parameter at all (sstk lives in pure_ectx,
   // reached the same way for both JIT and AOT-compiled code). Pass a
   // null placeholder to keep pure_interp_main's argument count/order

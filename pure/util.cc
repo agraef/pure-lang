@@ -210,7 +210,7 @@ static char *my_nl_langinfo(nl_item item)
    the cache in an automatic fashion. */
 
 #define NCACHE 10
-// Thread-local (Phase 1b, see DESIGN-XTC-RUNTIME.md): this cache backs
+// Thread-local: this cache backs
 // every Pure string value's alloc/free (pure_free_internal/the string
 // constructors in runtime.cc route through my_strdup/my_strfree, and
 // MY_STRDUP above is unconditionally defined, so this is not an

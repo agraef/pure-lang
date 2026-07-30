@@ -4053,8 +4053,8 @@ void pure_delete_interp(pure_interp *interp)
   delete _interp;
 }
 
-/* Shadow-stack accessor for JIT-generated code (Phase 1b Slice B, see
-   DESIGN-XTC-RUNTIME.md). Generated code used to read the shadow-stack
+/* Shadow-stack accessor for JIT-generated code. Generated code used to
+   read the shadow-stack
    pointer from a process-global LLVM variable ($$sstk$$) that
    interpreter::init_llvm_target() bound, via define_symbol, to the
    address of a single interpreter member. That member is gone --
@@ -4093,7 +4093,7 @@ void pure_switch_interp(pure_interp *interp)
 
 #include <pthread.h>
 
-/* GIL removal (see DESIGN-XTC-RUNTIME.md).
+/* GIL removal.
 
    The old global interpreter lock is gone. The active interpreter and the
    C-stack context (g_interp, baseptr, brkflag, brkmask) are now
@@ -4145,7 +4145,7 @@ extern "C" void pure_compile_unlock()
 // implementation unlocked the argument instead of the held lock; since
 // pure_lock_interp's own contract is to return the *previous* active
 // interpreter, which is commonly NULL on a fresh thread, that silently
-// skipped the unlock entirely -- see DESIGN-XTC-RUNTIME.md.)
+// skipped the unlock entirely.)
 namespace {
   thread_local std::vector<interpreter*> locked_interp_stack;
 }

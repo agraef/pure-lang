@@ -573,7 +573,7 @@ struct cvector_data {
   }
 };
 
-// Per-thread evaluation arena, Phase 1b (see DESIGN-XTC-RUNTIME.md).
+// Per-thread evaluation arena.
 //
 // Holds the expression-memory block chain, the free list, the
 // temporaries list, and the allocation counters -- the state
@@ -598,7 +598,7 @@ struct pure_ectx {
   // current call's argument/environment slots", read via the
   // pure_get_sstk() runtime accessor (interpreter.cc's codegen for
   // vref()/envptr() calls it instead of loading the old process-global
-  // $$sstk$$ variable -- see Slice B / stage 1c in the design).
+  // $$sstk$$ variable).
   pure_expr **sstk = 0;
   size_t sstk_cap = 0, sstk_sz = 0;
   // Scratch argument-vector buffer for pure_apply()'s saturated-call
@@ -606,7 +606,7 @@ struct pure_ectx {
   // needs to persist across calls -- it was `static` purely to avoid a
   // stack allocation, which made it a second free-list-style race
   // between threads sharing one interpreter (the same class of bug
-  // Slice A/B fixed for mem/exps/tmps/sstk/astk). PURE_ECTX_MAXARGS
+  // the per-thread arena fixed for mem/exps/tmps/sstk/astk). PURE_ECTX_MAXARGS
   // must match MAXARGS in funcall.h; runtime.cc static_asserts this
   // (funcall.h's `funcall` macro collides with interpreter::funcall(),
   // an unrelated codegen member, so this header cannot include
@@ -747,7 +747,7 @@ public:
   env typeenv;       // global type environment
   funset dirty;      // "dirty" function entries which need a recompile
   funset dirty_types;// "dirty" type entries which need a recompile
-  // Per-thread evaluation arena (Phase 1b, see DESIGN-XTC-RUNTIME.md).
+  // Per-thread evaluation arena.
   // mem/exps/tmps/freectr/memctr are accessed via ectx(), which returns
   // the calling thread's private pure_ectx for *this* interpreter -- so
   // several threads can run the same interpreter's compiled code at once,
@@ -1271,8 +1271,8 @@ public:
   set<llvm::Function*> always_used;
   map<int32_t,GlobalVar> globalvars;
   map<int32_t,Env> globalfuns, globaltypes;
-  // astk, sstk, sstk_cap, sstk_sz moved into pure_ectx (Phase 1b Slice B,
-  // see DESIGN-XTC-RUNTIME.md): the activation-stack top pointer and the
+  // astk, sstk, sstk_cap, sstk_sz moved into pure_ectx,
+  // the activation-stack top pointer and the
   // shadow (GC root) stack buffer are per-(interpreter,thread) state,
   // reached via ectx(). The JIT no longer binds a process-global
   // $$sstk$$ variable to a fixed interpreter member; instead generated
@@ -1354,7 +1354,7 @@ public:
   // concurrently. See pure_lock_interp in runtime.cc.
   pthread_mutex_t lock;
   // Global context switching for interpreters. The sstk half of this
-  // dance is gone (Phase 1b Slice B): sstk now lives in pure_ectx,
+  // dance is gone: sstk now lives in pure_ectx,
   // looked up per-thread via ectx(), so there is no single
   // interpreter-wide slot left to save/restore when switching the
   // active interpreter on one thread. fptr is unaffected (see the
@@ -1513,7 +1513,7 @@ public:
   // OS thread has its own current interpreter and stack base, so distinct
   // interpreters run concurrently on distinct threads without a global
   // lock (removing the GIL). Within a single interpreter, its own lock
-  // still serializes reentrant access. See DESIGN-XTC-RUNTIME.md.
+  // still serializes reentrant access.
   static thread_local interpreter* g_interp;
   // not saved
   static thread_local int brkflag, brkmask;
@@ -1581,7 +1581,7 @@ private:
   }
 
   // Activation stack for handling indirect calls and exceptions. Moved
-  // into pure_ectx (Phase 1b Slice B): ap/abp/aep/afreep/aplist are the
+  // into pure_ectx: ap/abp/aep/afreep/aplist are the
   // per-thread aframe arena, get_aframe()/free_aframe() now take the
   // calling thread's ectx() explicitly so they can be called from the
   // free functions in runtime.cc as well as from interpreter methods.

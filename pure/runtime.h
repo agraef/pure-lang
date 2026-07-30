@@ -729,12 +729,11 @@ void pure_finalize(void);
 void pure_compile_lock(void);
 void pure_compile_unlock(void);
 
-/* Shadow-stack accessor called by JIT-generated code (Phase 1b Slice B).
+/* Shadow-stack accessor called by JIT-generated code.
    Returns the calling thread's shadow-stack buffer for the interpreter
    currently active on this thread. Not part of the public embedding API;
    generated code calls it in place of the old $$sstk$$ global variable
-   load. See DESIGN-XTC-RUNTIME.md and the comment on this function's
-   definition in runtime.cc. */
+   load. See the comment on this function's definition in runtime.cc. */
 
 pure_expr **pure_get_sstk(void);
 
