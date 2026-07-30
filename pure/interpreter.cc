@@ -176,6 +176,13 @@ void interpreter::init()
   // so several threads may construct interpreters concurrently (as an
   // embedding host that spawns one interpreter per plugin instance does).
   compile_lock_guard _init_guard;
+  // Track whether this call is the one that adopts the global g_interp, so
+  // that if init() fails partway (e.g. JIT setup) we do not leave g_interp
+  // dangling at a half-constructed object that operator delete is about to
+  // reclaim. An embedding host (Postgres, an LV2 plugin) must be able to
+  // survive a failed pure_create_interp without the process being torn down
+  // or a stale global left behind.
+  const bool adopted_g_interp = !g_interp;
   if (!g_interp) g_interp = this;
   if (!g_init) {
     stackdir = c_stack_dir();
@@ -258,16 +265,24 @@ void interpreter::init()
 
   // Detect host and configure
   auto JTMB = JITTargetMachineBuilder::detectHost();
-  if (!JTMB) handleAllErrors(JTMB.takeError(), [](const ErrorInfoBase &E) {
-    std::cerr << "** Panic: " << E.message() << " **\n";
-    exit(1);
-  });
+  if (!JTMB) {
+    std::string msg;
+    handleAllErrors(JTMB.takeError(), [&msg](const ErrorInfoBase &E) {
+      msg = E.message();
+    });
+    if (adopted_g_interp) g_interp = 0;
+    throw err("cannot initialize JIT target for this host: " + msg);
+  }
 
   auto DL = JTMB->getDefaultDataLayoutForTarget();
-  if (!DL) handleAllErrors(DL.takeError(), [](const ErrorInfoBase &E) {
-    std::cerr << "** Panic: " << E.message() << " **\n";
-    exit(1);
-  });
+  if (!DL) {
+    std::string msg;
+    handleAllErrors(DL.takeError(), [&msg](const ErrorInfoBase &E) {
+      msg = E.message();
+    });
+    if (adopted_g_interp) g_interp = 0;
+    throw err("cannot determine JIT data layout: " + msg);
+  }
   module->setDataLayout(*DL);
 
   // Configure tail call optimization
@@ -310,10 +325,14 @@ void interpreter::init()
   // symbols reside in the process address space.
 
   auto JITOrErr = JITBuilder.create();
-  if (!JITOrErr) handleAllErrors(JITOrErr.takeError(), [](const ErrorInfoBase &E) {
-    std::cerr << "** Panic: " << E.message() << " **\n";
-    exit(1);
-  });
+  if (!JITOrErr) {
+    std::string msg;
+    handleAllErrors(JITOrErr.takeError(), [&msg](const ErrorInfoBase &E) {
+      msg = E.message();
+    });
+    if (adopted_g_interp) g_interp = 0;
+    throw err("cannot create JIT engine: " + msg);
+  }
   JIT = std::move(*JITOrErr);
 
   // Set up optimization pipeline
@@ -336,10 +355,12 @@ void interpreter::init()
     auto GenOrErr = DynamicLibrarySearchGenerator::GetForCurrentProcess(
       DL->getGlobalPrefix());
     if (!GenOrErr) {
-      handleAllErrors(GenOrErr.takeError(), [](const ErrorInfoBase &E) {
-        std::cerr << "** Panic: " << E.message() << " **\n";
+      std::string msg;
+      handleAllErrors(GenOrErr.takeError(), [&msg](const ErrorInfoBase &E) {
+        msg = E.message();
       });
-      exit(1);
+      if (adopted_g_interp) g_interp = 0;
+      throw err("cannot set up JIT symbol resolution: " + msg);
     }
     MainJD.addGenerator(std::move(*GenOrErr));
   }

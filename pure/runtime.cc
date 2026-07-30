@@ -3754,7 +3754,21 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   // This is pretty much the same as pure.cc:main(), except that some options
   // are ignored and there's no user interaction.
   char base;
-  interpreter *_interp = new interpreter(0, 0), &interp = *_interp;
+  // Construction runs init(), which sets up the LLVM/ORC JIT for this host.
+  // That can fail (unsupported target, JIT engine creation error); when it
+  // does, init() throws instead of terminating the process, so an embedding
+  // host survives the failure. Return NULL to the caller (the documented
+  // failure result, already produced below for bad arguments), after
+  // restoring whatever interpreter was active on this thread.
+  interpreter *_interp;
+  try {
+    _interp = new interpreter(0, 0);
+  } catch (err &e) {
+    std::cerr << "pure_create_interp: " << e.what() << '\n';
+    if (interpreter::g_interp) interpreter::g_interp->restore_context();
+    return 0;
+  }
+  interpreter &interp = *_interp;
   int count = 0;
   bool batch = false, want_prelude = true;
   // We use some stuff which is not safe to call while another interpreter is

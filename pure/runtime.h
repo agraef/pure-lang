@@ -642,7 +642,16 @@ typedef struct _pure_interp pure_interp;
    *not* possible to pass pure_expr* values created with one interpreter
    instance to another. Instead, you can use str (from the library API, see
    below) and pure_eval (see above) to first unparse the expression in the
-   source interpreter and then reparse it in the target interpreter. */
+   source interpreter and then reparse it in the target interpreter.
+
+   pure_create_interp returns NULL if the interpreter cannot be created,
+   for example when the LLVM/ORC JIT cannot be initialized for the host.
+   It never terminates the calling process on such a failure, so it is
+   safe to call from inside a host application (a database extension, a
+   plugin) that owns the process: check the result and handle NULL. The
+   Pure runtime does not install signal handlers, call exit(), or take
+   over the process's memory allocator on the interpreter create/eval
+   path; the host stays in control of that shared process state. */
 
 pure_interp *pure_create_interp(int argc, char *argv[]);
 void pure_delete_interp(pure_interp *interp);
