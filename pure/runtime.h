@@ -649,27 +649,37 @@ void pure_delete_interp(pure_interp *interp);
 void pure_switch_interp(pure_interp *interp);
 pure_interp *pure_current_interp();
 
-/* POSIX multithreading support. As the Pure runtime isn't thread-safe right
-   now, it is *not* safe to concurrently run Pure code in a multithreaded
-   program. This means that if you run multiple interpreter instances (or even
-   a single instance) in a multithreaded C/C++ application then you'll have to
-   serialize accesses to the runtime. The following routines implement a
-   global interpreter lock (GIL) which lets you switch between different
-   interpreter instances in a thread-safe way. Note that in a multithreaded
-   application you'll have to explicitly call these whenever running an
-   interpreter in a critical code section which may be run concurrently, even
-   if there is only a single global interpreter instance. (Depending on your
-   application, this may become a major bottleneck, so beware!)
+/* POSIX multithreading support. The runtime keeps the active interpreter
+   and the C-stack context in thread-local storage, and each interpreter
+   instance has its own recursive lock, so distinct interpreter instances
+   running on distinct threads execute concurrently without contending for
+   a process-wide lock. Parsing and code generation are serialized
+   internally by a separate compile lock (the LLVM/ORC JIT state and the
+   scanner are process-global), but evaluation of already-compiled code in
+   different interpreters proceeds in parallel.
 
-   To use these functions, call pure_lock_interp() on the interpreter instance
-   to be used when entering a critical section. This obtains the GIL, switches
-   to the given interpreter (as with pure_switch_interp()) and returns the
-   previously active interpreter instance (the previous pure_current_interp()).
-   Save the returned instance in a local variable and do whatever processing
-   is needed. When exiting the critical section, call pure_unlock_interp() on
-   the saved interpreter instance which releases the GIL and restores the
-   saved instance. (Note that you *must* call pure_unlock_interp() some time
-   after pure_lock_interp() in order to prevent deadlocks.) */
+   Two usage patterns are supported. The simplest is one interpreter per
+   thread: create an interpreter on a thread with pure_create_interp, make
+   it active there with pure_switch_interp, and evaluate; no locking is
+   needed because nothing is shared. Alternatively, several threads may
+   share a single interpreter instance, in which case accesses to that
+   instance must be serialized with pure_lock_interp/pure_unlock_interp,
+   which take that instance's own lock (not a global one).
+
+   Note that a single interpreter's evaluation is not automatically spread
+   across cores; concurrency comes from running interpreters (one per
+   thread, or serialized access to a shared one) in parallel.
+
+   To serialize access to a shared instance, call pure_lock_interp() on the
+   interpreter instance to be used when entering a critical section. This
+   obtains that interpreter's lock, switches to it (as with
+   pure_switch_interp()) and returns the previously active interpreter
+   instance (the previous pure_current_interp()). Save the returned instance
+   in a local variable and do whatever processing is needed. When exiting
+   the critical section, call pure_unlock_interp() on the saved interpreter
+   instance, which releases the lock and restores the saved instance. (Note
+   that you *must* call pure_unlock_interp() some time after
+   pure_lock_interp() in order to prevent deadlocks.) */
 
 pure_interp *pure_lock_interp(pure_interp *interp);
 pure_interp *pure_unlock_interp(pure_interp *interp);
