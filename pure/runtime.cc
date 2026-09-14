@@ -3737,6 +3737,19 @@ static string unixize(const string& s)
 extern "C"
 pure_interp *pure_create_interp(int argc, char *argv[])
 {
+  // RAII guard over the compile lock, so every return path below (including
+  // the ~16 early error returns) releases it. Interpreter creation parses,
+  // generates code, and mutates process-global state (the shared symbol
+  // table, the LLVM/ORC machinery, and the thread-local g_interp during
+  // expression teardown in prelude/script loading), so two threads creating
+  // interpreters concurrently would otherwise race and crash. The lock is
+  // recursive, so the nested run()/init() calls that also take it are fine.
+  // Concurrent creation serializes here; evaluation of already-created
+  // interpreters on other threads still runs in parallel.
+  struct create_lock_guard {
+    create_lock_guard() { pure_compile_lock(); }
+    ~create_lock_guard() { pure_compile_unlock(); }
+  } _create_guard;
   if (interpreter::g_interp) interpreter::g_interp->save_context();
   // This is pretty much the same as pure.cc:main(), except that some options
   // are ignored and there's no user interaction.
@@ -4050,7 +4063,20 @@ void pure_delete_interp(pure_interp *interp)
 {
   assert(interp);
   interpreter *_interp = (interpreter*)interp;
+  // The interpreter teardown chain (~interpreter -> ~Env ->
+  // free_function_code, and expression destructors) operates on the
+  // interpreter that is active on this thread via the thread-local
+  // g_interp. A host may delete an interpreter from a thread on which it
+  // was never made active (g_interp null or pointing at a different
+  // instance), so make the target active for the duration of destruction
+  // and restore the previous active interpreter afterwards. Without this,
+  // free_function_code runs with a null interpreter and crashes.
+  interpreter *s_interp = interpreter::g_interp;
+  if (s_interp == _interp) s_interp = 0;
+  interpreter::g_interp = _interp;
   delete _interp;
+  interpreter::g_interp = s_interp;
+  if (s_interp) s_interp->restore_context();
 }
 
 /* Shadow-stack accessor for JIT-generated code. Generated code used to
@@ -4062,7 +4088,7 @@ void pure_delete_interp(pure_interp *interp)
    interpreter::ectx() -- so generated code instead calls this function,
    which resolves to the calling thread's own shadow stack for whatever
    interpreter is currently active on this thread (interpreter::g_interp,
-   itself thread-local since Stage 1a). This is one extra indirect call
+   itself thread-local). This is one extra indirect call
    per shadow-stack access site (vref()/envptr() in interpreter.cc); it
    is what lets one interpreter's compiled code run correctly on several
    threads at once, which a single shared global could never do. */
