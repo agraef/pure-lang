@@ -21,7 +21,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "pure";
-  version = "0.7.1";  # Keep in sync with AC_INIT in pure/configure.ac
+  version = "0.68";  # Keep in sync with AC_INIT in pure/configure.ac
 
   src = ./pure;
 
