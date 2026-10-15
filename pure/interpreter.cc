@@ -84,8 +84,6 @@ namespace llvm {
 
 uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
-thread_local interpreter* interpreter::g_interp = 0;
-thread_local char *interpreter::baseptr = 0;
 llvm::LLVMContext& pure_active_llvm_context()
 {
   assert(interpreter::g_interp && interpreter::g_interp->Context);
@@ -95,8 +93,6 @@ llvm::LLVMContext& pure_active_llvm_context()
 // interpreter and runtime)
 int interpreter::stackmax = (8192-128)*1024;
 int interpreter::stackdir = 0;
-thread_local int interpreter::brkflag = 0;
-thread_local int interpreter::brkmask = 0;
 bool interpreter::g_init = false;
 std::atomic<uint64_t> interpreter::next_id{1};
 
@@ -107,8 +103,14 @@ std::atomic<uint64_t> interpreter::next_id{1};
 // call, plus a real shared-library call boundary at every runtime.cc/
 // printer.cc call site).
 thread_local std::unordered_map<uint64_t, pure_ectx> interpreter::ectx_cache;
-thread_local uint64_t interpreter::last_ectx_id = 0;
-thread_local pure_ectx *interpreter::last_ectx_ptr = 0;
+
+__attribute__((noinline)) pure_ectx& interpreter::ectx_slow()
+{
+  pure_ectx& e = ectx_cache[id];
+  last_ectx_id = id;
+  last_ectx_ptr = &e;
+  return e;
+}
 
 map<uint32_t, void (*)(void*)> interpreter::locals_destroy_cb;
 

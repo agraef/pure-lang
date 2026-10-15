@@ -13188,7 +13188,12 @@ char *pure_strftime(const char *format, struct tm *tm)
   // string (see lib/system.pure), so nothing retains this buffer past
   // the call -- but it was `static`, racing two threads formatting
   // times concurrently.
-  static thread_local char buf[1024];
+  // The buffer lives on the heap rather than as a thread_local array:
+  // libpure's TLS segment has to fit in the static TLS reserve glibc keeps
+  // for dlopen'ed libraries (see PURE_TLS_HOT in interpreter.hh), and a
+  // 1 KB array would make up most of it.
+  static thread_local char *buf = nullptr;
+  if (!buf && !(buf = (char*)malloc(1024))) return (char*)"";
   if (!strftime(buf, 1024, format, tm))
     /* The interface to strftime is rather brain-damaged since it returns zero
        both in case of a buffer overflow and when the resulting string is

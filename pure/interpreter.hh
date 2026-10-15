@@ -156,6 +156,15 @@ using namespace std;
 
 class interpreter;
 
+/* TLS model for the runtime's hot per-thread state (see the comment on
+   interpreter::g_interp). Platforms without ELF initial-exec TLS fall back
+   to the compiler's default model. */
+#if defined(__ELF__) && (defined(__GNUC__) || defined(__clang__))
+#define PURE_TLS_HOT __attribute__((tls_model("initial-exec")))
+#else
+#define PURE_TLS_HOT
+#endif
+
 // Global LLVM context pointer set by interpreter, used by Env constructors
 // before the interpreter class definition is complete.
 // The LLVM context of the active interpreter (interpreter::g_interp). Each
@@ -771,12 +780,13 @@ public:
   // thread, and for enumeration/purge on interpreter deletion.
   inline pure_ectx& ectx()
   {
-    if (id == last_ectx_id) return *last_ectx_ptr;
-    pure_ectx& e = ectx_cache[id];
-    last_ectx_id = id;
-    last_ectx_ptr = &e;
-    return e;
+    if (__builtin_expect(id == last_ectx_id, 1)) return *last_ectx_ptr;
+    return ectx_slow();
   }
+  // Out-of-line slow path of ectx() (interpreter.cc): an interpreter switch
+  // on this thread. Kept out of line so ectx() stays a compare and a load
+  // and its callers (the allocator and refcount hot paths) stay inlinable.
+  pure_ectx& ectx_slow();
   // Drop this thread's cached ectx for this interpreter. Called from
   // ~interpreter() (by the destroying thread) so that if this
   // interpreter's address is reused by a later `new interpreter`, the
@@ -1514,10 +1524,28 @@ public:
   // interpreters run concurrently on distinct threads without a global
   // lock (removing the GIL). Within a single interpreter, its own lock
   // still serializes reentrant access.
-  static thread_local interpreter* g_interp;
+  //
+  // Defined inline here, constant-initialized, and given the initial-exec
+  // TLS model (PURE_TLS_HOT, below). Each of these is read on every
+  // expression allocation, refcount operation, and stack check, so access
+  // cost dominates the single-threaded runtime:
+  //   - An out-of-line `extern` thread_local static member makes every
+  //     access from another translation unit call a TLS init-function
+  //     check, because the compiler cannot see that it needs no dynamic
+  //     initialization. Defining it inline with a constant initializer
+  //     removes that call.
+  //   - The default global-dynamic model, required for code in a shared
+  //     library, adds a TLS-descriptor call per access. initial-exec
+  //     turns each access into one %fs-relative load. It requires the
+  //     library's TLS to be allocated in the static TLS block, which
+  //     holds when libpure is linked at startup or dlopen'ed into a
+  //     process with enough static TLS surplus (glibc reserves space for
+  //     this; libpure's whole TLS segment is under 1.5 KB).
+  PURE_TLS_HOT static inline thread_local interpreter* g_interp = nullptr;
   // not saved
-  static thread_local int brkflag, brkmask;
-  static thread_local char *baseptr;
+  PURE_TLS_HOT static inline thread_local int brkflag = 0;
+  PURE_TLS_HOT static inline thread_local int brkmask = 0;
+  PURE_TLS_HOT static inline thread_local char *baseptr = nullptr;
   // Genuinely global, read-only after startup.
   static int stackmax;
   static int stackdir;
@@ -1551,9 +1579,13 @@ private:
   // per thread -- mutated only by its own thread, so no lock is needed --
   // plus a single-slot fast path in front of it. last_ectx_id==0 means
   // the slot is empty (0 is never a valid `id`: new_id() starts at 1).
+  // ectx_cache has a non-trivial constructor, so it keeps an out-of-line
+  // definition; it is only touched on the slow path (an interpreter switch
+  // on this thread). The single-slot cache in front of it is on every hot
+  // path and is defined like g_interp above.
   static thread_local std::unordered_map<uint64_t, pure_ectx> ectx_cache;
-  static thread_local uint64_t last_ectx_id;
-  static thread_local pure_ectx *last_ectx_ptr;
+  PURE_TLS_HOT static inline thread_local uint64_t last_ectx_id = 0;
+  PURE_TLS_HOT static inline thread_local pure_ectx *last_ectx_ptr = nullptr;
 
   // Utility functions to quickly save and restore the global state.
   struct globals {
