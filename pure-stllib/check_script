@@ -4,36 +4,45 @@
 
 DESTDIR=$1
 
-libdir=`pkg-config pure --variable libdir`
+libdir=$(pkg-config pure --variable libdir)
 installdir=${DESTDIR}${libdir}/pure
 
-# Linux might need this
-export LD_LIBRARY_PATH=${installdir}
+# Linux might need this. Include both the module install dir (for the
+# freshly-built .so modules) and the runtime libdir (for libpure.so),
+# so this works when Pure is installed to a non-standard prefix.
+export LD_LIBRARY_PATH=${installdir}:${DESTDIR}${libdir}:${libdir}:${LD_LIBRARY_PATH}
 # OS X needs this
-export DYLD_LIBRARY_PATH=${installdir}
+export DYLD_LIBRARY_PATH=${installdir}:${DESTDIR}${libdir}:${libdir}:${DYLD_LIBRARY_PATH}
 
 curdir=$PWD
 
-trap 'x=$?; rm -rf '$DESTDIR'; exit $x;' ALRM HUP INT TERM
+# Invoked indirectly via the trap below.
+# shellcheck disable=SC2329
+cleanup() {
+  local status=$?
+  rm -rf "${DESTDIR}"
+  exit "${status}"
+}
+trap cleanup ALRM HUP INT TERM
 
 # run ut for stlvec
-cd pure-stlvec/ut
-pure -I${installdir} -L${installdir} -x ut_all.pure
+cd pure-stlvec/ut || exit 1
+pure -I"${installdir}" -L"${installdir}" -x ut_all.pure
 stlvec_ec=$?
 
-cd ${curdir}
+cd "${curdir}" || exit 1
 
-echo 
+echo
 
-cd pure-stlmap/uts
-pure -I${installdir} -L${installdir} -x check_uts.pure uts_*.pure
+cd pure-stlmap/uts || exit 1
+pure -I"${installdir}" -L"${installdir}" -x check_uts.pure uts_*.pure
 stlmap_ec=$?
 
-cd ${curdir}
+cd "${curdir}" || exit 1
 
-rm -rf ${DESTDIR}
+rm -rf "${DESTDIR}"
 
-if [ ${stlvec_ec} -ne 0 -o ${stlmap_ec} -ne 0 ] 
+if [ "${stlvec_ec}" -ne 0 ] || [ "${stlmap_ec}" -ne 0 ]
 then
   echo
   echo --- MAKE CHECK FAILED ---
@@ -43,10 +52,3 @@ else
   echo --- MAKE CHECK PASSED ---
   exit 0
 fi
-
-
-
-
-
-
-
