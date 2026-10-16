@@ -1005,6 +1005,9 @@ public:
   };
   std::vector<ModuleResources> OldModuleResources;
   std::set<std::string> SubmittedSymbols;
+  // Symbols defined by the most recent submit_module() call (the module
+  // under ModuleRT); see release_eval_code.
+  std::vector<std::string> LastSubmitted;
   std::set<std::string> FreedSymbols;
   std::set<std::string> AbsoluteSymbols;
   std::map<std::string, llvm::orc::ResourceTrackerSP> SymbolTrackers;
@@ -1022,8 +1025,22 @@ public:
   void define_symbol(const std::string& name, void* addr);
   void free_function_code(llvm::Function* f);
   void optimize_function(llvm::Function* f);
+  // Erase an LLVM function from the module. Use this instead of
+  // Function::eraseFromParent(): the function analysis manager caches
+  // analysis results per Function (dominator trees, scalar evolution,
+  // MemorySSA, ...) and does not notice when a function is deleted, so
+  // erasing without clearing first leaks those results.
+  void erase_function(llvm::Function *f);
+  // Same for Function::deleteBody(), which leaves the declaration in the
+  // module but invalidates every cached analysis of the body.
+  void delete_function_body(llvm::Function *f);
   void submit_module();
   void cleanup_old_modules(size_t keep_recent = 10);
+  // Free the machine code of a finished pure_eval/doeval (see doeval).
+  bool owns_module(llvm::orc::ResourceTrackerSP rt);
+  void release_eval_code(llvm::orc::ResourceTrackerSP rt);
+  // Symbols defined by the module of a doeval that is still running.
+  std::map<llvm::orc::ResourceTracker*, std::vector<std::string>> EvalSymbols;
   bool module_dirty;
 
   // LLVM type convenience accessors (require Context)

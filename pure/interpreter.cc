@@ -1077,14 +1077,18 @@ void interpreter::submit_module() {
   }
   ModuleRT = JIT->getMainJITDylib().createResourceTracker();
   // Record which symbols we are submitting in this batch.
+  LastSubmitted.clear();
   for (auto &F : *ClonedModule) {
     if (!F.isDeclaration()) {
       SubmittedSymbols.insert(F.getName().str());
+      LastSubmitted.push_back(F.getName().str());
     }
   }
   for (auto &GV : ClonedModule->globals())
-    if (GV.hasInitializer())
+    if (GV.hasInitializer()) {
       SubmittedSymbols.insert(GV.getName().str());
+      LastSubmitted.push_back(GV.getName().str());
+    }
   auto TSM = llvm::orc::ThreadSafeModule(
     std::move(ClonedModule),
     llvm::orc::ThreadSafeContext(*TSCtx));
@@ -1094,6 +1098,37 @@ void interpreter::submit_module() {
     std::cerr << "addIRModule failed: " << errStr << "\n";
   }
   module_dirty = false;
+}
+
+bool interpreter::owns_module(llvm::orc::ResourceTrackerSP rt)
+{
+  // The tracker of the module submitted for a doeval may be released only
+  // if that module defined nothing but the evaluation's own anonymous
+  // function. doeval flushes pending code first, but the module still
+  // picks up globals created while generating the expression (string
+  // literals, for example), and running the expression can compile and
+  // submit other code under the same tracker (evalcmd, definitions made
+  // at run time). Those must outlive the evaluation.
+  if (!rt || rt != ModuleRT || module_dirty) return false;
+  auto it = EvalSymbols.find(rt.get());
+  if (it == EvalSymbols.end() || it->second.size() != 1) return false;
+  return it->second.front().compare(0, 6, "$$init") == 0;
+}
+
+void interpreter::release_eval_code(llvm::orc::ResourceTrackerSP rt)
+{
+  if (!rt) return;
+  // The symbols the module defined disappear from the JIT; make sure a
+  // later submission emits them afresh instead of treating them as present.
+  auto it = EvalSymbols.find(rt.get());
+  if (it != EvalSymbols.end()) {
+    for (const auto &name : it->second) SubmittedSymbols.erase(name);
+    EvalSymbols.erase(it);
+  }
+  if (rt == ModuleRT) ModuleRT = nullptr;
+  for (auto r = OldModuleResources.begin(); r != OldModuleResources.end(); ++r)
+    if (r->RT == rt) { OldModuleResources.erase(r); break; }
+  if (auto Err = rt->remove()) llvm::consumeError(std::move(Err));
 }
 
 void interpreter::cleanup_old_modules(size_t keep_recent) {
@@ -1150,6 +1185,18 @@ void interpreter::free_function_code(llvm::Function* f) {
   std::string name = f->getName().str();
   if (SubmittedSymbols.erase(name))
     FreedSymbols.insert(name);
+}
+
+void interpreter::erase_function(llvm::Function *f)
+{
+  if (FAM) FAM->clear(*f, f->getName());
+  f->eraseFromParent();
+}
+
+void interpreter::delete_function_body(llvm::Function *f)
+{
+  if (FAM) FAM->clear(*f, f->getName());
+  f->deleteBody();
 }
 
 // Optimize a single function using modern pass pipeline
@@ -2244,7 +2291,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       (*v)->dropAllReferences();
     }
     for (list<Function*>::iterator f = funptrs.begin();
-	 f != funptrs.end(); ++f) (*f)->eraseFromParent();
+	 f != funptrs.end(); ++f) erase_function(*f);
     for (list<GlobalVariable*>::iterator v = varptrs.begin();
 	 v != varptrs.end(); ++v) (*v)->eraseFromParent();
   }
@@ -4137,8 +4184,8 @@ void interpreter::compile()
 	    free_function_code(f);
 	    if (h != f) h->dropAllReferences();
 	    f->dropAllReferences();
-	    if (h != f) h->eraseFromParent();
-	    f->eraseFromParent();
+	    if (h != f) erase_function(h);
+	    erase_function(f);
 	  }
 	  // Reset the runtime type information.
 	  pure_add_rtty(ftag, 0, 0);
@@ -4832,8 +4879,8 @@ void interpreter::clearsym(int32_t f)
     free_function_code(f);
     if (h != f) h->dropAllReferences();
     f->dropAllReferences();
-    if (h != f) h->eraseFromParent();
-    f->eraseFromParent();
+    if (h != f) erase_function(h);
+    erase_function(f);
   }
   // Update dependent interface types.
   map< int32_t, set<int32_t> >::iterator it = fun_types.find(f);
@@ -4855,8 +4902,8 @@ void interpreter::cleartypesym(int32_t f)
     free_function_code(f);
     if (h != f) h->dropAllReferences();
     f->dropAllReferences();
-    if (h != f) h->eraseFromParent();
-    f->eraseFromParent();
+    if (h != f) erase_function(h);
+    erase_function(f);
   }
   // Reset the runtime type information.
   pure_add_rtty(f, 0, 0);
@@ -10892,7 +10939,7 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
   var_to_be_deleted.clear();
   for (list<Function*>::iterator it = fun_to_be_deleted.begin(),
 	 end = fun_to_be_deleted.end(); it != end; it++) {
-    (*it)->eraseFromParent();
+    erase_function(*it);
   }
   fun_to_be_deleted.clear();
   // Finally build the main function with all the initialization code.
@@ -11526,15 +11573,15 @@ void Env::clear()
       if (h != f) interp.free_function_code(h);
       interp.free_function_code(f);
       // Delete bodies to prevent stale code from being resubmitted.
-      f->deleteBody();
-      if (h != f) h->deleteBody();
+      interp.delete_function_body(f);
+      if (h != f) interp.delete_function_body(h);
     }
     // delete all nested environments and reinitialize other body-related data
     fmap.clear(); xmap.clear(); xtab.clear(); prop.clear(); m = 0;
     // now that all references have been removed, delete the function pointers
     for (list<Function*>::iterator fi = to_be_deleted.begin();
 	 fi != to_be_deleted.end(); fi++) {
-      (*fi)->deleteBody();
+      interp.delete_function_body(*fi);
     }
     to_be_deleted.clear();
   }
@@ -13677,6 +13724,10 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
      environments survive for the entire lifetime of any embedded closures,
      which might still be called at a later time. */
   Env *save_fptr = fptr;
+  // JIT any code that is still pending (e.g. definitions compiled just
+  // before this expression), so that the module submitted for $$init below
+  // holds only this evaluation's code and can be released afterwards.
+  if (!keep) submit_module();
   fptr = new Env(0, 0, 0, x, false); fptr->refc = 1;
   Env &f = *fptr;
   push("doeval", &f);
@@ -13694,17 +13745,27 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
     std::string initname = f.f->getName().str();
     void *fp = lookup_symbol(initname);
     assert(fp);
+    llvm::orc::ResourceTrackerSP rt = ModuleRT;
+    if (rt) EvalSymbols[rt.get()] = LastSubmitted;
     begin_stats();
     res = pure_invoke(fp, &e);
     end_stats();
     // Get rid of our anonymous function.
     free_function_code(f.f);
-    f.f->eraseFromParent();
-    // If there are no more references, we can get rid of the environment now.
-    if (fptr->refc == 1)
+    erase_function(f.f);
+    // If there are no more references, we can get rid of the environment
+    // now, and of the machine code too, as freeMachineCodeForFunction did
+    // with the old JIT: no closure created by this evaluation is left (it
+    // would hold a reference to fptr). Without this every pure_eval of a
+    // non-constant expression kept its compiled code for the life of the
+    // interpreter. Evaluations whose result contains closures keep their
+    // code, as before.
+    if (fptr->refc == 1) {
       delete fptr;
-    else
+      if (owns_module(rt)) release_eval_code(rt);
+    } else
       fptr->refc--;
+    if (rt) EvalSymbols.erase(rt.get());
   }
   fptr = save_fptr;
   if (!astk) {
@@ -13903,7 +13964,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
   // Get rid of our anonymous function.
   free_function_code(f.f);
   if (!keep) {
-    f.f->eraseFromParent();
+    erase_function(f.f);
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
