@@ -17,7 +17,7 @@ installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) $(CXXFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CXXFLAGS = -g -O2 -Wall -Wextra
+CXXFLAGS = -g -O2 -Wall -Wextra -std=c++11 -Wno-deprecated-declarations
 
 ifeq "$(DLL)" ".dylib"
 DLL_FLAGS = -install_name "$(libdir)/pure/$@"
