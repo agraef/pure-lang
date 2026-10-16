@@ -1351,6 +1351,7 @@ pure_aframe *interpreter::push_aframe(size_t sz)
   assert(a); a->e = 0; a->sz = sz;
   a->fp = 0; a->n = a->m = a->count = 0; a->argv = 0;
   a->prev = e.astk; e.astk = a;
+  e.nhandlers++;
   return a;
 }
 
@@ -1359,6 +1360,7 @@ void interpreter::pop_aframe()
   pure_ectx& e = ectx();
   pure_aframe *a = e.astk;
   assert(a);
+  if (a->count == 0) e.nhandlers--;
   e.astk = a->prev;
   free_aframe(e, a);
 }

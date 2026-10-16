@@ -645,13 +645,45 @@ typedef struct _pure_interp pure_interp;
    source interpreter and then reparse it in the target interpreter.
 
    pure_create_interp returns NULL if the interpreter cannot be created,
-   for example when the LLVM/ORC JIT cannot be initialized for the host.
-   It never terminates the calling process on such a failure, so it is
-   safe to call from inside a host application (a database extension, a
-   plugin) that owns the process: check the result and handle NULL. The
-   Pure runtime does not install signal handlers, call exit(), or take
-   over the process's memory allocator on the interpreter create/eval
-   path; the host stays in control of that shared process state. */
+   for example when the LLVM/ORC JIT cannot be initialized for the host;
+   check the result.
+
+   Embedding. libpure can run inside a host application that owns the
+   process (a database extension, an audio plugin, a spreadsheet). On the
+   paths a host uses -- creating, using and deleting interpreters, and
+   calling Pure through the functions in this header -- the runtime:
+
+   - does not terminate the process. Failures are reported as a NULL
+     result. Exceptions that no Pure code catches are returned to the host
+     instead of aborting: the x-variants (pure_evalx, pure_appx,
+     pure_funcallx, pure_symbolx, ...) hand the exception value back
+     directly; pure_eval sets lasterr(); and pure_app, pure_appl,
+     pure_appv, pure_symbol, pure_force and pure_funcall return NULL and
+     leave the exception for pure_last_exception() when called from the
+     host with no Pure handler active (from Pure code, or from C code
+     called by Pure, they propagate the exception as before);
+   - does not install signal handlers (Pure code can ask for them with
+     trap);
+   - does not replace the process memory allocator (plain malloc/free);
+   - keeps evaluation state per interpreter and per thread, so separate
+     interpreters run concurrently on separate threads.
+
+   Compiled code is freed when it can no longer be used, so repeated
+   pure_eval calls run in bounded memory -- with one exception: each
+   evaluation that creates a lambda keeps that lambda's compiled code (a
+   few KB) for the lifetime of the interpreter. Hosts that evaluate the
+   same expression many times should define it once as a function and
+   call it with pure_app, which allocates nothing that outlives the call.
+
+   Exceptions to the above, none reachable unless the host asks for them:
+   the interactive debugger (pure -g) and the batch compiler (pure -c) can
+   exit(); failing to load the regex library on first regex use exits; and
+   compiling inline ATS code sets the PURE_ATSCCOMP environment variable.
+
+   libpure uses the initial-exec TLS model for its hottest thread-local
+   state. When libpure is dlopen'ed rather than linked, its thread-local
+   segment (under 0.5 KB) must fit in the static TLS space glibc reserves
+   for that purpose, which it does by default. */
 
 pure_interp *pure_create_interp(int argc, char *argv[]);
 void pure_delete_interp(pure_interp *interp);
@@ -692,6 +724,17 @@ pure_interp *pure_current_interp();
 
 pure_interp *pure_lock_interp(pure_interp *interp);
 pure_interp *pure_unlock_interp(pure_interp *interp);
+
+/* Exceptions that reach the host. After pure_app, pure_appl, pure_appv,
+   pure_symbol, pure_force or pure_funcall returns NULL from a host call
+   (see "Embedding" above), pure_last_exception returns the exception
+   value, or NULL if the failure had no value (e.g. a failed match). The
+   value belongs to the runtime and stays valid until the next such
+   failure or pure_clear_exception on this thread; pure_new it to keep it.
+   Both are per interpreter and per thread. */
+
+pure_expr *pure_last_exception(void);
+void pure_clear_exception(void);
 
 /* Eager compilation. This runs the JIT, as necessary, on the given global
    function and transitively all other functions it might use. This often

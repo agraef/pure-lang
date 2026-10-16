@@ -1163,8 +1163,51 @@ int32_t pure_sym_nprec(int32_t tag)
   return nprec(sym.prec, sym.fix);
 }
 
+/* Host entry points. pure_app, pure_appl, pure_appv, pure_symbol,
+   pure_force and pure_funcall do not report exceptions. Called from Pure
+   code (or from C code that Pure called) an exception propagates to the
+   enclosing Pure handler as before. But when the caller is the host
+   application itself and no Pure handler is active on this thread, there
+   is nothing to propagate to; pure_throw used to call abort() and take the
+   host process down. Instead, run the call under a handler, store the
+   exception in the per-thread arena (see pure_last_exception), and return
+   NULL. The test is one integer compare, so calls from Pure code are not
+   slowed down. */
+
+static inline bool pure_have_handler()
+{
+  interpreter *interp = interpreter::g_interp;
+  return interp && interp->ectx().nhandlers > 0;
+}
+
+static void set_last_exception(pure_ectx& ectx, pure_expr *e)
+{
+  if (ectx.last_exception) pure_free_internal(ectx.last_exception);
+  ectx.last_exception = e ? pure_new_internal(e) : 0;
+}
+
+/* Finish a guarded host call: on failure, keep the exception for
+   pure_last_exception() and release the caller's reference. */
+static inline pure_expr *host_call_done(pure_expr *res, pure_expr *e)
+{
+  // The x-variants hand back the exception unreferenced (refc 0), like a
+  // fresh temporary; set_last_exception takes the reference.
+  if (!res) set_last_exception(interpreter::g_interp->ectx(), e);
+  return res;
+}
+
+extern "C" pure_expr *pure_symbolx(int32_t tag, pure_expr **e);
+static pure_expr *pure_symbol_internal(int32_t tag);
+
 extern "C"
 pure_expr *pure_symbol(int32_t tag)
+{
+  if (pure_have_handler()) return pure_symbol_internal(tag);
+  pure_expr *e = 0;
+  return host_call_done(pure_symbolx(tag, &e), e);
+}
+
+static pure_expr *pure_symbol_internal(int32_t tag)
 {
   assert(tag>0);
   interpreter& interp = *interpreter::g_interp;
@@ -1272,7 +1315,21 @@ pure_expr *pure_symbol(int32_t tag)
 extern "C"
 pure_expr *pure_symbolx(int32_t tag, pure_expr **_e)
 {
-  pure_try_call(pure_symbol(tag));
+  pure_try_call(pure_symbol_internal(tag));
+}
+
+extern "C"
+pure_expr *pure_last_exception(void)
+{
+  interpreter *interp = interpreter::g_interp;
+  return interp ? interp->ectx().last_exception : 0;
+}
+
+extern "C"
+void pure_clear_exception(void)
+{
+  interpreter *interp = interpreter::g_interp;
+  if (interp) set_last_exception(interp->ectx(), 0);
 }
 
 extern "C"
@@ -2341,9 +2398,22 @@ static pure_expr *myfuncall(void *f, uint32_t n, pure_expr **argv)
   return ret;
 }
 
+static pure_expr *pure_funcallv_x(void *f, uint32_t n, pure_expr **args,
+				  pure_expr **_e);
+
 extern "C"
 pure_expr *pure_funcall(void *f, uint32_t n, ...)
 {
+  if (!pure_have_handler()) {
+    // pure_funcallx is variadic too; rebuild its argument list.
+    va_list ap;
+    pure_expr **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
+    va_start(ap, n);
+    for (uint32_t i = 0; i < n; i++) argv[i] = va_arg(ap, pure_expr*);
+    va_end(ap);
+    pure_expr *e = 0;
+    return host_call_done(pure_funcallv_x(f, n, argv, &e), e);
+  }
   va_list ap;
   pure_expr **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
   argv[n] = 0;
@@ -2360,6 +2430,21 @@ pure_expr *pure_funcall(void *f, uint32_t n, ...)
       pure_push_argv(n, 0, argv);
   }
   return myfuncall(f, n, argv);
+}
+
+static pure_expr *pure_funcallv_x(void *f, uint32_t n, pure_expr **args,
+				  pure_expr **_e)
+{
+  pure_expr **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
+  for (uint32_t i = 0; i < n; i++) argv[i] = args[i];
+  argv[n] = 0;
+  if (n>0 || !interpreter::g_interp->debugging) {
+    if (n == 1)
+      pure_push_arg(argv[0]);
+    else
+      pure_push_argv(n, 0, argv);
+  }
+  pure_try_call(myfuncall(f, n, argv));
 }
 
 extern "C"
@@ -2386,7 +2471,9 @@ pure_expr *pure_funcallx(void *f, pure_expr **_e, uint32_t n, ...)
 extern "C"
 pure_expr *pure_app(pure_expr *fun, pure_expr *arg)
 {
-  return pure_apply2(fun, arg);
+  if (pure_have_handler()) return pure_apply2(fun, arg);
+  pure_expr *e = 0;
+  return host_call_done(pure_appx(fun, arg, &e), e);
 }
 
 extern "C"
@@ -2404,6 +2491,10 @@ pure_expr *pure_appl(pure_expr *fun, size_t argc, ...)
 extern "C"
 pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args)
 {
+  if (!pure_have_handler()) {
+    pure_expr *e = 0;
+    return host_call_done(pure_appxv(fun, argc, args, &e), e);
+  }
   pure_expr *y = fun;
   for (size_t i = 0; i < argc; i++)
     y = pure_apply2(y, args[i]);
@@ -5874,7 +5965,7 @@ static pure_expr *trampoline(interpreter& interp,
   // create a new trampoline for handling tail calls
   fini = true;
   ex = interp.push_aframe(ectx.sstk_sz);
-  ex->count = 1;
+  ex->count = 1; ectx.nhandlers--; // trampoline frame, not a handler
   if (setjmp(ex->jmp)) {
     // landing pad of tail call
     x = ex->e; fp = ex->fp;
@@ -5951,8 +6042,22 @@ pure_expr *pure_call(pure_expr *x)
 
 #define is_thunk(x) ((x)->tag == 0 && (x)->data.clos && (x)->data.clos->n == 0)
 
+static pure_expr *pure_force_internal(pure_expr *x);
+
+static pure_expr *pure_forcex(pure_expr *x, pure_expr **_e)
+{
+  pure_try_call(pure_force_internal(x));
+}
+
 extern "C"
 pure_expr *pure_force(pure_expr *x)
+{
+  if (pure_have_handler()) return pure_force_internal(x);
+  pure_expr *e = 0;
+  return host_call_done(pure_forcex(x, &e), e);
+}
+
+static pure_expr *pure_force_internal(pure_expr *x)
 {
   char test;
   assert(x);

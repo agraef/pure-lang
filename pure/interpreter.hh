@@ -629,6 +629,15 @@ struct pure_ectx {
   // all be freed when this ectx is torn down. astk is the top of the
   // (logical, prev-linked) activation stack.
   pure_aframe *astk = 0;
+  // Number of frames on astk that catch exceptions (count == 0), as
+  // opposed to trampoline frames (count > 0). Zero means no Pure code on
+  // this thread can catch an exception, i.e. the caller is the host
+  // application; see pure_host_call in runtime.cc.
+  size_t nhandlers = 0;
+  // Last exception that reached the host through one of the public entry
+  // points that cannot report it (pure_app, pure_symbol, ...). Owned by
+  // this arena (refcounted); see pure_last_exception in runtime.h.
+  pure_expr *last_exception = 0;
   pure_aframe *ap = 0, *abp = 0, *aep = 0, *afreep = 0;
   std::list<pure_aframe*> aplist;
   // Lazily allocate the initial shadow-stack buffer and the first

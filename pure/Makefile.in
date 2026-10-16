@@ -242,7 +242,7 @@ examples/ats_list_demo/Makefile examples/ats_list_demo/*.pure \
 examples/ats_list_demo/*/*/*.*ats \
 texmacs/packages/*.ts texmacs/plugins/pure/doc/*.tm \
 texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure \
-lib/*.pure test/*.pure test/*.log test/*.blob
+lib/*.pure test/*.pure test/*.log test/*.blob test/embed.c
 # These need special editing (see dist target, datesubst below).
 SEDFILES = INSTALL
 
@@ -337,7 +337,7 @@ install.txt: INSTALL
 # cleaning
 
 clean:
-	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc etc/flycheck-pure.elc texmacs/plugins/pure/*/*~
+	rm -f *~ *.bak pure$(EXE) test/embed$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc etc/flycheck-pure.elc texmacs/plugins/pure/*/*~
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -597,6 +597,15 @@ endif
 
 check: pure
 	./run-tests $(rtflags)
+
+# Embedding contract test: libpure called from a C host (see test/embed.c).
+check-embed: test/embed$(EXE)
+	LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH DYLD_LIBRARY_PATH=.:$$DYLD_LIBRARY_PATH \
+	PURELIB=$(srcdir)/lib ./test/embed$(EXE)
+
+test/embed$(EXE): test/embed.c runtime.h $(libpure)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PTHREAD_CFLAGS) -I$(srcdir) -o $@ \
+	$(srcdir)/test/embed.c $(LDFLAGS) -L. -l$(libpure_name) $(PTHREAD_LIBS)
 
 recheck: pure
 	./run-tests -f $(rtflags)
