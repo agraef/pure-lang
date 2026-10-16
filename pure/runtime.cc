@@ -536,6 +536,14 @@ gsl_matrix_symbolic_memcpy(gsl_matrix_symbolic *dest,
       interpreter::stackdir*(&test - interpreter::baseptr)		\
       >= interpreter::stackmax)						\
     pure_throw(stack_exception())
+// Host interrupt hook (pure_set_interrupt_hook). Called at the same points
+// as the signal check, so a host can cancel long-running Pure code (e.g. a
+// database query cancel) without delivering a signal to Pure. Process-wide;
+// a multithreaded host's hook can consult its own thread-local state.
+static int (*volatile pure_interrupt_hook)(void) = 0;
+// Stack base supplied by the host for this thread (pure_set_stack_limit),
+// or null to let pure_switch_interp derive it from the current frame.
+static thread_local char *host_stack_base = 0;
 #define checkall(test) if (interpreter::stackmax > 0 &&			\
 	interpreter::stackdir*(&test - interpreter::baseptr)		\
 	>= interpreter::stackmax)					\
@@ -543,7 +551,11 @@ gsl_matrix_symbolic_memcpy(gsl_matrix_symbolic *dest,
   else if (interpreter::brkmask) {					\
     if (interpreter::brkmask == 2) interpreter::brkmask = 0;		\
   } else if (interpreter::brkflag)					\
-    pure_throw(signal_exception(interpreter::brkflag))
+    pure_throw(signal_exception(interpreter::brkflag));		\
+  else if (pure_interrupt_hook) {					\
+    int _sig = pure_interrupt_hook();					\
+    if (_sig) pure_throw(signal_exception(_sig));			\
+  }
 
 // Debug expression allocations. Warns about expression memory leaks.
 // NOTE: Bookkeeping starts and ends at each toplevel pure_invoke call.
@@ -1316,6 +1328,22 @@ extern "C"
 pure_expr *pure_symbolx(int32_t tag, pure_expr **_e)
 {
   pure_try_call(pure_symbol_internal(tag));
+}
+
+extern "C"
+void pure_set_interrupt_hook(int (*hook)(void))
+{
+  pure_interrupt_hook = hook;
+}
+
+extern "C"
+void pure_set_stack_limit(void *base, size_t size)
+{
+  // A host-supplied base is authoritative for this thread: every
+  // interpreter made active on it uses it (see pure_switch_interp).
+  host_stack_base = (char*)base;
+  if (base) interpreter::baseptr = (char*)base;
+  if (size) interpreter::stackmax = (int)size;
 }
 
 extern "C"
@@ -4223,7 +4251,9 @@ void pure_switch_interp(pure_interp *interp)
      current frame is wildly far from the saved base, which indicates we
      were resumed on a different stack. */
   long d = interpreter::baseptr ? (&base - interpreter::baseptr) : 0;
-  if (!interpreter::baseptr || d < -100000 || d > 100000)
+  if (host_stack_base)
+    interpreter::baseptr = host_stack_base;
+  else if (!interpreter::baseptr || d < -100000 || d > 100000)
     interpreter::baseptr = &base;
 }
 

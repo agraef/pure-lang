@@ -5,6 +5,8 @@
    the "Embedding" section of runtime.h makes:
 
    - uncaught exceptions are returned to the host instead of aborting it;
+   - the interrupt hook cancels running Pure code;
+   - the stack limit turns runaway recursion into stack_fault;
    - repeated evaluation runs in bounded memory;
    - two interpreters can be used alternately on one thread, and one
      keeps working after the other is deleted;
@@ -55,6 +57,13 @@ static long heap_in_use(void)
 #endif
 }
 
+static volatile int cancel_requested = 0;
+
+static int interrupt_hook(void)
+{
+  return cancel_requested ? 2 : 0;
+}
+
 static void test_exceptions(pure_expr *h)
 {
   pure_expr *r, *e = 0;
@@ -83,6 +92,32 @@ static void test_exceptions(pure_expr *h)
 
   r = pure_app(pure_symbol(pure_sym("succ")), pure_int(41));
   check(r && pure_is_int(r, &k) && k == 42, "normal calls still work");
+}
+
+static void test_interrupt(void)
+{
+  pure_expr *r;
+  pure_set_interrupt_hook(interrupt_hook);
+  cancel_requested = 1;
+  r = pure_app(pure_symbol(pure_sym("loop")), pure_int(0));
+  cancel_requested = 0;
+  pure_set_interrupt_hook(0);
+  check(r == 0 && is_app_int(pure_last_exception(), "signal", 2),
+	"the interrupt hook cancels an infinite loop");
+}
+
+static void test_stack(void)
+{
+  char base;
+  pure_expr *r;
+  int32_t k;
+  pure_set_stack_limit(&base, 256 * 1024);
+  r = pure_app(pure_symbol(pure_sym("deep")), pure_int(100000000));
+  check(r == 0 && is_sym(pure_last_exception(), "stack_fault"),
+	"runaway recursion is reported as stack_fault");
+  r = pure_app(pure_symbol(pure_sym("deep")), pure_int(100));
+  check(r && pure_is_int(r, &k) && k == 100,
+	"evaluation works after a stack fault");
 }
 
 static void test_memory(pure_expr *f)
@@ -180,10 +215,14 @@ int main(void)
   if (!ip) return 1;
   pure_switch_interp(ip);
   pure_eval("h x = throw (oops x); thrower = throw (oops 0); "
+	    "loop n = loop (n+1); "
+	    "deep n = if n == 0 then 0 else 1 + deep (n-1); "
 	    "double_all xs = map (\\x->2*x) xs;");
   h = pure_new(pure_symbol(pure_sym("h")));
   f = pure_new(pure_symbol(pure_sym("double_all")));
   test_exceptions(h);
+  test_interrupt();
+  test_stack();
   test_memory(f);
   pure_free(h);
   pure_free(f);

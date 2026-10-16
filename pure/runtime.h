@@ -662,11 +662,13 @@ typedef struct _pure_interp pure_interp;
      leave the exception for pure_last_exception() when called from the
      host with no Pure handler active (from Pure code, or from C code
      called by Pure, they propagate the exception as before);
-   - does not install signal handlers (Pure code can ask for them with
-     trap);
+   - does not install signal handlers. Pure code can ask for them with
+     trap; a host that must keep its own handlers can use
+     pure_set_interrupt_hook instead (below);
    - does not replace the process memory allocator (plain malloc/free);
    - keeps evaluation state per interpreter and per thread, so separate
-     interpreters run concurrently on separate threads.
+     interpreters run concurrently on separate threads. The interrupt hook
+     and the stack size limit (below) are the process-wide exceptions.
 
    Compiled code is freed when it can no longer be used, so repeated
    pure_eval calls run in bounded memory -- with one exception: each
@@ -735,6 +737,31 @@ pure_interp *pure_unlock_interp(pure_interp *interp);
 
 pure_expr *pure_last_exception(void);
 void pure_clear_exception(void);
+
+/* Cooperative interruption. If set, the hook is called wherever Pure
+   checks for pending signals (on entry to each compiled function, unless
+   the interpreter runs with --nochecks). A nonzero return value is thrown
+   as the exception 'signal n' with n the returned value, which Pure code
+   can catch like a real signal and which otherwise reaches the host as
+   above. A host such as a database server uses this to cancel a running
+   Pure query from its own interrupt flag, without delivering a signal to
+   Pure. Pass NULL to remove the hook. The hook is process-wide; in a
+   multithreaded host it should consult thread-local state. */
+
+void pure_set_interrupt_hook(int (*hook)(void));
+
+/* Stack limit. Pure detects C stack overflow by comparing the current
+   frame against a base address and a maximum depth (default: about 8 MB,
+   or PURE_STACK in KB). When running on a host thread whose stack is
+   smaller, or entered deep inside the host's own call chain, give the
+   address of a frame near the bottom of the usable stack and the number
+   of bytes Pure may use from there; overflow is then reported as the
+   exception stack_fault instead of crashing. size 0 keeps the current
+   limit, base NULL returns to deriving the base from the frame that calls
+   pure_switch_interp. The base applies to every interpreter run on the
+   calling thread; the size is process-wide. */
+
+void pure_set_stack_limit(void *base, size_t size);
 
 /* Eager compilation. This runs the JIT, as necessary, on the given global
    function and transitively all other functions it might use. This often
