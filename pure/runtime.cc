@@ -4071,12 +4071,17 @@ void pure_delete_interp(pure_interp *interp)
   // instance), so make the target active for the duration of destruction
   // and restore the previous active interpreter afterwards. Without this,
   // free_function_code runs with a null interpreter and crashes.
+  // Tearing down the interpreter's definitions frees compiler data that
+  // is shared between interpreters (the expression hash table in expr.cc,
+  // the LLVM context), so it is serialized like interpreter creation.
+  pure_compile_lock();
   interpreter *s_interp = interpreter::g_interp;
   if (s_interp == _interp) s_interp = 0;
   interpreter::g_interp = _interp;
   delete _interp;
   interpreter::g_interp = s_interp;
   if (s_interp) s_interp->restore_context();
+  pure_compile_unlock();
 }
 
 /* Shadow-stack accessor for JIT-generated code. Generated code used to

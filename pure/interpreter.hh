@@ -1517,8 +1517,10 @@ private:
 
 public:
   // Global data, saved and restored by the run method.
-  static uint8_t g_verbose;
-  static bool g_interactive;
+  // Per-thread like g_interp below: they describe what the interpreter
+  // running on this thread is doing (verbosity, interactive session).
+  static inline thread_local uint8_t g_verbose = 0;
+  static inline thread_local bool g_interactive = false;
   // The active interpreter and the C-stack context are thread-local: each
   // OS thread has its own current interpreter and stack base, so distinct
   // interpreters run concurrently on distinct threads without a global
