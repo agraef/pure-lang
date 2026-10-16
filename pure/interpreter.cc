@@ -86,7 +86,11 @@ uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
 interpreter* interpreter::g_interp = 0;
 char *interpreter::baseptr = 0;
-llvm::LLVMContext* pure_llvm_context = nullptr;
+llvm::LLVMContext& pure_active_llvm_context()
+{
+  assert(interpreter::g_interp && interpreter::g_interp->Context);
+  return *interpreter::g_interp->Context;
+}
 // provide a reasonable default for the stack size (8192K - 128K for
 // interpreter and runtime)
 int interpreter::stackmax = (8192-128)*1024;
@@ -217,9 +221,6 @@ void interpreter::init()
   Context = ContextPtr.get();  // Store raw pointer for easy access
   TSCtx = std::make_unique<ThreadSafeContext>(std::move(ContextPtr));
 
-  // Set global context pointer used by Env constructors in interpreter.hh
-  // (they need the context before 'this' is available).
-  pure_llvm_context = Context;
 
   // Create module in context
   module = new Module(modname, *Context);
@@ -953,11 +954,25 @@ interpreter::~interpreter()
       if (destroy) destroy(ptr);
     }
   }
-  // get rid of global environments and the LLVM data
+  // get rid of global environments and the LLVM data. Env::clear and the
+  // expression destructors work on the active interpreter (g_interp), so
+  // make this one active while they run; otherwise deleting one of several
+  // interpreters records its functions in another interpreter's JIT
+  // bookkeeping, which then fails with duplicate-symbol errors.
+  interpreter *s_interp = g_interp;
+  bool was_active = s_interp == this;
+  if (!was_active) {
+    if (s_interp) s_interp->save_context();
+    g_interp = this;
+  }
   globenv.clear(); typeenv.clear(); macenv.clear();
   globalfuns.clear(); globaltypes.clear(); globalvars.clear();
+  if (!was_active) {
+    g_interp = s_interp;
+    if (s_interp) s_interp->restore_context();
+  }
   // free the shadow stack
-  if (g_interp != this && __sstk_save)
+  if (!was_active && __sstk_save)
     free(*__sstk_save);
   else
     free(sstk);
@@ -11463,7 +11478,7 @@ void Env::add_key(uint32_t key, uint32_t *refp)
 Env::Env(const Env& e)
   : tag(e.tag), name(e.name), key(e.key), descr(e.descr), n(e.n), m(e.m),
     f(e.f), h(e.h), args(e.args), envs(e.envs), rp(e.rp),
-    b(e.b), local(e.local), builder(*pure_llvm_context),
+    b(e.b), local(e.local), builder(pure_active_llvm_context()),
     parent(e.parent), refc(0), refp(e.refp),  // refc starts at 0 for copy
     fmap(e.fmap), xmap(e.xmap), xtab(e.xtab), prop(e.prop)
 {

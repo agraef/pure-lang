@@ -155,7 +155,11 @@ class interpreter;
 
 // Global LLVM context pointer set by interpreter, used by Env constructors
 // before the interpreter class definition is complete.
-extern llvm::LLVMContext* pure_llvm_context;
+// The LLVM context of the active interpreter (interpreter::g_interp). Each
+// interpreter owns its own context; IR built for one interpreter must use
+// that interpreter's context. Defined in interpreter.cc, where
+// interpreter is complete (Env's constructors below need it earlier).
+llvm::LLVMContext& pure_active_llvm_context();
 
 // verbosity levels, these can be ORed together
 namespace verbosity {
@@ -340,7 +344,7 @@ public:
   Env()
     : tag(0), key(0), descr(0), n(0), m(0), f(0), h(0),
       args(0), envs(0), rp(0), b(false), local(false),
-      builder(*pure_llvm_context),
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   { *refp = 0; add_key(getkey(), refp); }
   // environment for an anonymous closure with given body x
@@ -348,7 +352,7 @@ public:
       bool _b, bool _local = false)
     : tag(_tag), key(0), descr(_descr), n(_n), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(_b), local(_local),
-      builder(*pure_llvm_context),
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   {
     *refp = 0; add_key(getkey(), refp);
@@ -366,7 +370,7 @@ public:
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
     : tag(_tag), key(0), descr(0), n(info.argc), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(_b), local(_local),
-      builder(*pure_llvm_context),
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   {
     *refp = 0; add_key(getkey(), refp);
@@ -384,7 +388,7 @@ public:
   Env(int32_t _tag, uint32_t _n, bool _local = false)
     : tag(_tag), key(0), descr(0), n(_n), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(false), local(false),
-      builder(*pure_llvm_context),
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   { *refp = 0; add_key(getkey(), refp); }
   // copy constructor - needed because Env objects are stored by value in maps
