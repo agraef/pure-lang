@@ -861,15 +861,26 @@ static void pure_free_clos(pure_expr *x)
        << (x->data.clos->local?"local":"global") << " closure "
        << x << " (" << (void*)x << "), refc = " << x->refc << endl;
 #endif
+  // IMPORTANT: Decrement *refp BEFORE potentially deleting the Env.
+  // This way, when delete env -> ~Env -> clear() -> release_refp() runs,
+  // it sees the correct *refp value and can properly free the refp pointer
+  // when both refp_refcounts==0 and *refp==0 (no leak, no double-free).
+  uint32_t *clos_refp = (uint32_t*)x->data.clos->refp;
+  if (clos_refp) {
+    assert(*clos_refp > 0);
+    --(*clos_refp);
+  }
   if (x->data.clos->ep) {
     Env *env = (Env*)x->data.clos->ep;
     assert(env->refc > 0);
     if (--env->refc == 0) delete env;
   }
-  if (x->data.clos->refp) {
-    uint32_t *refp = (uint32_t*)x->data.clos->refp;
-    assert(*refp > 0);
-    --(*refp);
+  // If *refp reached 0 but the Env's release_refp() already ran earlier
+  // (e.g. because FMap::clear() called Env::clear() while closures were
+  // still alive), the refp is orphaned.  Clean it up now.
+  if (clos_refp && *clos_refp == 0) {
+    interpreter& interp = *interpreter::g_interp;
+    interp.try_free_refp(clos_refp);
   }
   if (x->data.clos->env) {
     for (size_t i = 0; i < x->data.clos->m; i++)
@@ -1164,12 +1175,12 @@ pure_expr *pure_symbol(int32_t tag)
     else
       lab = "$"+sym.s;
     // Create a global variable bound to the symbol for now.
-    v.v = interpreter::global_variable
+    v.v = interp.global_variable
       (interp.module, interp.ExprPtrTy, false,
        llvm::GlobalVariable::InternalLinkage,
        llvm::ConstantPointerNull::get(interp.ExprPtrTy),
        lab.c_str());
-    interp.JIT->addGlobalMapping(v.v, &v.x);
+    interp.define_symbol(v.v->getName().str(), &v.x);
     v.x = pure_new_internal(pure_const(tag));
     // Since we just created this variable, it doesn't have any closure bound
     // to it yet, so it's safe to just return the symbol as is.
@@ -1184,7 +1195,7 @@ pure_expr *pure_symbol(int32_t tag)
       // external wrapper function itself.
       const ExternInfo& info = it->second;
       size_t n = info.argtypes.size();
-      void *f = interp.JIT->getPointerToFunction(info.f);
+      void *f = interp.lookup_symbol(info.f->getName().str());
       if (f) {
 	if (n == 0) {
 	  // Parameterless external, do a direct call.
@@ -3325,12 +3336,36 @@ int pure_pointer_tag(const char *s)
     name.clear();
     for (; *s; ++s) if (!isspace(*s)) name.append(1, *s);
   }
-  // If the type is valid Pure syntax, normalize it a bit.
-  try {
-    llvm_const_Type *ty = interp.named_type(name);
-    assert(ty);
-    name = interp.type_name(ty);
-  } catch (err &e) {
+  // Normalize the type name.  With opaque pointers (LLVM 15+)
+  // type_name() maps every pointer type to "void*", which would
+  // collapse distinct named pointer tags (e.g. FILE*, char*).  So for
+  // pointer types we normalize the base-type string directly,
+  // matching the aliases that named_type() recognises.
+  if (name.size() > 0 && name[name.size()-1] == '*') {
+    size_t pos = name.find_last_not_of('*');
+    if (pos != string::npos) {
+      string ptr = name.substr(pos+1);
+      string base = name.substr(0, pos+1);
+      if (base == "int8")
+        base = "char";
+      else if (base == "int16")
+        base = "short";
+      else if (base == "int32")
+        base = "int";
+#if SIZEOF_LONG==8
+      else if (base == "int64")
+        base = "long";
+#endif
+      name = base + ptr;
+    }
+  } else {
+    // For non-pointer types, validate and normalize via LLVM types.
+    try {
+      llvm::Type *ty = interp.named_type(name);
+      assert(ty);
+      name = interp.type_name(ty);
+    } catch (err &e) {
+    }
   }
   if (name == "void*") return 0; // generic pointer
   map<string,int>::iterator it = interp.pointer_tags.find(name);
@@ -3916,12 +3951,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       break;
     }
   }
-#if USE_FASTCC && !LLVM31
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  if (interp.use_fastcc) llvm::GuaranteedTailCallOpt = true;
-#endif
-  interp.init_jit_mode();
+  // Tail call optimization is now set via TargetMachine in interpreter::init()
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
@@ -4173,11 +4203,7 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
     add_path(interp.librarydirs, unixize(env));
-#if USE_FASTCC && !LLVM31
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  llvm::GuaranteedTailCallOpt = true;
-#endif
+  // Tail call optimization is now set via TargetMachine in interpreter::init()
   // scan the command line options
   list<string> myargs;
   if (argv && argc>0)
@@ -5652,10 +5678,11 @@ static inline void *get_funptr(pure_expr *x)
     if (g != interp.globalfuns.end()) {
       llvm::Function *f = g->second.f, *h = g->second.h;
       assert(h);
-      if (f != h) interp.JIT->getPointerToFunction(f);
-      x->data.clos->fp = interp.JIT->getPointerToFunction(h);
+      if (f != h) interp.lookup_symbol(f->getName().str());
+      x->data.clos->fp = interp.lookup_symbol(h->getName().str());
 #if DEBUG>1
-      std::cerr << "JIT " << h->getNameStr() << " -> " << x->data.clos->fp << '\n';
+      std::cerr << "JIT " << h->getName().str() << " -> "
+                << x->data.clos->fp << '\n';
 #endif
     }
   }
@@ -6814,7 +6841,7 @@ static void print_vars(ostream& out, interpreter& interp, DebugInfo& d)
     // right now, so we need to make up our own.
     for (uint32_t i = 0; i < d.e->n; i++) {
       char buf[100];
-      sprintf(buf, "x%u", i+1);
+      snprintf(buf, sizeof(buf), "x%u", i+1);
       assert(d.args[i]);
       vals[buf] = d.args[i];
     }
@@ -6860,7 +6887,7 @@ static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
     // right now, so we need to make up our own.
     for (uint32_t i = 0; i < d.e->n; i++) {
       char buf[100];
-      sprintf(buf, "::x%u", i+1);
+      snprintf(buf, sizeof(buf), "::x%u", i+1);
       symbol *sym = interp.symtab.sym(buf);
       if (sym) vals[sym->f] = d.args[i];
     }
@@ -13091,7 +13118,7 @@ double pure_nanosleep(double t)
     unsigned long nsecs;
     struct timespec req, rem;
     fp = modf(t, &ip);
-    if (ip > LONG_MAX) { ip = (double)LONG_MAX; fp = 0.0; }
+    if (ip > (double)LONG_MAX) { ip = (double)LONG_MAX; fp = 0.0; }
     secs = (unsigned long)ip;
     nsecs = (unsigned long)(fp*1e9);
     req.tv_sec = secs; req.tv_nsec = nsecs;
@@ -14625,7 +14652,7 @@ void pure_regex_vars(void)
   // This sets the pcre_version variable if the runtime is built with PCRE
   // support.
   char buf[100];
-  sprintf(buf, "%d.%d", PCRE_MAJOR, PCRE_MINOR);
+  snprintf(buf, sizeof(buf), "%d.%d", PCRE_MAJOR, PCRE_MINOR);
   df(interp, "pcre_version",	pure_cstring_dup(buf));
 #endif
   // regcomp flags
@@ -17652,29 +17679,29 @@ void faust_free_ui(void *p)
 static struct stack_elem_t {
   int i, n;
   pure_expr **xv;
-} *stack = NULL; // TLD
+} *elem_stack = NULL; // TLD
 
 static int astacksz = 0, stacksz = 0; // TLD
 
 static void clear()
 {
   for (int i = 0; i < stacksz; i++)
-    if (stack[i].xv) free(stack[i].xv);
-  free(stack); stack = NULL; astacksz = stacksz = 0;
+    if (elem_stack[i].xv) free(elem_stack[i].xv);
+  free(elem_stack); elem_stack = NULL; astacksz = stacksz = 0;
 }
 
 static int push(int i, int n, pure_expr **xv)
 {
   if (stacksz+1 >= astacksz) {
     stack_elem_t *stack1 =
-      (stack_elem_t*)realloc(stack, (astacksz+100)*sizeof(stack_elem_t));
+      (stack_elem_t*)realloc(elem_stack, (astacksz+100)*sizeof(stack_elem_t));
     if (!stack1) return 0;
-    stack = stack1;
+    elem_stack = stack1;
     astacksz += 100;
   }
-  stack[stacksz].i = i;
-  stack[stacksz].n = n;
-  stack[stacksz].xv = xv;
+  elem_stack[stacksz].i = i;
+  elem_stack[stacksz].n = n;
+  elem_stack[stacksz].xv = xv;
   stacksz++;
   return 1;
 }
@@ -17683,9 +17710,9 @@ static int pop(int &i, int &n, pure_expr **&xv)
 {
   if (stacksz <= 0) return 0;
   stacksz--;
-  i = stack[stacksz].i;
-  n = stack[stacksz].n;
-  xv = stack[stacksz].xv;
+  i = elem_stack[stacksz].i;
+  n = elem_stack[stacksz].n;
+  xv = elem_stack[stacksz].xv;
   return 1;
 }
 

@@ -928,9 +928,9 @@ pchar(char *s, long c, char d)
       return (s);
     } else {
       if (d != 0 && isxdigit(d))
-	sprintf(s, "\\(0x%lx)", c);
+	snprintf(s, 128, "\\(0x%lx)", c);
       else
-	sprintf(s, "\\0x%lx", c);
+	snprintf(s, 128, "\\0x%lx", c);
       return (s);
     }
   }
@@ -1106,7 +1106,7 @@ char *parsestr(const char *s, char*& err)
       const char *v = u8strind(u, 1);
       c[0] = '\\'; strncpy(c+1, u, v-u); c[v-u+1] = 0;
       char *e = fromutf8(c);
-      sprintf(msg, "syntax error, invalid character escape '%s'", e);
+      snprintf(msg, sizeof(msg), "syntax error, invalid character escape '%s'", e);
       free(e);
       err = msg;
     }
@@ -1521,7 +1521,7 @@ my_formatd (char        *buffer,
 	format_char == 'g' || format_char == 'G'))
     return NULL;
 
-  sprintf (buffer, format, d);
+  snprintf (buffer, 128, format, d);
 
   locale_data = localeconv ();
   decimal_point = locale_data->decimal_point;
