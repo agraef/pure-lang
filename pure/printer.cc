@@ -920,7 +920,13 @@ ostream& operator << (ostream& os, const pure_paren& p)
 
 static inline bool pstr(ostream& os, pure_expr *x)
 {
-  static bool recursive = false;
+  // Thread-local: this guards against re-entering the custom __show__
+  // printer while it's already running (infinite-print-recursion
+  // detection). Printing is an ordinary, concurrently-reachable
+  // operation (str, puts, error messages, ...), so a process-wide
+  // `static` here both raced across threads and could let one
+  // thread's print falsely trip another's recursion guard.
+  static thread_local bool recursive = false;
   if (!x) return false;
   if (recursive ||
       // We don't want to force a thunk here. Unfortunately, this means that
@@ -929,21 +935,22 @@ static inline bool pstr(ostream& os, pure_expr *x)
       (x->tag == 0 && x->data.clos && x->data.clos->n == 0))
     return false;
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   int32_t f = interp.symtab.__show__sym;
   map<int32_t,GlobalVar>::iterator it;
   if (f > 0 && (it = interp.globalvars.find(f)) != interp.globalvars.end() &&
       it->second.x && it->second.x->tag >= 0 && it->second.x->data.clos) {
-    pure_aframe *ex = interp.push_aframe(interp.sstk_sz);
+    pure_aframe *ex = interp.push_aframe(ectx.sstk_sz);
     if (setjmp(ex->jmp)) {
       // caught an exception
       size_t sz = ex->sz;
       pure_expr* e = ex->e;
       interp.pop_aframe();
       if (e) pure_freenew(e);
-      for (size_t i = interp.sstk_sz; i-- > sz; )
-	if (interp.sstk[i] && interp.sstk[i]->refc > 0)
-	  pure_free(interp.sstk[i]);
-      interp.sstk_sz = sz;
+      for (size_t i = ectx.sstk_sz; i-- > sz; )
+	if (ectx.sstk[i] && ectx.sstk[i]->refc > 0)
+	  pure_free(ectx.sstk[i]);
+      ectx.sstk_sz = sz;
       recursive = false;
       return false;
     } else {

@@ -64,23 +64,22 @@ if test -z "$EMACS"; then
   AC_MSG_WARN([Cannot find emacs, won't be able to byte-compile pure-mode.el.])
 fi
 
-dnl Check for C++11 support, enable if necessary.
-cpp11check="yes"
-AC_ARG_ENABLE(c++11,
-  [  --enable-c++11          C++11 support (default, needed for LLVM 3.5+)],
-  [case "${enableval}" in
-     no)  cpp11check="no" ;;
-   esac])
-if test "$cpp11check" = "yes"; then
+dnl Check for C++17 support (required for LLVM 20+).
+AC_MSG_CHECKING([whether $CXX supports C++17])
 save_CXXFLAGS=$CXXFLAGS
-CXXFLAGS=""
-AX_CXX_COMPILE_STDCXX_11([ext],[optional])
-CXX11FLAG=$CXXFLAGS
-CXXFLAGS=$save_CXXFLAGS
-if test -n "$CXX11FLAG"; then
-  CXXFLAGS="$CXXFLAGS $CXX11FLAG"
-fi
-fi
+CXXFLAGS="$CXXFLAGS -std=c++17"
+AC_LANG_PUSH([C++])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([[
+    #include <type_traits>
+    static_assert(std::is_same_v<int,int>);
+  ]], [])],
+  [AC_MSG_RESULT([yes])
+   CXX17FLAG="-std=c++17"],
+  [AC_MSG_RESULT([no])
+   AC_MSG_ERROR([C++17 support is required for LLVM 20+. Please use a compiler that supports -std=c++17.])])
+AC_LANG_POP([C++])
+CXXFLAGS="$save_CXXFLAGS $CXX17FLAG"
 
 dnl Check for special linker options.
 AX_CHECK_LINK_FLAG([-l:libm.a], [pure_cv_gnu_linker="yes"])
@@ -318,15 +317,23 @@ if test $fastcc = yes; then
   AC_DEFINE(HAVE_FASTCC, 1, [Define to build with fastcc/TCO support (broken on some systems).])
 fi
 
-dnl Check for LLVM (try various LLVM versions).
-AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.5 llvm-config-3.4 llvm-config-3.3 llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
+dnl Check for LLVM (require LLVM 20.1 or later).
+AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-22 llvm-config-21 llvm-config-20 llvm-config],no,"$PATH:/")
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
 
-dnl Determine the LLVM version.
+dnl Determine the LLVM version and check minimum requirement.
 llvm_version=`$LLVMCONF --version`
 AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
+
+dnl Require LLVM >= 20.1 (modern ORC JIT v2 with stable APIs).
+llvm_major=`echo "$llvm_version" | sed -e 's/\..*//'`
+llvm_minor=`echo "$llvm_version" | sed -e 's/^[0-9]*\.\([0-9]*\).*/\1/'`
+if test "$llvm_major" -lt 20 2>/dev/null || \
+   { test "$llvm_major" -eq 20 && test "$llvm_minor" -lt 1 2>/dev/null; }; then
+  AC_MSG_ERROR([LLVM >= 20.1 is required, but found ${llvm_version}.])
+fi
 
 dnl Some systems have the LLVM tools under /usr/lib/llvm-${llvm_version}/bin.
 if test -z "${TOOL_PREFIX}" -a -x "/usr/lib/llvm-${llvm_version}/bin/opt"; then
@@ -335,7 +342,7 @@ fi
 AC_SUBST(TOOL_PREFIX)
 AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
 
-dnl LLVM 3.5 lists some extra system libraries with the --system-libs options.
+dnl LLVM lists extra system libraries with the --system-libs option.
 dnl These are required when linking against the static LLVM libs. Note that
 dnl we edit some of the linker options to prevent collisions with Pure's
 dnl readline support.
@@ -351,18 +358,18 @@ AC_MSG_CHECKING([for shared LLVM library])
 AC_TRY_LINK([#ifdef __cplusplus
 extern "C"
 #endif
-char LLVMFreeMachineCodeForFunction ();],
-[return LLVMFreeMachineCodeForFunction ();
+char LLVMContextCreate ();],
+[return LLVMContextCreate ();
  ;
  return 0;],
 [LLVM_LIBS="${llvm_lib_flags} -lLLVM-${llvm_version}"; LLVM_EXE_LIBS="${LLVM_LIBS}"
 AC_MSG_RESULT([$]LLVM_LIBS)],
-[LLVM_LIBS="$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ') ${LLVM_SYS_LIBS}"
+[LLVM_LIBS="$($LLVMCONF --ldflags --libs core bitreader bitwriter linker orcjit passes support | tr '\r\n' '  ') ${LLVM_SYS_LIBS}"
 LLVM_EXE_LIBS=${LLVM_SYS_LIBS}
 AC_MSG_RESULT(no)])
 LIBS="$save_LIBS"
 else
-LLVM_LIBS="$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ') ${LLVM_SYS_LIBS}"
+LLVM_LIBS="$($LLVMCONF --ldflags --libs core bitreader bitwriter linker orcjit passes support | tr '\r\n' '  ') ${LLVM_SYS_LIBS}"
 LLVM_EXE_LIBS=${LLVM_SYS_LIBS}
 fi
 AC_SUBST(LLVM_LIBS)
@@ -386,109 +393,13 @@ case $host in
   ;;
 esac
 AC_SUBST(PIC)
-AC_DEFINE_UNQUOTED(PIC, "${PIC}", [Define if the -fPIC flag is needed for shared libraries.])
+AC_DEFINE_UNQUOTED(PURE_PIC, "${PIC}", [PIC compiler flag for shared libraries. Named PURE_PIC to avoid conflict with LLVM PassInstrumentationCallbacks parameter.])
 
-dnl Check for the new-style template arguments of the IRBuilder class.
+dnl Verify LLVM headers are usable.
 AC_LANG_PUSH([C++])
 save_CPPFLAGS=$CPPFLAGS
-CPPFLAGS="`$LLVMCONF --cppflags` $CXX11FLAG $CPPFLAGS"
-AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 3.3)], [pure_cv_new_builder33],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-       #include <llvm/IR/IRBuilder.h>
-      ], [
-        llvm::IRBuilder<> b(llvm::getGlobalContext());
-      ])
-    ], [pure_cv_new_builder33=yes], [pure_cv_new_builder33=no])
-  ])
-if test "$pure_cv_new_builder33" = yes; then
-pure_cv_new_builder26=yes
-else
-AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 3.2)], [pure_cv_new_builder32],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-       #include <llvm/IRBuilder.h>
-      ], [
-        llvm::IRBuilder<> b(llvm::getGlobalContext());
-      ])
-    ], [pure_cv_new_builder32=yes], [pure_cv_new_builder32=no])
-  ])
-if test "$pure_cv_new_builder32" = yes; then
-pure_cv_new_builder26=yes
-else
-AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builder26],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-       #include <llvm/LLVMContext.h>
-       #include <llvm/Support/IRBuilder.h>
-      ], [
-        llvm::IRBuilder<> b(llvm::getGlobalContext());
-      ])
-    ], [pure_cv_new_builder26=yes], [pure_cv_new_builder26=no])
-  ])
-fi
-fi
-if test "$pure_cv_new_builder26" = yes; then
-  AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
-  AC_DEFINE(LLVM26, 1, [Define when building with new-style LLVM API (LLVM 2.6 or later).])
-AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 2.7)], [pure_cv_new_ostream],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-	#include <string>
-        #include <llvm/Support/raw_ostream.h>
-      ], [
-  	std::string error;
-        llvm::raw_fd_ostream os("xxxjunk", error, llvm::raw_fd_ostream::F_Excl);
-      ])
-    ], [pure_cv_new_ostream=yes], [pure_cv_new_ostream=no])
-  ])
-if test "$pure_cv_new_ostream" = yes; then
-  AC_DEFINE(NEW_OSTREAM, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 2.7).])
-fi
-AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 3.4)], [pure_cv_new_ostream34],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-	#include <string>
-        #include <llvm/Support/FileSystem.h>
-        #include <llvm/Support/raw_ostream.h>
-      ], [
-  	std::string error;
-        llvm::raw_fd_ostream os("xxxjunk", error, llvm::sys::fs::F_Excl);
-      ])
-    ], [pure_cv_new_ostream34=yes], [pure_cv_new_ostream34=no])
-  ])
-if test "$pure_cv_new_ostream34" = yes; then
-  AC_DEFINE(NEW_OSTREAM34, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 3.4).])
-fi
-else
-AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.4)], [pure_cv_new_builder],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-       #include <llvm/Support/IRBuilder.h>
-      ], [
-        llvm::IRBuilder<> b;
-      ])
-    ], [pure_cv_new_builder=yes], [pure_cv_new_builder=no])
-  ])
-if test "$pure_cv_new_builder" = yes; then
-  AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
-fi
-fi
-AC_CACHE_CHECK([for new user_iterator class (LLVM >= 3.5)], [pure_cv_new_user_iterator],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-       #include <llvm/IR/Value.h>
-      ], [
-        llvm::Value::user_iterator it;
-      ])
-    ], [pure_cv_new_user_iterator=yes], [pure_cv_new_user_iterator=no])
-  ])
-if test "$pure_cv_new_user_iterator" = yes; then
-  AC_DEFINE(NEW_USER_ITERATOR, 1, [Define when building with new-style user_iterator class.])
-fi
-AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h], [], [], [[#include <llvm/ADT/StringRef.h>]])
-AC_CHECK_HEADERS([llvm/Support/CallSite.h], [], [], [[#include <llvm/IR/StringRef.h>]])
-AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IR/DataLayout.h llvm/DerivedTypes.h llvm/IRBuilder.h llvm/IR/IRBuilder.h llvm/IR/Verifier.h llvm/IR/CallSite.h llvm/Linker/Linker.h llvm/Support/TargetSelect.h])
-if test "$pure_cv_new_builder26" = yes; then
-  AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/ADT/StringRef.h>
-#include <llvm/Target/TargetOptions.h>]])
-else
-  AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/Target/TargetOptions.h>]])
-fi
-AC_CHECK_DECLS([llvm::parseBitcodeFile], [], [], [[#include <llvm/Bitcode/ReaderWriter.h>]])
+CPPFLAGS="`$LLVMCONF --cppflags` $CXX17FLAG $CPPFLAGS"
+AC_CHECK_HEADERS([llvm/IR/IRBuilder.h llvm/IR/Verifier.h llvm/Linker/Linker.h llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/Support/TargetSelect.h llvm/Support/DynamicLibrary.h llvm/IR/DataLayout.h])
 CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
 

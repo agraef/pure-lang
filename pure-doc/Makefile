@@ -12,6 +12,9 @@ libdir      = $(shell pkg-config pure --variable libdir)
 DISTFILES = COPYING Makefile README config.guess fixdoc pure-doc.ll pure-doc.cc debian/*
 SEDFILES = README
 
+# Flex-generated code uses the deprecated 'register' keyword.
+CXXFLAGS += -Wno-register
+
 all: pure-doc
 
 pure-doc: pure-doc.cc
@@ -20,7 +23,7 @@ pure-doc.cc: pure-doc.ll
 	flex -o $@ $<
 
 clean:
-	rm -f pure-doc
+	rm -f pure-doc pure-doc.cc
 
 realclean: clean
 

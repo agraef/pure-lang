@@ -642,37 +642,126 @@ typedef struct _pure_interp pure_interp;
    *not* possible to pass pure_expr* values created with one interpreter
    instance to another. Instead, you can use str (from the library API, see
    below) and pure_eval (see above) to first unparse the expression in the
-   source interpreter and then reparse it in the target interpreter. */
+   source interpreter and then reparse it in the target interpreter.
+
+   pure_create_interp returns NULL if the interpreter cannot be created,
+   for example when the LLVM/ORC JIT cannot be initialized for the host;
+   check the result.
+
+   Embedding. libpure can run inside a host application that owns the
+   process (a database extension, an audio plugin, a spreadsheet). On the
+   paths a host uses -- creating, using and deleting interpreters, and
+   calling Pure through the functions in this header -- the runtime:
+
+   - does not terminate the process. Failures are reported as a NULL
+     result. Exceptions that no Pure code catches are returned to the host
+     instead of aborting: the x-variants (pure_evalx, pure_appx,
+     pure_funcallx, pure_symbolx, ...) hand the exception value back
+     directly; pure_eval sets lasterr(); and pure_app, pure_appl,
+     pure_appv, pure_symbol, pure_force and pure_funcall return NULL and
+     leave the exception for pure_last_exception() when called from the
+     host with no Pure handler active (from Pure code, or from C code
+     called by Pure, they propagate the exception as before);
+   - does not install signal handlers. Pure code can ask for them with
+     trap; a host that must keep its own handlers can use
+     pure_set_interrupt_hook instead (below);
+   - does not replace the process memory allocator (plain malloc/free);
+   - keeps evaluation state per interpreter and per thread, so separate
+     interpreters run concurrently on separate threads. The interrupt hook
+     and the stack size limit (below) are the process-wide exceptions.
+
+   Compiled code is freed when it can no longer be used, so repeated
+   pure_eval calls run in bounded memory -- with one exception: each
+   evaluation that creates a lambda keeps that lambda's compiled code (a
+   few KB) for the lifetime of the interpreter. Hosts that evaluate the
+   same expression many times should define it once as a function and
+   call it with pure_app, which allocates nothing that outlives the call.
+
+   Exceptions to the above, none reachable unless the host asks for them:
+   the interactive debugger (pure -g) and the batch compiler (pure -c) can
+   exit(); failing to load the regex library on first regex use exits; and
+   compiling inline ATS code sets the PURE_ATSCCOMP environment variable.
+
+   libpure uses the initial-exec TLS model for its hottest thread-local
+   state. When libpure is dlopen'ed rather than linked, its thread-local
+   segment (under 0.5 KB) must fit in the static TLS space glibc reserves
+   for that purpose, which it does by default. */
 
 pure_interp *pure_create_interp(int argc, char *argv[]);
 void pure_delete_interp(pure_interp *interp);
 void pure_switch_interp(pure_interp *interp);
 pure_interp *pure_current_interp();
 
-/* POSIX multithreading support. As the Pure runtime isn't thread-safe right
-   now, it is *not* safe to concurrently run Pure code in a multithreaded
-   program. This means that if you run multiple interpreter instances (or even
-   a single instance) in a multithreaded C/C++ application then you'll have to
-   serialize accesses to the runtime. The following routines implement a
-   global interpreter lock (GIL) which lets you switch between different
-   interpreter instances in a thread-safe way. Note that in a multithreaded
-   application you'll have to explicitly call these whenever running an
-   interpreter in a critical code section which may be run concurrently, even
-   if there is only a single global interpreter instance. (Depending on your
-   application, this may become a major bottleneck, so beware!)
+/* POSIX multithreading support. The runtime keeps the active interpreter
+   and the C-stack context in thread-local storage, and each interpreter
+   instance has its own recursive lock, so distinct interpreter instances
+   running on distinct threads execute concurrently without contending for
+   a process-wide lock. Parsing and code generation are serialized
+   internally by a separate compile lock (the LLVM/ORC JIT state and the
+   scanner are process-global), but evaluation of already-compiled code in
+   different interpreters proceeds in parallel.
 
-   To use these functions, call pure_lock_interp() on the interpreter instance
-   to be used when entering a critical section. This obtains the GIL, switches
-   to the given interpreter (as with pure_switch_interp()) and returns the
-   previously active interpreter instance (the previous pure_current_interp()).
-   Save the returned instance in a local variable and do whatever processing
-   is needed. When exiting the critical section, call pure_unlock_interp() on
-   the saved interpreter instance which releases the GIL and restores the
-   saved instance. (Note that you *must* call pure_unlock_interp() some time
-   after pure_lock_interp() in order to prevent deadlocks.) */
+   Two usage patterns are supported. The simplest is one interpreter per
+   thread: create an interpreter on a thread with pure_create_interp, make
+   it active there with pure_switch_interp, and evaluate; no locking is
+   needed because nothing is shared. Alternatively, several threads may
+   share a single interpreter instance, in which case accesses to that
+   instance must be serialized with pure_lock_interp/pure_unlock_interp,
+   which take that instance's own lock (not a global one).
+
+   Note that a single interpreter's evaluation is not automatically spread
+   across cores; concurrency comes from running interpreters (one per
+   thread, or serialized access to a shared one) in parallel.
+
+   To serialize access to a shared instance, call pure_lock_interp() on the
+   interpreter instance to be used when entering a critical section. This
+   obtains that interpreter's lock, switches to it (as with
+   pure_switch_interp()) and returns the previously active interpreter
+   instance (the previous pure_current_interp()). Save the returned instance
+   in a local variable and do whatever processing is needed. When exiting
+   the critical section, call pure_unlock_interp() on the saved interpreter
+   instance, which releases the lock and restores the saved instance. (Note
+   that you *must* call pure_unlock_interp() some time after
+   pure_lock_interp() in order to prevent deadlocks.) */
 
 pure_interp *pure_lock_interp(pure_interp *interp);
 pure_interp *pure_unlock_interp(pure_interp *interp);
+
+/* Exceptions that reach the host. After pure_app, pure_appl, pure_appv,
+   pure_symbol, pure_force or pure_funcall returns NULL from a host call
+   (see "Embedding" above), pure_last_exception returns the exception
+   value, or NULL if the failure had no value (e.g. a failed match). The
+   value belongs to the runtime and stays valid until the next such
+   failure or pure_clear_exception on this thread; pure_new it to keep it.
+   Both are per interpreter and per thread. */
+
+pure_expr *pure_last_exception(void);
+void pure_clear_exception(void);
+
+/* Cooperative interruption. If set, the hook is called wherever Pure
+   checks for pending signals (on entry to each compiled function, unless
+   the interpreter runs with --nochecks). A nonzero return value is thrown
+   as the exception 'signal n' with n the returned value, which Pure code
+   can catch like a real signal and which otherwise reaches the host as
+   above. A host such as a database server uses this to cancel a running
+   Pure query from its own interrupt flag, without delivering a signal to
+   Pure. Pass NULL to remove the hook. The hook is process-wide; in a
+   multithreaded host it should consult thread-local state. */
+
+void pure_set_interrupt_hook(int (*hook)(void));
+
+/* Stack limit. Pure detects C stack overflow by comparing the current
+   frame against a base address and a maximum depth (default: about 8 MB,
+   or PURE_STACK in KB). When running on a host thread whose stack is
+   smaller, or entered deep inside the host's own call chain, give the
+   address of a frame near the bottom of the usable stack and the number
+   of bytes Pure may use from there; overflow is then reported as the
+   exception stack_fault instead of crashing. size 0 keeps the current
+   limit, base NULL returns to deriving the base from the frame that calls
+   pure_switch_interp. The base applies to every interpreter run on the
+   calling thread; the size is process-wide. */
+
+void pure_set_stack_limit(void *base, size_t size);
 
 /* Eager compilation. This runs the JIT, as necessary, on the given global
    function and transitively all other functions it might use. This often
@@ -717,6 +806,25 @@ void pure_finalize(void);
 
 /* Stuff below this line is for internal use by the Pure interpreter. Don't
    call these directly, unless you know what you are doing. */
+
+/* Global compile lock. Guards the process-global LLVM/ORC-JIT machinery
+   (one LLVMContext is shared across interpreters) and the non-reentrant
+   flex scanner / shared symbol table during parsing and code generation.
+   Distinct interpreters evaluate compiled code concurrently without it; it
+   is taken only while parsing/compiling, never on the eval hot path.
+   Recursive: the parse region holds it while codegen re-enters via symbol
+   lookup. */
+
+void pure_compile_lock(void);
+void pure_compile_unlock(void);
+
+/* Shadow-stack accessor called by JIT-generated code.
+   Returns the calling thread's shadow-stack buffer for the interpreter
+   currently active on this thread. Not part of the public embedding API;
+   generated code calls it in place of the old $$sstk$$ global variable
+   load. See the comment on this function's definition in runtime.cc. */
+
+pure_expr **pure_get_sstk(void);
 
 /* Create an interpreter instance from a dump of the internal tables. This is
    used in code generated by the batch compiler. */

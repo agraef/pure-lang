@@ -15,7 +15,7 @@ MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I.. \
 	       $(CXXFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CXXFLAGS = -g -O2 -Wall -Wextra
+CXXFLAGS = -g -O2 -Wall -Wextra -std=c++11 -Wno-deprecated-declarations
 ifneq "$(DLL)" ".so"
 # additional libraries to be linked (Mac/Windows only)
 EXTRA_LIBS = ../stlbase$(DLL)

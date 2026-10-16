@@ -1,0 +1,183 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [ master, llvm-migration-orc-jit ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  LLVM_VERSION: "21"
+
+jobs:
+  build-ubuntu:
+    name: Build and Test with LLVM ${{ matrix.llvm-version }} on Ubuntu
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        llvm-version: [20, 21, 22]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install LLVM ${{ matrix.llvm-version }}
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh ${{ matrix.llvm-version }}
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgmp-dev \
+            libmpfr-dev \
+            libreadline-dev \
+            bison \
+            flex \
+            autoconf \
+            automake \
+            libtool
+
+      - name: Build Pure
+        working-directory: pure
+        run: |
+          autoreconf -fi
+          ./configure --with-llvm-version=${{ matrix.llvm-version }} \
+            CC=clang-${{ matrix.llvm-version }} \
+            CXX=clang++-${{ matrix.llvm-version }}
+          make -j$(nproc)
+        env:
+          CXXFLAGS: "-O2"
+
+      - name: Smoke test
+        working-directory: pure
+        run: |
+          export PURELIB=$(pwd)/lib
+          export LD_LIBRARY_PATH=$(pwd)
+          echo '2+2;' | ./pure --noprelude -q | tee /dev/stderr | grep -q '^4$'
+          echo "LLVM ${{ matrix.llvm-version }} smoke test passed"
+
+      - name: Run full test suite
+        working-directory: pure
+        run: |
+          make check
+
+      - name: Run embedding test
+        working-directory: pure
+        run: |
+          make check-embed
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: test-results-llvm${{ matrix.llvm-version }}
+          path: |
+            pure/test/*.diff
+
+      - name: Check binary size
+        run: |
+          ls -lh pure/pure
+          ls -lh pure/libpure.so.*
+
+  build-macos:
+    name: Build and Test on macOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          brew install \
+            llvm@${{ env.LLVM_VERSION }} \
+            gmp \
+            mpfr \
+            readline \
+            bison \
+            flex \
+            autoconf \
+            automake \
+            libtool
+          echo "$(brew --prefix llvm@${{ env.LLVM_VERSION }})/bin" >> $GITHUB_PATH
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
+          echo "$(brew --prefix flex)/bin" >> $GITHUB_PATH
+
+      - name: Verify LLVM installation
+        run: |
+          llvm-config --version
+          llvm-config --prefix
+
+      - name: Build Pure
+        working-directory: pure
+        run: |
+          autoreconf -fi
+          GMP_PREFIX=$(brew --prefix gmp)
+          MPFR_PREFIX=$(brew --prefix mpfr)
+          READLINE_PREFIX=$(brew --prefix readline)
+          LLVM_PREFIX=$(brew --prefix llvm@${{ env.LLVM_VERSION }})
+          export LDFLAGS="-L${GMP_PREFIX}/lib -L${MPFR_PREFIX}/lib -L${READLINE_PREFIX}/lib"
+          export CPPFLAGS="-I${GMP_PREFIX}/include -I${MPFR_PREFIX}/include -I${READLINE_PREFIX}/include"
+          ./configure --with-tool-prefix="${LLVM_PREFIX}/bin/"
+          make -j$(sysctl -n hw.ncpu)
+        env:
+          CXXFLAGS: "-O2"
+
+      - name: Smoke test
+        working-directory: pure
+        run: |
+          export PURELIB=$(pwd)/lib
+          export DYLD_LIBRARY_PATH=$(pwd)
+          echo '2+2;' | ./pure --noprelude -q | tee /dev/stderr | grep -q '^4$'
+          echo "macOS smoke test passed"
+
+      - name: Run full test suite
+        working-directory: pure
+        run: |
+          make check
+
+      - name: Run embedding test
+        working-directory: pure
+        run: |
+          make check-embed
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: test-results-macos
+          path: |
+            pure/test/*.diff
+
+      - name: Check binary size
+        run: |
+          ls -lh pure/pure
+          ls -lh pure/libpure.*.dylib
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@48ab28a6f5dbc2a99bf1e0131198dd8f1df78169  # v3.28.0
+        with:
+          sarif_file: 'trivy-results.sarif'
