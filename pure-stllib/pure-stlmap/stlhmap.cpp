@@ -207,14 +207,11 @@ void stl_shm_reserve(px* pxshp, double max_load, int count)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
-  pxhmap& hm = shp->hm;  
-  if (max_load > 0.0) 
+  pxhmap& hm = shp->hm;
+  if (max_load > 0.0)
     hm.max_load_factor(max_load);
-  // This requires g++ >= 4.5. (Add other compilers as needed.)
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
   if (count > 0)
     hm.reserve(count);
-#endif
 }
 
 px* stl_shm_info(px* pxshp)

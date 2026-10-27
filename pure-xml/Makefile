@@ -5,7 +5,7 @@ version = 0.7
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
-CFLAGS = -O3
+CFLAGS = -O3 -Wno-deprecated-declarations
 #CFLAGS = -g -O2
 
 # platform-specific setup

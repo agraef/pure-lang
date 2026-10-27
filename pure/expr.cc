@@ -46,7 +46,7 @@ EXPR::~EXPR()
   case WRAP:
     if (data.p) {
       GlobalVar *v = (GlobalVar*)data.p;
-      interpreter::g_interp->JIT->updateGlobalMapping(v->v, 0);
+      interpreter::g_interp->define_symbol(v->v->getName().str(), nullptr);
       v->v->eraseFromParent();
       pure_free(v->x);
       delete v;

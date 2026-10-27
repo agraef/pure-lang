@@ -19,93 +19,43 @@
 #ifndef INTERPRETER_HH
 #define INTERPRETER_HH
 
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/JIT.h>
-#include <llvm/PassManager.h>
+// Undefine PIC macro from config.h to avoid conflict with LLVM's
+// PassInstrumentationCallbacks parameter name (PIC)
+#ifdef PIC
+#undef PIC
+#endif
+
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/ExecutionEngine/Orc/ThreadSafeModule.h>
+#include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Passes/StandardInstrumentations.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
+#include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Target/TargetOptions.h>
+#include <llvm/Support/TargetSelect.h>
 #include <llvm/Transforms/Scalar.h>
 
 #include <time.h>
 #include <set>
+#include <unordered_map>
 #include <string>
 #include "expr.hh"
 #include "matcher.hh"
 #include "symtable.hh"
 #include "runtime.h"
 
-#if HAVE_LLVM_IR_VERIFIER_H
-// LLVM 3.5 and later has this header in a different directory.
-#include <llvm/IR/Verifier.h>
-#define LLVM35 1
-#else
-#include <llvm/Analysis/Verifier.h>
-#endif
+// LLVM version detection for API compatibility
+#include <llvm/Config/llvm-config.h>
 
-#ifdef HAVE_LLVM_DERIVEDTYPES_H
-// LLVM 3.3 and later have these headers in a different directory.
-#include <llvm/DerivedTypes.h>
-#include <llvm/Module.h>
-#include <llvm/GlobalValue.h>
-#else
+// Modern LLVM includes (20.1+)
+#include <llvm/IR/Verifier.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/GlobalValue.h>
-#endif
-
-#ifdef HAVE_LLVM_DATALAYOUT_H
-// This class has been renamed and moved to LLVMCore in LLVM 3.2.
-#include <llvm/DataLayout.h>
-#define LLVM32 1
-#else
-#ifdef HAVE_LLVM_IR_DATALAYOUT_H
 #include <llvm/IR/DataLayout.h>
-#define LLVM32 1
-#define LLVM33 1
-#else
-#include <llvm/Target/TargetData.h>
-#endif
-#endif
-
-#ifdef HAVE_LLVM_IRBUILDER_H
-// LLVM 3.2 and later have this header in a different directory.
-#include <llvm/IRBuilder.h>
-#else
-#ifdef HAVE_LLVM_IR_IRBUILDER_H
 #include <llvm/IR/IRBuilder.h>
-#else
-#include <llvm/Support/IRBuilder.h>
-#endif
-#endif
-
-#ifdef HAVE_LLVM_MODULEPROVIDER_H
-#include <llvm/ModuleProvider.h>
-#else
-// LLVM 2.7 and later don't have this header any more.
-#define LLVM27 1
-#endif
-
-#ifndef HAVE_LLVM_TYPESYMBOLTABLE_H
-// LLVM 3.0 and later don't have this header any more.
-#define LLVM30 1
-#endif
-
-#if !HAVE_DECL_LLVM__GUARANTEEDTAILCALLOPT
-#if HAVE_DECL_LLVM__PERFORMTAILCALLOPT
-// API breakage in LLVM 2.7.
-#define GuaranteedTailCallOpt PerformTailCallOpt
-#else
-// LLVM 3.1 and later have the target options in a separate class
-#define LLVM31 1
-#endif
-#endif
-
-#if LLVM26
-#if LLVM33
-#include "llvm/IR/LLVMContext.h"
-#else
-#include "llvm/LLVMContext.h"
-#endif
-#endif
+#include <llvm/IR/LLVMContext.h>
 
 #include "parserdefs.hh"
 // Get rid of silly warnings in bison-generated position.hh.
@@ -203,6 +153,14 @@ using namespace std;
 
 class interpreter;
 
+// Global LLVM context pointer set by interpreter, used by Env constructors
+// before the interpreter class definition is complete.
+// The LLVM context of the active interpreter (interpreter::g_interp). Each
+// interpreter owns its own context; IR built for one interpreter must use
+// that interpreter's context. Defined in interpreter.cc, where
+// interpreter is complete (Env's constructors below need it earlier).
+llvm::LLVMContext& pure_active_llvm_context();
+
 // verbosity levels, these can be ORed together
 namespace verbosity {
   enum { none = 0, defs = 0x1, envs = 0x2, code = 0x4, dump = 0x8,
@@ -234,43 +192,11 @@ struct VarInfo {
     : v(_v), vtag(_vtag), idx(_idx), p(_p) {}
 };
 
-#ifdef NEW_BUILDER
-/* LLVM 2.4 has a new IRBuilder class which takes some optional template
-   parameters. */
-#define Builder llvm::IRBuilder<>
-#else
-#define Builder llvm::IRBuilder
-#endif
-
-#ifdef NEW_USER_ITERATOR
-/* Workarounds for LLVM 3.5 API breakage. */
+// Modern LLVM 20.1+ uses IRBuilder<> template and user_iterator
+using Builder = llvm::IRBuilder<>;
 #define value_user_iterator Value::user_iterator
 #define value_user_begin(x) x->user_begin()
 #define value_user_end(x) x->user_end()
-#else
-#define value_user_iterator Value::use_iterator
-#define value_user_begin(x) x->use_begin()
-#define value_user_end(x) x->use_end()
-#endif
-
-#ifdef LLVM32
-/* Workarounds for LLVM 3.2 API breakage. */
-#define TargetData DataLayout
-#define getTargetData getDataLayout
-#endif
-
-#ifdef LLVM30
-/* Workarounds for LLVM 3.0 API breakage. */
-#define llvm_const_Type llvm::Type
-#define llvm_const_FunctionType llvm::FunctionType
-#define mkargs(args) llvm::ArrayRef<llvm::Value*>(args)
-#define mkidxs(beg, end) llvm::ArrayRef<llvm::Value*>(beg, end)
-#else
-#define llvm_const_Type const llvm::Type
-#define llvm_const_FunctionType const llvm::FunctionType
-#define mkargs(args) args.begin(), args.end()
-#define mkidxs(beg, end) beg, end
-#endif
 
 typedef list<Env*> EnvStack;
 typedef map<int32_t,Env*> EnvMap;
@@ -366,29 +292,46 @@ public:
   // reference counters
   uint32_t refc, *refp;
   // convenience functions for invoking CreateGEP() and CreateLoad()
+  // ty = pointee type for GEP index calculation (required by opaque ptrs)
   llvm::Value *CreateGEP
-  (llvm::Value *x, llvm::Value *i, const char* name = "")
-  { return builder.CreateGEP(x, i, name); }
+  (llvm::Type *ty, llvm::Value *x, llvm::Value *i,
+   const char* name = "")
+  { return builder.CreateGEP(ty, x, i, name); }
   llvm::Value *CreateGEP
-  (llvm::Value *x, llvm::Value *i, llvm::Value *j, const char* name = "")
+  (llvm::Type *ty, llvm::Value *x, llvm::Value *i,
+   llvm::Value *j, const char* name = "")
   { llvm::Value* idxs[2] = { i, j };
-    return builder.CreateGEP(x, mkidxs(idxs, idxs+2), name);
+    return builder.CreateGEP(ty, x,
+      llvm::ArrayRef<llvm::Value*>(idxs, 2), name);
   }
   llvm::Value *CreateGEP
-  (llvm::Value *x, llvm::Value *i, llvm::Value *j, llvm::Value *k,
-   const char* name = "")
+  (llvm::Type *ty, llvm::Value *x, llvm::Value *i,
+   llvm::Value *j, llvm::Value *k, const char* name = "")
   { llvm::Value* idxs[3] = { i, j, k };
-    return builder.CreateGEP(x, mkidxs(idxs, idxs+3), name); }
+    return builder.CreateGEP(ty, x,
+      llvm::ArrayRef<llvm::Value*>(idxs, 3), name); }
+  // ty = pointee type for the GEP; load type is inferred from GEP result
   llvm::LoadInst *CreateLoadGEP
-  (llvm::Value *x, llvm::Value *i, const char* name = "")
-  { return builder.CreateLoad(CreateGEP(x, i), name); }
-  llvm::LoadInst *CreateLoadGEP
-  (llvm::Value *x, llvm::Value *i, llvm::Value *j, const char* name = "")
-  { return builder.CreateLoad(CreateGEP(x, i, j), name); }
-  llvm::LoadInst *CreateLoadGEP
-  (llvm::Value *x, llvm::Value *i, llvm::Value *j, llvm::Value *k,
+  (llvm::Type *ty, llvm::Value *x, llvm::Value *i,
    const char* name = "")
-  { return builder.CreateLoad(CreateGEP(x, i, j, k), name); }
+  { auto *gep = llvm::cast<llvm::GetElementPtrInst>(
+      CreateGEP(ty, x, i));
+    return builder.CreateLoad(gep->getResultElementType(),
+      gep, name); }
+  llvm::LoadInst *CreateLoadGEP
+  (llvm::Type *ty, llvm::Value *x, llvm::Value *i,
+   llvm::Value *j, const char* name = "")
+  { auto *gep = llvm::cast<llvm::GetElementPtrInst>(
+      CreateGEP(ty, x, i, j));
+    return builder.CreateLoad(gep->getResultElementType(),
+      gep, name); }
+  llvm::LoadInst *CreateLoadGEP
+  (llvm::Type *ty, llvm::Value *x, llvm::Value *i,
+   llvm::Value *j, llvm::Value *k, const char* name = "")
+  { auto *gep = llvm::cast<llvm::GetElementPtrInst>(
+      CreateGEP(ty, x, i, j, k));
+    return builder.CreateLoad(gep->getResultElementType(),
+      gep, name); }
   // simplified interface to CreateCall()
   llvm::CallInst *CreateCall(llvm::Function *f,
 			     const vector<llvm::Value*>& args);
@@ -401,9 +344,7 @@ public:
   Env()
     : tag(0), key(0), descr(0), n(0), m(0), f(0), h(0),
       args(0), envs(0), rp(0), b(false), local(false),
-#ifdef LLVM26
-      builder(llvm::getGlobalContext()),
-#endif
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   { *refp = 0; add_key(getkey(), refp); }
   // environment for an anonymous closure with given body x
@@ -411,9 +352,7 @@ public:
       bool _b, bool _local = false)
     : tag(_tag), key(0), descr(_descr), n(_n), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(_b), local(_local),
-#ifdef LLVM26
-      builder(llvm::getGlobalContext()),
-#endif
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   {
     *refp = 0; add_key(getkey(), refp);
@@ -431,9 +370,7 @@ public:
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
     : tag(_tag), key(0), descr(0), n(info.argc), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(_b), local(_local),
-#ifdef LLVM26
-      builder(llvm::getGlobalContext()),
-#endif
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   {
     *refp = 0; add_key(getkey(), refp);
@@ -451,11 +388,12 @@ public:
   Env(int32_t _tag, uint32_t _n, bool _local = false)
     : tag(_tag), key(0), descr(0), n(_n), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(false), local(false),
-#ifdef LLVM26
-      builder(llvm::getGlobalContext()),
-#endif
+      builder(pure_active_llvm_context()),
       parent(0), refc(0), refp(new uint32_t)
   { *refp = 0; add_key(getkey(), refp); }
+  // copy constructor - needed because Env objects are stored by value in maps
+  // Must increment refp refcount since we're sharing the refp pointer
+  Env(const Env& e);
   // assignment -- this is only allowed if the lvalue is an uninitialized
   // environment for which no LLVM function has been created yet, or if it is
   // a global function to be overridden
@@ -488,17 +426,31 @@ struct ExternInfo {
   int32_t tag;				// function symbol
   string name;				// real function name
   bool varargs;				// varargs function
-  llvm_const_Type* type;		// return type
-  vector<llvm_const_Type*> argtypes;	// argument types
+  llvm::Type* type;		// return type
+  vector<llvm::Type*> argtypes;	// argument types
   llvm::Function *f;			// Pure wrapper for the external
+  // Source-level type name strings.  With opaque pointers (LLVM 15+)
+  // all pointer LLVM types collapse to `ptr`, so we keep the original
+  // names for correct dispatch and serialization.
+  string restype_name;
+  vector<string> argtype_names;
   ExternInfo()
     : tag(0), varargs(false), type(0), argtypes(0), f(0)
   {}
-  ExternInfo(int32_t _tag, const string&_name, llvm_const_Type *_type,
-	     vector<llvm_const_Type*> _argtypes, llvm::Function *_f,
+  ExternInfo(int32_t _tag, const string&_name, llvm::Type *_type,
+	     vector<llvm::Type*> _argtypes, llvm::Function *_f,
 	     bool _varargs = false)
     : tag(_tag), name(_name), varargs(_varargs),
       type(_type), argtypes(_argtypes), f(_f)
+  {}
+  ExternInfo(int32_t _tag, const string&_name, llvm::Type *_type,
+	     vector<llvm::Type*> _argtypes, llvm::Function *_f,
+	     const string& _restype_name,
+	     const vector<string>& _argtype_names,
+	     bool _varargs = false)
+    : tag(_tag), name(_name), varargs(_varargs),
+      type(_type), argtypes(_argtypes), f(_f),
+      restype_name(_restype_name), argtype_names(_argtype_names)
   {}
 };
 
@@ -562,7 +514,7 @@ struct bcdata_t {
 
 typedef map<string,bcdata_t> bcmap;
 
-typedef map<string,llvm_const_Type*> type_map;
+typedef map<string,llvm::Type*> type_map;
 
 struct enventry {
   const env* e;
@@ -632,15 +584,13 @@ public:
   void init_sys_vars(const string& version = "",
 		     const string& host = "",
 		     const list<string>& argv = list<string>());
-  // Configure the JIT according to the setting of the eager_jit member.
-  void init_jit_mode();
 
   // Option data. You can modify these according to your needs.
   uint8_t verbose;   // debugging output from interpreter
   bool compat;       // enable backward compatibility warnings
   bool compat2;      // enable forward compatibility hints
   bool compiling;    // batch compiler mode
-  bool eager_jit;    // eager JIT (LLVM 2.7 or later)
+  bool eager_jit;    // accepted for CLI compat, not used by ORC JIT
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
   bool texmacs;      // texmacs mode (http://www.texmacs.org/)
@@ -1040,12 +990,31 @@ public:
 
   // LLVM code generation and execution.
 
-  llvm::Module *module;
-#ifdef HAVE_LLVM_MODULEPROVIDER_H
-  llvm::ModuleProvider *MP;
-#endif
-  llvm::ExecutionEngine *JIT;
-  llvm::FunctionPassManager *FPM;
+  // ORC JIT v2 infrastructure
+  std::unique_ptr<llvm::orc::LLJIT> JIT;
+  std::unique_ptr<llvm::orc::ThreadSafeContext> TSCtx;
+  llvm::LLVMContext *Context;  // Raw pointer to context for easy access
+  llvm::Module *module;  // Raw pointer owned by ThreadSafeModule
+
+  std::unique_ptr<llvm::PassBuilder> PB;
+  std::unique_ptr<llvm::LoopAnalysisManager> LAM;
+  std::unique_ptr<llvm::FunctionAnalysisManager> FAM;
+  std::unique_ptr<llvm::CGSCCAnalysisManager> CGAM;
+  std::unique_ptr<llvm::ModuleAnalysisManager> MAM;
+  llvm::orc::ResourceTrackerSP ModuleRT;
+  // Track both ResourceTrackers and their associated Env objects
+  struct ModuleResources {
+    llvm::orc::ResourceTrackerSP RT;
+    std::set<Env*> active_envs;
+  };
+  std::vector<ModuleResources> OldModuleResources;
+  std::set<std::string> SubmittedSymbols;
+  // Symbols defined by the most recent submit_module() call (the module
+  // under ModuleRT); see release_eval_code.
+  std::vector<std::string> LastSubmitted;
+  std::set<std::string> FreedSymbols;
+  std::set<std::string> AbsoluteSymbols;
+  std::map<std::string, llvm::orc::ResourceTrackerSP> SymbolTrackers;
   llvm::StructType  *ExprTy, *IntExprTy, *DblExprTy, *StrExprTy, *PtrExprTy;
   llvm::StructType  *ComplexTy, *GSLMatrixTy, *GSLDoubleMatrixTy,
     *GSLComplexMatrixTy, *GSLIntMatrixTy;
@@ -1055,252 +1024,131 @@ public:
   llvm::PointerType *ComplexPtrTy, *GSLMatrixPtrTy, *GSLDoubleMatrixPtrTy,
     *GSLComplexMatrixPtrTy, *GSLIntMatrixPtrTy;
 
-  // Helpers for LLVM 2.6 and 3.0 compatibility.
-#ifdef LLVM30
-  static llvm::IntegerType* int1_type()
-#else
-  static const llvm::IntegerType* int1_type()
-#endif
-#ifdef LLVM26
-  { return llvm::Type::getInt1Ty(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::Int1Ty; }
-#endif
-#ifdef LLVM30
-  static llvm::IntegerType* int8_type()
-#else
-  static const llvm::IntegerType* int8_type()
-#endif
-#ifdef LLVM26
-  { return llvm::Type::getInt8Ty(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::Int8Ty; }
-#endif
-#ifdef LLVM30
-  static llvm::IntegerType* int16_type()
-#else
-  static const llvm::IntegerType* int16_type()
-#endif
-#ifdef LLVM26
-  { return llvm::Type::getInt16Ty(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::Int16Ty; }
-#endif
-#ifdef LLVM30
-  static llvm::IntegerType* int32_type()
-#else
-  static const llvm::IntegerType* int32_type()
-#endif
-#ifdef LLVM26
-  { return llvm::Type::getInt32Ty(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::Int32Ty; }
-#endif
-#ifdef LLVM30
-  static llvm::IntegerType* int64_type()
-#else
-  static const llvm::IntegerType* int64_type()
-#endif
-#ifdef LLVM26
-  { return llvm::Type::getInt64Ty(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::Int64Ty; }
-#endif
-#ifdef LLVM30
-  static llvm::IntegerType* long_type()
-#else
-  static const llvm::IntegerType* long_type()
-#endif
-#if SIZEOF_LONG==4
-  { return int32_type(); }
-#else
-  { return int64_type(); }
-#endif
-#ifdef LLVM30
-  static llvm::IntegerType* size_t_type()
-#else
-  static const llvm::IntegerType* size_t_type()
-#endif
-#if SIZEOF_SIZE_T==4
-  { return int32_type(); }
-#else
-  { return int64_type(); }
-#endif
-  static llvm_const_Type* float_type()
-#ifdef LLVM26
-  { return llvm::Type::getFloatTy(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::FloatTy; }
-#endif
-  static llvm_const_Type* double_type()
-#ifdef LLVM26
-  { return llvm::Type::getDoubleTy(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::DoubleTy; }
-#endif
+  // ORC JIT v2 symbol resolution helpers
+  void* lookup_symbol(const std::string& name);
+  void define_symbol(const std::string& name, void* addr);
+  void free_function_code(llvm::Function* f);
+  void optimize_function(llvm::Function* f);
+  // Erase an LLVM function from the module. Use this instead of
+  // Function::eraseFromParent(): the function analysis manager caches
+  // analysis results per Function (dominator trees, scalar evolution,
+  // MemorySSA, ...) and does not notice when a function is deleted, so
+  // erasing without clearing first leaks those results.
+  void erase_function(llvm::Function *f);
+  // Same for Function::deleteBody(), which leaves the declaration in the
+  // module but invalidates every cached analysis of the body.
+  void delete_function_body(llvm::Function *f);
+  void submit_module();
+  void cleanup_old_modules(size_t keep_recent = 10);
+  // Free the machine code of a finished pure_eval/doeval (see doeval).
+  bool owns_module(llvm::orc::ResourceTrackerSP rt);
+  void release_eval_code(llvm::orc::ResourceTrackerSP rt);
+  // Symbols defined by the module of a doeval that is still running.
+  std::map<llvm::orc::ResourceTracker*, std::vector<std::string>> EvalSymbols;
+  bool module_dirty;
 
-  static llvm_const_Type* void_type()
-#ifdef LLVM26
-  { return llvm::Type::getVoidTy(llvm::getGlobalContext()); }
-#else
-  { return llvm::Type::VoidTy; }
-#endif
+  // LLVM type convenience accessors (require Context)
+  llvm::IntegerType* int1_type()   { return llvm::Type::getInt1Ty(*Context); }
+  llvm::IntegerType* int8_type()   { return llvm::Type::getInt8Ty(*Context); }
+  llvm::IntegerType* int16_type()  { return llvm::Type::getInt16Ty(*Context); }
+  llvm::IntegerType* int32_type()  { return llvm::Type::getInt32Ty(*Context); }
+  llvm::IntegerType* int64_type()  { return llvm::Type::getInt64Ty(*Context); }
+  llvm::Type*        float_type()  { return llvm::Type::getFloatTy(*Context); }
+  llvm::Type*        double_type() { return llvm::Type::getDoubleTy(*Context); }
+  llvm::Type*        void_type()   { return llvm::Type::getVoidTy(*Context); }
 
-#ifdef LLVM30
-// OpaqueType doesn't exist any more in LLVM 3.0, instead we have to create a
-// named struct type.
-#define OpaqueType StructType
-#endif
-  static llvm::OpaqueType* opaque_type(const char *name)
-#ifdef LLVM30
+  llvm::IntegerType* long_type()
   {
-    return llvm::StructType::create(llvm::getGlobalContext(), name);
+#if SIZEOF_LONG==4
+    return int32_type();
+#else
+    return int64_type();
+#endif
   }
-#else
-// We just ignore the name here.
-#ifdef LLVM26
-  { return llvm::OpaqueType::get(llvm::getGlobalContext()); }
-#else
-  { return llvm::OpaqueType::get(); }
-#endif
-#endif
 
-#ifndef LLVM30
-  static llvm::OpaqueType* opaque_type()
-#ifdef LLVM26
-  { return llvm::OpaqueType::get(llvm::getGlobalContext()); }
+  llvm::IntegerType* size_t_type()
+  {
+#if SIZEOF_SIZE_T==4
+    return int32_type();
 #else
-  { return llvm::OpaqueType::get(); }
+    return int64_type();
 #endif
-#endif
+  }
+
+  // OpaqueType is now StructType in modern LLVM
+  llvm::StructType* opaque_type(const char *name)
+  { return llvm::StructType::create(*Context, name); }
 
   // anonymous struct types
-  static llvm::StructType* struct_type(std::vector<llvm_const_Type*>& elts)
-#ifdef LLVM30
+  llvm::StructType* struct_type(std::vector<llvm::Type*>& elts)
   {
-    // StructType::get takes an ArrayRef<Type*> argument in LLVM 3.0.
     llvm::ArrayRef<llvm::Type*> myelts = elts;
-    return llvm::StructType::get(llvm::getGlobalContext(), myelts);
+    return llvm::StructType::get(*Context, myelts);
   }
-#else
-#ifdef LLVM26
-  { return llvm::StructType::get(llvm::getGlobalContext(), elts); }
-#else
-  { return llvm::StructType::get(elts); }
-#endif
-#endif
 
-  // named struct types; these work differently in LLVM 3.0
-  llvm::StructType* struct_type
-  (const char *name, std::vector<llvm_const_Type*>& elts)
-#ifdef LLVM30
+  // named struct types
+  llvm::StructType* struct_type(const char *name, std::vector<llvm::Type*>& elts)
   {
-    llvm::StructType *ty =
-      llvm::StructType::create(llvm::getGlobalContext(), name);
+    llvm::StructType *ty = llvm::StructType::create(*Context, name);
     llvm::ArrayRef<llvm::Type*> myelts = elts;
     ty->setBody(myelts);
     return ty;
   }
-#else
-  {
-    llvm::StructType *ty =
-      llvm::StructType::get(
-#ifdef LLVM26
-			    llvm::getGlobalContext(),
-#endif
-			    elts);
-    module->addTypeName(name, ty);
-    return ty;
-  }
-#endif
 
   // array types
-  static llvm::ArrayType* array_type(llvm_const_Type* ty, size_t num_elts)
+  llvm::ArrayType* array_type(llvm::Type* ty, size_t num_elts)
   { return llvm::ArrayType::get(ty, num_elts); }
 
-  static llvm::FunctionType* func_type(llvm_const_Type* res, std::vector<llvm_const_Type*>& args, bool varargs)
-#ifdef LLVM30
+  llvm::FunctionType* func_type(llvm::Type* res, std::vector<llvm::Type*>& args, bool varargs)
   {
-    // FunctionType::get takes an ArrayRef<Type*> argument in LLVM 3.0.
     llvm::ArrayRef<llvm::Type*> myargs = args;
     return llvm::FunctionType::get(res, myargs, varargs);
   }
-#else
-  { return llvm::FunctionType::get(res, args, varargs); }
-#endif
 
-  static bool is_pointer_type(llvm_const_Type *ty)
-#ifdef LLVM27
+  bool is_pointer_type(llvm::Type *ty)
   { return ty->isPointerTy(); }
-#else
-  { return ty->getTypeID() == llvm::Type::PointerTyID; }
-#endif
 
-  static bool is_struct_type(llvm_const_Type *ty)
-#ifdef LLVM27
+  bool is_struct_type(llvm::Type *ty)
   { return ty->isStructTy(); }
-#else
-  { return ty->getTypeID() == llvm::Type::StructTyID; }
-#endif
 
-  static llvm::Constant* constant_char_array(const char *s)
-#ifdef LLVM31
-  { return llvm::ConstantDataArray::getString(llvm::getGlobalContext(), s); }
-#else
-#ifdef LLVM26
-  { return llvm::ConstantArray::get(llvm::getGlobalContext(), s); }
-#else
-  { return llvm::ConstantArray::get(s); }
-#endif
-#endif
+  llvm::Constant* constant_char_array(const char *s)
+  { return llvm::ConstantDataArray::getString(*Context, s); }
 
-  static llvm::GlobalVariable* global_variable
+  llvm::GlobalVariable* global_variable
   (llvm::Module *M, llvm::Type *Ty, bool isConstant,
    llvm::GlobalValue::LinkageTypes Linkage,
    llvm::Constant *Init = 0, string Name = "")
-#ifdef LLVM26
   { return new llvm::GlobalVariable(*M, Ty, isConstant, Linkage, Init, Name); }
-#else
-  { return new llvm::GlobalVariable(Ty, isConstant, Linkage, Init, Name, M); }
-#endif
 
   llvm::BasicBlock *basic_block(const char *name, llvm::Function* f = 0)
-#ifdef LLVM26
-  { return llvm::BasicBlock::Create(llvm::getGlobalContext(), name, f); }
-#else
-  { return llvm::BasicBlock::Create(name, f); }
-#endif
+  { return llvm::BasicBlock::Create(*Context, name, f); }
 
-  llvm::PHINode *phi_node(Builder &b, llvm_const_Type *ty,
+  llvm::PHINode *phi_node(llvm::IRBuilder<> &b, llvm::Type *ty,
 			  unsigned n, const char *name = "")
-#ifdef LLVM30
   { return b.CreatePHI(ty, n, name); }
-#else
-  { return b.CreatePHI(ty); }
-#endif
 
   type_map pointer_types;
-  map<llvm_const_Type*,type_map::iterator> pointer_type_of;
+  map<llvm::Type*,type_map::iterator> pointer_type_of;
   map<string,int> pointer_tags;
   map<int,map<string,int>::iterator> pointer_type_with_tag;
   map<int,pointer_type_extra_info> pointer_type_info;
 
-  llvm_const_Type *make_pointer_type(const string& name);
-  string pointer_type_name(llvm_const_Type *type);
+  llvm::Type *make_pointer_type(const string& name);
+  string pointer_type_name(llvm::Type *type);
   int pointer_type_tag(const string& name);
-  int pointer_type_tag(llvm_const_Type *type)
+  int pointer_type_tag(llvm::Type *type)
   {
     assert(is_pointer_type(type));
     return pointer_type_tag(type_name(type));
   }
 
-  llvm_const_Type *named_type(string name);
-  string type_name(llvm_const_Type *type);
-  string bctype_name(llvm_const_Type *type);
-  string dsptype_name(llvm_const_Type *type);
-  bool compatible_types(llvm_const_Type *type1, llvm_const_Type *type2);
-  llvm_const_Type *gslmatrix_type(llvm_const_Type *elem_ty,
-				  llvm_const_Type *block_ty,
+  llvm::Type *named_type(string name);
+  string type_name(llvm::Type *type);
+  string bctype_name(llvm::Type *type);
+  string dsptype_name(llvm::Type *type);
+  bool compatible_types(llvm::Type *type1, llvm::Type *type2);
+  llvm::Type *gslmatrix_type(llvm::Type *elem_ty,
+				  llvm::Type *block_ty,
 				  size_t padding = 0);
   set<llvm::Function*> always_used;
   map<int32_t,GlobalVar> globalvars;
@@ -1649,11 +1497,16 @@ public:
 
 private:
   map<uint32_t,uint32_t*> keys;
+  // Reference counts for refp pointers themselves (to fix deliberate leak)
+  // Use unordered_map for O(1) average case instead of map's O(log n)
+  std::unordered_map<uint32_t*, uint32_t> refp_refcounts;
 
 public:
   void add_key(uint32_t key, uint32_t *refp)
   {
     keys[key] = refp;
+    // Increment refcount for this refp pointer
+    refp_refcounts[refp]++;
   }
   uint32_t *get_refp(uint32_t key)
   {
@@ -1662,6 +1515,39 @@ public:
       return 0;
     else
       return it->second;
+  }
+  void addref_refp(uint32_t *refp)
+  {
+    if (!refp) return;
+    refp_refcounts[refp]++;
+  }
+  void release_refp(uint32_t *refp)
+  {
+    if (!refp) return;
+    auto it = refp_refcounts.find(refp);
+    if (it != refp_refcounts.end()) {
+      if (--it->second == 0) {
+        refp_refcounts.erase(it);
+        // Only delete refp if no closures reference it either
+        // *refp counts how many closures are using this refp
+        if (*refp == 0) {
+          delete refp;
+        }
+        // If *refp > 0, closures still reference it; they will call
+        // try_free_refp() when they decrement *refp to 0.
+      }
+    }
+  }
+  // Called from pure_free_clos when *refp reaches 0.  If no Env tracks
+  // this refp anymore (refp_refcounts entry already erased), we are the
+  // last user and must free the pointer to prevent a leak.
+  void try_free_refp(uint32_t *refp)
+  {
+    if (!refp) return;
+    if (refp_refcounts.find(refp) == refp_refcounts.end()) {
+      // No Env references this refp anymore -- we're the last user.
+      delete refp;
+    }
   }
 
   // Interface to the lexer.
