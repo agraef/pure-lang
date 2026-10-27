@@ -3,6 +3,21 @@
 
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <malloc.h>
+#else
+/* alloca: <alloca.h> on glibc, macOS and illumos; <stdlib.h> on the BSDs,
+   where it is hidden when a strict standard (_POSIX_C_SOURCE) is asked for,
+   so fall back to the compiler builtin there. */
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#include <stdlib.h>
+#ifndef alloca
+#define alloca(n) __builtin_alloca(n)
+#endif
+#else
+#include <alloca.h>
+#endif
+#endif
 #include <pure/runtime.h>
 
 typedef struct _gsl_matrix

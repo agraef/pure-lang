@@ -296,7 +296,7 @@ static void offsets(void *data, unsigned n, ffi_type **types, void **v)
   for (i = 0; i < n; i++) {
     unsigned short a = ofs % types[i]->alignment;
     if (a != 0) ofs += types[i]->alignment-a;
-    v[i] = data+ofs;
+    v[i] = (char*)data+ofs;
     ofs += types[i]->size;
   }
 }
@@ -317,7 +317,7 @@ static void *offset(void *data, unsigned n, ffi_type **types)
     return 0;
   a = ofs % types[i]->alignment;
   if (a != 0) ofs += types[i]->alignment-a;
-  return data+ofs;
+  return (char*)data+ofs;
 }
 
 /* Function to compute a single offset on the fly -
@@ -328,11 +328,11 @@ pure_expr *ffi_struct_offsetof(ffi_type *type, int i)
   if (i < 0) return 0;
   pure_expr *x;
   void *v;
-  void *data = NULL + 2; // make a non-null pointer
+  void *data = (char*)NULL + 2; // make a non-null pointer
   if (type->type != FFI_TYPE_STRUCT) return 0;
   v = offset(data, i, type->elements);
   if (v) {
-    x = pure_int(v - data);
+    x = pure_int((char*)v - (char*)data);
     return x;
   } else
     return 0;

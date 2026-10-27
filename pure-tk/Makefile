@@ -26,16 +26,21 @@ MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 # Try to guess the Tcl version.
-tclvers = $(shell echo 'puts $$tcl_version' | tclsh)
+tclvers = $(shell echo 'puts $$tcl_version' | $(firstword $(foreach t,tclsh tclsh8.6 tclsh8.7 tclsh9.0,$(shell command -v $(t) 2>/dev/null)) tclsh))
 # OS X: Use this instead to link against the native (Apple) Tcl/Tk.
 #tclvers = $(shell echo 'puts $$tcl_version' | /usr/bin/tclsh)
 ifeq ($(strip $(tclvers)),)
 tclvers = 8.6
 endif
 
-# Try to figure out where the Tcl/Tk includes and libraries are.
-tk_includes = $(shell pkg-config tcl --cflags-only-I 2>/dev/null)
-tk_libs = $(shell pkg-config tcl --libs-only-L 2>/dev/null)
+# Try to figure out where the Tcl/Tk includes and libraries are. FreeBSD
+# names the packages tk86 and tcl86, and installs the headers in versioned
+# directories.
+tk_pc = $(firstword $(foreach p,tk tk$(subst .,,$(tclvers)) tk$(tclvers),$(shell pkg-config --exists $(p) 2>/dev/null && echo $(p))))
+tk_includes = $(shell pkg-config $(or $(tk_pc),tcl) --cflags-only-I 2>/dev/null)
+tk_libs = $(shell pkg-config $(or $(tk_pc),tcl) --libs-only-L 2>/dev/null)
+# The libraries themselves: from pkg-config if it knows Tk, else by version.
+tk_link = $(if $(tk_pc),$(shell pkg-config $(tk_pc) --libs-only-l),-ltcl$(tclvers) -ltk$(tclvers))
 # OS X: Use this instead to link against the native (Apple) Tcl/Tk.
 #tk_includes = -I/System/Library/Frameworks/Tcl.framework/Headers -I/System/Library/Frameworks/Tk.framework/Headers
 #tk_libs = -framework tcl -framework tk
@@ -50,7 +55,7 @@ SEDFILES = README
 all: tk$(DLL)
 
 tk$(DLL): tk.c
-	$(CC) $(shared) $(dllname) -o $@ -Wall $(MOD_CFLAGS) $< $(MOD_LDFLAGS) -ltcl$(tclvers) -ltk$(tclvers)
+	$(CC) $(shared) $(dllname) -o $@ -Wall $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(tk_link)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o

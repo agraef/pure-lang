@@ -57,11 +57,15 @@ pmlib$(DLL): pmdev.c
 
 generate:
 	rm -f portmidi.pure
-	make portmidi.pure
+	$(MAKE) portmidi.pure
 
 excludes = '^(linux|unix)$$'
 
-portmidi.pure: portmidi.h porttime.h pmdev.h
+# portmidi.pure is generated, but it is in the repository and rebuilding it
+# needs pure-gen. Only 'make generate' rebuilds it: a timestamp dependency on
+# the headers would trigger whenever a fresh checkout leaves portmidi.pure
+# older than the headers, which git does not guarantee either way.
+portmidi.pure:
 ifeq ($(DLL),.dll)
 	echo 'using "lib:libportmidi";' > $@
 	pure-gen -N -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@

@@ -25,8 +25,8 @@ ifneq "$(findstring -darwin,$(host))" ""
 DLL = .dylib
 shared = -dynamiclib
 endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
+ifeq "$(findstring -darwin,$(host))$(findstring -mingw,$(host))$(findstring -cygwin,$(host))" ""
+# ELF shared objects need -fPIC, whatever the CPU
 PIC = -fPIC
 endif
 

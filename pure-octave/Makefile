@@ -12,6 +12,9 @@ PIC         = $(shell pkg-config pure --variable PIC)
 shared      = $(shell pkg-config pure --variable shared)
 
 prefix      = $(shell pkg-config pure --variable prefix)
+# Where to find pure/runtime.h and libpure, if not in the default paths.
+PURE_CFLAGS = $(shell pkg-config pure --cflags)
+PURE_LIBS   = $(shell pkg-config pure --libs)
 bindir      = $(prefix)/bin
 libdir      = $(shell pkg-config pure --variable libdir)
 
@@ -33,9 +36,12 @@ mkoctfile = mkoctfile
 octversion = $(shell $(mkoctfile) --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/\1 \2/')
 octversionflag = -DOCTAVE_MAJOR=$(word 1,$(octversion)) -DOCTAVE_MINOR=$(word 2,$(octversion))
 
-# Add the -rpath flag so that the dynamic linker finds liboctave.so etc. when
-# Pure loads the module. NOTE: This doesn't seem to be needed any more.
-RLD_FLAG=$(shell $(mkoctfile) -p RLD_FLAG)
+# Record where Octave's libraries are, so that the dynamic linker finds
+# liboctinterp and liboctave when Pure loads the module. Distributions put
+# them outside the default search path (/usr/lib/<triple>/octave/<version>
+# on Debian). mkoctfile's RLD_FLAG, which used to provide this, has been
+# empty since Octave 3.6.
+RLD_FLAG=-Wl,-rpath,$(shell $(mkoctfile) -p OCTLIBDIR)
 
 # Octave 5.1 doesn't automatically include these linker options any more.
 OCT_FLAGS=-L$(shell $(mkoctfile) -p OCTLIBDIR) $(shell $(mkoctfile) -p LIBOCTINTERP) $(shell $(mkoctfile) -p LIBOCTAVE)
@@ -51,12 +57,12 @@ ifeq ($(DLL),.dylib)
 # dylib which can be linked into other modules.
 embed.o: embed.cc embed.h
 	rm -f $@
-	$(mkoctfile) -v $(octversionflag) -o $@ -c $<
+	$(mkoctfile) -v $(octversionflag) $(PURE_CFLAGS) -o $@ -c $<
 MKOCT_LDCXX = $(shell $(mkoctfile) -p CXXLD)
 MKOCT_LDFLAGS = $(shell $(mkoctfile) -p LFLAGS) $(shell $(mkoctfile) -p OCTAVE_LIBS) $(shell $(mkoctfile) -p LDFLAGS)
 octave_embed$(DLL): embed.o
 	rm -f $@
-	$(MKOCT_LDCXX) $(shared) $(dllname) -o $@ embed.o $(MKOCT_LDFLAGS) -lpure $(RLD_FLAG)
+	$(MKOCT_LDCXX) $(shared) $(dllname) -o $@ embed.o $(MKOCT_LDFLAGS) $(PURE_LIBS) $(RLD_FLAG)
 else
 ifeq ($(DLL),.dll)
 # Custom build commands for msys2/mingw32 using a static build of Octave 4.0.3.
@@ -71,7 +77,7 @@ octave_embed$(DLL): embed.cc embed.h
 else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
-	$(mkoctfile) -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG) $(OCT_FLAGS)
+	$(mkoctfile) -v $(octversionflag) $(PURE_CFLAGS) -o $@ $< $(PURE_LIBS) $(RLD_FLAG) $(OCT_FLAGS)
 	if test -f $@.oct; then mv $@.oct $@; fi
 endif
 endif

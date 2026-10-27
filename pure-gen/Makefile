@@ -32,7 +32,9 @@ GHCFLAGS = -dynamic
 
 # Try to guess the host system type and do platform-specific setup.
 host = $(shell ./config.guess)
-gcc = gcc
+# The C preprocessor dump-ast runs. gcc if installed, else the system cc
+# (clang on FreeBSD and macOS).
+gcc = $(shell command -v gcc >/dev/null 2>&1 && echo gcc || echo cc)
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
@@ -42,16 +44,17 @@ endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX: Try to find a suitable gcc version to be used as the C preprocessor.
 # The following assumes that a recent gcc version from MacPorts is installed.
-# Note that we *really* need gcc (4.3+) here, pure-gen does *not* work when
-# using clang (the system compiler on newer OS X versions) instead.
+# Note that we *really* need gcc (4.3+) here; pure-gen did *not* work with
+# the clang of older OS X versions. (Current clang, e.g. on FreeBSD, works.)
 gcc = $(lastword gcc $(sort $(wildcard /opt/local/bin/gcc-mp-*)))
 endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
+ifeq "$(findstring -darwin,$(host))$(findstring -mingw,$(host))$(findstring -cygwin,$(host))" ""
+# ELF shared objects need -fPIC, whatever the CPU
 PIC = -fPIC
 endif
 
 DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
+cabal.project dump-ast.cabal \
 dump-ast.hs dump-ast-old.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests \
 debian/* examples/*.templ language-c/*
 
@@ -77,10 +80,11 @@ pure-gen: pure-gen.pure
 # the library. (If you can figure out which changes are needed in dump-ast to
 # compile against the latest version, please let me know!)
 
-# If a suitable language-c version is not readily available, you can run this
-# to install the included language-c 0.5.0 locally using cabal.
-cabal-install:
-	cd language-c && cabal v1-update && cabal v1-install
+# If a suitable language-c version is not readily available, 'make' builds
+# dump-ast against the included language-c 0.5.0 with cabal (see
+# maintainer-build below). This used to install language-c with cabal's v1
+# commands, which current cabal-install no longer has.
+cabal-install: maintainer-build
 
 # These options work around quirks with various ghc versions.
 GHCXFLAGS += -XTypeSynonymInstances -XFlexibleInstances
@@ -105,15 +109,16 @@ dump-ast: dump-ast.hs
 # the path, to make static builds work.
 maintainer-build: export PATH := /usr/share/ghc-pristine/bin:$(PATH)
 
+# Build dump-ast against the included language-c with cabal's v2 (project)
+# commands, as described by cabal.project and dump-ast.cabal. cabal-install
+# 3.6 removed the v1-update command this target used to run. The Haskell
+# libraries are linked into the executable, so nothing has to be installed.
+# This needs cabal-install 3.0 or later; the package index update may fail
+# without network access, which is fine if the dependencies are cached.
 maintainer-build:
-# Install locally into the build directory.
-	cd language-c && HOME=$(shell pwd)/cabal cabal v1-update && HOME=$(shell pwd)/cabal cabal v1-install
-# Make sure to do a static build here, since the cabal-installed language-c
-# will be gone once we're finished.
-	$(MAKE) all GHCFLAGS=-static HOME=$(shell pwd)/cabal
-# Clean up.
-	HOME=$(shell pwd)/cabal ghc-pkg unregister language-c
-	rm -rf cabal language-c/dist
+	-cabal v2-update
+	cabal v2-install --installdir=. --install-method=copy --overwrite-policy=always exe:dump-ast
+	$(MAKE) pure-gen
 
 # Same as above, but without using cabal, which won't work on Launchpad where
 # we don't have a working Internet connection.
@@ -134,7 +139,7 @@ check:
 
 clean:
 	rm -f pure-gen$(EXE) dump-ast$(EXE) *~ *.hi *.o
-	rm -rf cabal language-c/dist
+	rm -rf cabal language-c/dist dist-newstyle
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"

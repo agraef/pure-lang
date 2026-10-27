@@ -323,8 +323,9 @@ pure_expr* wrap_gsl_complex_poly_complex_eval
   (gsl_matrix_complex *c, int len, double a, double b)
 {
   int i = 0;
-  gsl_complex z, *p, cc[2*len];
+  gsl_complex z, *p, *cc = malloc(len * sizeof *cc);
   double *d = c->data;
+  if (!cc) return 0;
   z.dat[0] = a;
   z.dat[1] = b;
   p = cc;
@@ -333,6 +334,7 @@ pure_expr* wrap_gsl_complex_poly_complex_eval
     p++->dat[1] = *d++;
   }
   z = gsl_complex_poly_complex_eval(cc, len, z);
+  free(cc);
   return pure_complex(z.dat);
 }
 
@@ -379,11 +381,12 @@ pure_expr* wrap_gsl_poly_complex_solve_cubic(double a, double b, double c)
 
 pure_expr* wrap_gsl_poly_complex_solve(double* a, size_t n)
 {
-  double tz[2*(n-1)];
-  pure_expr *z[n-1];
+  double *tz = malloc(2*(n-1) * sizeof *tz);
+  pure_expr **z = malloc((n-1) * sizeof *z), *res;
   double t[2];
   int i, r;
   
+  if (!tz || !z) { free(tz); free(z); return 0; }
   gsl_poly_complex_workspace* w = gsl_poly_complex_workspace_alloc(n);
   r = gsl_poly_complex_solve(a, n, w, tz);
   gsl_poly_complex_workspace_free(w);
@@ -393,9 +396,11 @@ pure_expr* wrap_gsl_poly_complex_solve(double* a, size_t n)
       t[1] = tz[2*i+1];
       z[i] = pure_complex(t);
     }
-    return pure_listv(n-1, z);
+    res = pure_listv(n-1, z);
   } else
-    return pure_listl(0);
+    res = pure_listl(0);
+  free(tz); free(z);
+  return res;
 }
 
 pure_expr* wrap_gsl_fit_linear(double* x, double* y, size_t n)
@@ -456,7 +461,7 @@ pure_expr* wrap_gsl_multifit_linear(gsl_matrix* X, gsl_matrix* y)
 {
   int i;
   double chisq;
-  pure_expr *cx[X->size1];
+  pure_expr **cx = malloc(X->size1 * sizeof *cx), *res;
   double *p;
 
   gsl_vector* c = gsl_vector_alloc(X->size1);
@@ -473,6 +478,8 @@ pure_expr* wrap_gsl_multifit_linear(gsl_matrix* X, gsl_matrix* y)
     cx[i] = pure_double(*p);
     ++p;
   }
-  return pure_listl(3, pure_matrix_columnsv(X->size1, cx),
-		    pure_double_matrix(cov), pure_double(chisq));
+  res = pure_listl(3, pure_matrix_columnsv(X->size1, cx),
+		   pure_double_matrix(cov), pure_double(chisq));
+  free(cx);
+  return res;
 }

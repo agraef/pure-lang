@@ -37,7 +37,11 @@ PURE_COPTS += -L$(dlldir)
 windows = true
 dllopts = $(foreach dllname, $(foreach dll,$(shell pkg-config --libs-only-l $(1)),$(basename $(notdir $(wildcard $(patsubst -l%,$(dlldir)/lib%*.dll,$(dll)))))), -l$(dllname))
 else
+# GNU ld and lld drop unused libraries with --as-needed; the illumos and
+# Solaris link editor never does and does not know the option.
+ifeq "$(findstring -solaris,$(shell $(CC) -dumpmachine))$(findstring -illumos,$(shell $(CC) -dumpmachine))" ""
 EXTRA_LD_FLAGS = -Wl,--no-as-needed
+endif
 atk_missing = -x '^(linux|unix)$$'
 endif
 endif

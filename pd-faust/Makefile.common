@@ -28,8 +28,12 @@ CXX = g++
 # and similar cpus (this works with both gcc and clang). CPPFLAGS, LDFLAGS and
 # LIBS are by default empty, but can also be set on the command line if you
 # need them.
-CFLAGS = -O3 -ffast-math -msse
-CXXFLAGS = -O3 -ffast-math -msse
+# -msse is an x86 option; compilers for other targets reject it.
+ifneq "$(filter x86_64 amd64 i386 i486 i586 i686,$(firstword $(subst -, ,$(shell $(CC) -dumpmachine))))" ""
+SSE = -msse
+endif
+CFLAGS = -O3 -ffast-math $(SSE)
+CXXFLAGS = -O3 -ffast-math $(SSE)
 
 # Faust2 is needed to create LLVM bitcode from Faust sources. For compiling
 # C/C++ to bitcode you can use either llvm-gcc (now deprecated), gcc >= 4.5

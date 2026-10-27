@@ -116,8 +116,8 @@ ifneq "$(findstring -darwin,$(host))" ""
 shared = -dynamiclib
 dllname = -install_name "$(gnmplugindir)/$(pureloaderdir)/$(notdir $@)"
 endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
+ifeq "$(findstring -darwin,$(host))$(findstring -mingw,$(host))$(findstring -cygwin,$(host))" ""
+# ELF shared objects need -fPIC, whatever the CPU
 PIC = -fPIC
 export PIC
 endif

@@ -9,6 +9,7 @@
 #include <pure/runtime.h>
 
 #include <dns_sd.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #ifndef DEBUG

@@ -141,29 +141,25 @@ protected:
   px* fun_;
 };
 
-struct pxh_fun1 : public pxh_fun,
-                  public std::unary_function<const pxh&, pxh>
+struct pxh_fun1 : public pxh_fun
 {
   pxh_fun1(px* f) : pxh_fun(f){}
   pxh operator()(const pxh&) const;
 };
 
-struct pxh_fun2 : public pxh_fun, 
-                  public std::binary_function<const pxh&, const pxh&, pxh>
+struct pxh_fun2 : public pxh_fun
 {
   pxh_fun2(px* f) : pxh_fun(f){}
   pxh operator()(const pxh&, const pxh&) const;
 };
 
-struct pxh_pred1 : public pxh_fun,
-                   public std::unary_function<const pxh&, bool>
+struct pxh_pred1 : public pxh_fun
 {
   pxh_pred1(px* f) : pxh_fun(f){}
   bool operator()(const pxh&) const;
 };
 
-struct pxh_pred2 : public pxh_fun,
-                   public std::binary_function<const pxh&, const pxh&, bool>
+struct pxh_pred2 : public pxh_fun
 {
   bool is_eq;
   bool is_same;
@@ -182,8 +178,7 @@ struct pxh_gen : public pxh_fun
 
 // TODO FIX -- change pxhpair_xx to use pxh_less and pxh_equal
 
-struct pxhpair_less : 
-  public std::binary_function<const pxhpair&, const pxhpair&, bool>
+struct pxhpair_less
 {
   pxhpair_less(px* f, px* s) : first_less(f), second_less(s) {}
   bool operator()(const pxhpair&, const pxhpair&) const;
@@ -192,8 +187,7 @@ protected:
   pxh_pred2 second_less;
 };
 
-struct pxhpair_equal : 
-  public std::binary_function<const pxhpair&, const pxhpair&, bool>
+struct pxhpair_equal
 {
   pxhpair_equal(px* f, px* s) : first_equal(f), second_equal(s) {}
   bool operator()(const pxhpair&, const pxhpair&) const;
@@ -202,8 +196,7 @@ protected:
   pxh_pred2 second_equal;
 };
 
-struct pxhpair_first_equal : 
-  public std::binary_function<const pxhpair&, const pxhpair&, bool>
+struct pxhpair_first_equal
 {
   pxhpair_first_equal(px* f) : first_equal(f) {}
   bool operator()(const pxhpair&, const pxhpair&) const;
@@ -211,8 +204,7 @@ protected:
   pxh_pred2 first_equal;
 };
 
-struct pxhpair_first_equivalent : 
-  public std::binary_function<const pxhpair&, const pxhpair&, bool>
+struct pxhpair_first_equivalent
 {
   pxhpair_first_equivalent(px* f) : first_less(f) {}
   bool operator()(const pxhpair&, const pxhpair&) const;
@@ -220,8 +212,7 @@ protected:
   pxh_pred2 first_less;
 };
 
-struct pxhpair_equivalent : 
-  public std::binary_function<const pxhpair&, const pxhpair&, bool>
+struct pxhpair_equivalent
 {
   pxhpair_equivalent(px* f, px* s) : first_less(f), second_equal(s) {}
   bool operator()(const pxhpair&, const pxhpair&) const;

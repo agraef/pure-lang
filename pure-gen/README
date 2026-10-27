@@ -20,9 +20,10 @@ Requirements
 As of version 0.5, pure-gen is now compiled to a native executable. You'll
 need Pure 0.21 or later and the basic LLVM toolchain to make this work.
 
-pure-gen also requires gcc (-E) as its C preprocessor *at runtime*. Moreover,
-it needs a version of gcc which understands the -fdirectives-only option,
-which means gcc >= 4.3. It will run with older versions of gcc, but then
+pure-gen also requires gcc (-E) as its C preprocessor *at runtime*, or the
+system cc where gcc is not installed (clang has been used on FreeBSD).
+Moreover, it needs a preprocessor which understands the -fdirectives-only
+option, which means gcc >= 4.3. It will run with older versions of gcc, but then
 you'll get an error message from gcc indicating that it doesn't understand the
 -fdirectives-only option. pure-gen then won't be able to extract any
 ``#define``\ d constants from the header files.
@@ -71,11 +72,12 @@ available through cabal (http://www.haskell.org/cabal/), see
 https://hackage.haskell.org/package/language-c for more information.
 
 **NOTE:** dump-ast requires Language.C 0.5 or earlier, any later version
-is *not* supported yet. If this version isn't readily available for your
-platform, you can use the included copy of language-c 0.5.0 and install that
-using cabal (run ``make install-cabal``) before running ``make``. Or, if that
-doesn't suit you, you can grab the official tarball here and install it
-manually by whatever means you prefer:
+is *not* supported yet. By default, ``make`` builds dump-ast against the
+included copy of language-c 0.5.0 with cabal (cabal-install 3.0 or later; see
+cabal.project and dump-ast.cabal), which fetches the few other Haskell
+packages it needs from Hackage. Or, if that doesn't suit you, you can grab the
+official tarball here, install it manually by whatever means you prefer, and
+run ``make all``:
 
 http://hackage.haskell.org/packages/archive/language-c/0.5.0/language-c-0.5.0.tar.gz.
 

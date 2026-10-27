@@ -15,10 +15,10 @@ ifeq ($(DLL),.dylib)
 dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(shell pkg-config --cflags lilv-0) $(CFLAGS) $(CPPFLAGS)
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(shell pkg-config --cflags lilv-0 serd-0) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-LIBS = $(shell pkg-config --libs lilv-0)
+LIBS = $(shell pkg-config --libs lilv-0 serd-0)
 
 # Basic rules to build the module, clean, install and uninstall.
 

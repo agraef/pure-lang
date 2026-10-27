@@ -50,6 +50,18 @@
 
 #ifdef _WIN32
 #include <malloc.h>
+#else
+/* alloca: <alloca.h> on glibc, macOS and illumos; <stdlib.h> on the BSDs,
+   where it is hidden when a strict standard (_POSIX_C_SOURCE) is asked for,
+   so fall back to the compiler builtin there. */
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#include <stdlib.h>
+#ifndef alloca
+#define alloca(n) __builtin_alloca(n)
+#endif
+#else
+#include <alloca.h>
+#endif
 #endif
 
 #include "embed.h"
@@ -117,9 +129,15 @@ static void my_clean_up_and_exit(int exit_status, bool safe_to_return)
 octave_value
 get_global_value (const std::string& nm, bool silent)
 {
+#if OCTAVE_MAJOR>=6
+  // Octave 6 moved global variables from the symbol table to the
+  // interpreter (the symbol_table methods are gone in Octave 8).
+  octave_value val = embedded_interpreter->global_varval (nm);
+#else
   octave::symbol_table& symtab = embedded_interpreter->get_symbol_table();
 
   octave_value val = symtab.global_varval (nm);
+#endif
 
   if (val.is_undefined () && ! silent)
     error ("get_global_value: undefined symbol '%s'", nm.c_str ());
@@ -130,9 +148,13 @@ get_global_value (const std::string& nm, bool silent)
 void
 set_global_value (const std::string& nm, const octave_value& val)
 {
+#if OCTAVE_MAJOR>=6
+  embedded_interpreter->global_assign (nm, val);
+#else
   octave::symbol_table& symtab = embedded_interpreter->get_symbol_table();
 
   symtab.global_assign (nm, val);
+#endif
 }
 #endif
 
@@ -198,9 +220,31 @@ static void recover(void)
 }
 #endif
 
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
+// Report an Octave error caught by octave_eval or octave_call and get the
+// interpreter back into a usable state.
+static void octave_error(const octave_execution_exception& ee)
+{
+#if OCTAVE_MAJOR>5
+  // Since Octave 6, error() no longer prints the message itself; that's the
+  // job of the handler, which also saves it for lasterr.
+  embedded_interpreter->handle_exception (ee);
+#else
+  recover ();
+  std::cout << "\n";
+#endif
+}
+#endif
+
 int octave_eval(const char *cmd)
 {
   int parse_status = 0;
+#if OCTAVE_MAJOR>=6
+  // The global error_state is a dummy which is always 0 since Octave 6, and
+  // it is gone in Octave 8. Errors are only signaled by exceptions now, so we
+  // keep our own status code.
+  int error_state = 0;
+#endif
 
   if (!init) return -1;
 
@@ -238,7 +282,9 @@ int octave_eval(const char *cmd)
   // "failure", which seems to be set in the interpreter somewhere, -2 is user
   // interrupt (and more dramatic failures), -3 memory failure.
   try {
+#if OCTAVE_MAJOR<6
     reset_error_handler ();
+#endif
     // XXXFIXME: eval_string() just always segfaults with Octave 4.2.0+. No
     // workaround for this is known yet. Octave 4.0 and 4.3 seem to be ok,
     // though, so just stick to one of these until this is fixed.
@@ -257,13 +303,8 @@ int octave_eval(const char *cmd)
     std::cout << "\n";
     error_state = -2;
 #if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
-  } catch (octave_execution_exception) {
-#if OCTAVE_MAJOR>5
-    embedded_interpreter->recover ();
-#else
-    recover ();
-#endif
-    std::cout << "\n";
+  } catch (const octave_execution_exception& ee) {
+    octave_error (ee);
     error_state = -1;
 #endif
   } catch (std::bad_alloc) {
@@ -971,11 +1012,41 @@ pure_expr *octave_call(pure_expr *fun, int nargout, pure_expr *args)
       delete val;
     }
     free(xs);
+#if OCTAVE_MAJOR<6
     reset_error_handler ();
+#endif
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
+    // Octave errors are C++ exceptions now, which must not propagate into
+    // Pure. Report the error and make the call fail instead.
+    try {
+#endif
     if (f)
       ret = feval(f, args, nargout);
     else
       ret = feval(s, args, nargout);
+#if OCTAVE_MAJOR>4 || OCTAVE_MAJOR>=4 && OCTAVE_MINOR>=2
+    } catch (const octave_execution_exception& ee) {
+      octave_error (ee);
+      if (s) free(s);
+      return 0;
+    } catch (octave_interrupt_exception) {
+#if OCTAVE_MAJOR>5
+      embedded_interpreter->recover ();
+#else
+      recover ();
+#endif
+      if (s) free(s);
+      return 0;
+    } catch (std::bad_alloc) {
+#if OCTAVE_MAJOR>5
+      embedded_interpreter->recover ();
+#else
+      recover ();
+#endif
+      if (s) free(s);
+      return 0;
+    }
+#endif
     if (s) free(s);
     n = ret.length();
     if (n > (size_t)nargout) n = nargout;
@@ -1022,7 +1093,11 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
     octave_idx_type nr = ch.rows();
     if (nr != 1)
       print_usage();
+#if OCTAVE_MAJOR>=6
+    else {
+#else
     else if (!error_state) {
+#endif
       std::string name = ch.row_as_string(0);
       int fno = pure_getsym(name.c_str());
       if (fno <= 0) {

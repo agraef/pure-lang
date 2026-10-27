@@ -364,11 +364,14 @@ static pure_expr *create_header(csv_t *csv)
 {
   pure_expr *t = csv_read(csv);
   pure_expr *f = pure_symbol(pure_getsym("=>"));
-  pure_expr *xs[csv->record->len];
+  pure_expr **xs = malloc(csv->record->len * sizeof *xs), *res;
   int i;
+  if (!xs) return 0;
   for (i = 0; i < csv->record->len; ++i)
     xs[i] = pure_appl(f, 2, csv->record->x[i], pure_int(i));
-  return pure_matrix_columnsvq(csv->record->len, xs);
+  res = pure_matrix_columnsvq(csv->record->len, xs);
+  free(xs);
+  return res;
 }
 
 csv_t *csv_open(char *fname, 

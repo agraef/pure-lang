@@ -32,8 +32,8 @@ ifneq "$(wildcard /c/Program*/Pd/src/m_pd.h)" ""
 datadir = "$(wildcard /c/Program*/Pd/extra)"
 endif
 endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
+ifeq "$(findstring -darwin,$(host))$(findstring -mingw,$(host))$(findstring -cygwin,$(host))" ""
+# ELF shared objects need -fPIC, whatever the CPU
 PIC = -fPIC
 endif
 

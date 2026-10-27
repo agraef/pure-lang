@@ -9,6 +9,12 @@
 #include <tk.h>
 #include <pure/runtime.h>
 
+/* List lengths are Tcl_Size (ptrdiff_t) in Tcl 9, int before 8.7. Tcl 8.7
+   and later define Tcl_Size and TCL_SIZE_MAX together. */
+#if !defined(TCL_SIZE_MAX) && !defined(Tcl_Size)
+typedef int Tcl_Size;
+#endif
+
 /* The Tcl interpreter. */
 
 static Tcl_Interp* interp;
@@ -271,7 +277,8 @@ pure_expr *tk_get(const char *s)
 
 pure_expr *tk_split(const char *s)
 {
-  int argc, ret;
+  Tcl_Size argc;
+  int ret;
   const char **argv;
   ret = Tcl_SplitList(NULL, s, &argc, &argv);
   if (ret == TCL_OK) {
