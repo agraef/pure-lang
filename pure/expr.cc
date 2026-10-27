@@ -46,10 +46,17 @@ EXPR::~EXPR()
   case WRAP:
     if (data.p) {
       GlobalVar *v = (GlobalVar*)data.p;
-      interpreter::g_interp->JIT->updateGlobalMapping(v->v, 0);
-      v->v->eraseFromParent();
-      pure_free(v->x);
-      delete v;
+      // g_interp is thread-local and may be null during teardown on a
+      // thread with no active interpreter; the LLVM global cleanup below
+      // needs a live interpreter/context, so skip it (leaking the wrapped
+      // global, as the debugging case above also does) rather than
+      // dereferencing a null g_interp.
+      if (interpreter::g_interp) {
+        interpreter::g_interp->define_symbol(v->v->getName().str(), nullptr);
+        v->v->eraseFromParent();
+        pure_free(v->x);
+        delete v;
+      }
     }
     break;
   case VAR:
@@ -84,8 +91,14 @@ EXPR::~EXPR()
     if (data.l.xs) delete data.l.xs;
     if (data.l.r) delete data.l.r;
     /* We're deliberately leaking memory in debugging mode here, since the
-       rule pointer of the lambda might still be needed by the debugger. */
-    if (m && !interpreter::g_interp->debugging) delete m;
+       rule pointer of the lambda might still be needed by the debugger.
+       g_interp is thread-local and may be null or point at a different
+       interpreter while an expression tree is being torn down (e.g. when a
+       host deletes an interpreter from a thread that has no active one), so
+       guard the dereference: no active interpreter means we are not
+       debugging, and deleting m is correct. */
+    if (m && !(interpreter::g_interp && interpreter::g_interp->debugging))
+      delete m;
     break;
   case MATRIX:
     if (data.xs) delete data.xs;

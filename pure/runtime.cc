@@ -19,16 +19,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 /* AIX requires this to be the first thing in the file.  */
-#ifndef __GNUC__
-# if HAVE_ALLOCA_H
-#  include <alloca.h>
-# else
-#  ifdef _AIX
+#include "config.h"
+#if HAVE_ALLOCA_H
+# include <alloca.h>
+#elif !defined __GNUC__
+# ifdef _AIX
 #pragma alloca
-#  else
-#   ifndef alloca /* predefined by HP cc +Olibcalls */
+# else
+#  ifndef alloca /* predefined by HP cc +Olibcalls */
 char *alloca ();
-#   endif
 #  endif
 # endif
 #endif
@@ -44,11 +43,35 @@ char *alloca ();
 #include <math.h>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "interpreter.hh"
 #include "util.hh"
 
 #include "funcall.h"
+
+static_assert(MAXARGS == PURE_ECTX_MAXARGS,
+	      "funcall.h's MAXARGS and pure_ectx::apply_argv's bound "
+	      "(interpreter.hh) must match");
+
+/* This file's per-thread scratch state, kept off the TLS segment (see
+   PURE_TLS_HOT in util.hh). Each member is described where it is used. */
+struct FaustMeta;
+struct stack_elem_t {
+  int i, n;
+  pure_expr **xv;
+};
+struct runtime_tls {
+  std::vector<interpreter*> locked_interp_stack;
+  pure_expr *cmp_p = nullptr;
+  unsigned cmp_pno = 0;
+  char swap_buf[16];
+  char strftime_buf[1024];
+  FaustMeta *faust_metadata = nullptr;
+  stack_elem_t *elem_stack = nullptr;
+  int astacksz = 0, stacksz = 0;
+};
+static PURE_TLS_HOT thread_local per_thread<runtime_tls> rt_tls;
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -667,50 +690,52 @@ static inline void free_sentry(pure_expr *x)
 static inline pure_expr *new_expr()
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *x = interp.exps;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr *x = ectx.exps;
   if (x) {
-    interp.exps = x->xp;
-    interp.freectr--;
-    if (interp.stats_mem && interp.freectr < interp.memctr)
-      interp.memctr = interp.freectr;
-  } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    ectx.exps = x->xp;
+    ectx.freectr--;
+    if (interp.stats_mem && ectx.freectr < ectx.memctr)
+      ectx.memctr = ectx.freectr;
+  } else if (ectx.mem && ectx.mem->p-ectx.mem->x < MEMSIZE) {
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   } else {
-    pure_mem *mem = interp.mem;
-    interp.mem = new pure_mem;
-    interp.mem->next = mem;
-    interp.mem->p = interp.mem->x;
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    pure_mem *mem = ectx.mem;
+    ectx.mem = new pure_mem;
+    ectx.mem->next = mem;
+    ectx.mem->p = ectx.mem->x;
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   }
   x->refc = 0;
-  x->xp = interp.tmps;
+  x->xp = ectx.tmps;
   x->sy = 0; // initialize the sentry
   x->data.x[1] = 0; // initialize the pointer tag
-  interp.tmps = x;
+  ectx.tmps = x;
   return x;
 }
 
 static inline pure_expr *new_ref_expr()
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *x = interp.exps;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr *x = ectx.exps;
   if (x) {
-    interp.exps = x->xp;
-    interp.freectr--;
-    if (interp.stats_mem && interp.freectr < interp.memctr)
-      interp.memctr = interp.freectr;
-  } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    ectx.exps = x->xp;
+    ectx.freectr--;
+    if (interp.stats_mem && ectx.freectr < ectx.memctr)
+      ectx.memctr = ectx.freectr;
+  } else if (ectx.mem && ectx.mem->p-ectx.mem->x < MEMSIZE) {
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   } else {
-    pure_mem *mem = interp.mem;
-    interp.mem = new pure_mem;
-    interp.mem->next = mem;
-    interp.mem->p = interp.mem->x;
-    x = interp.mem->p++;
-    if (interp.stats_mem) interp.memctr = 0;
+    pure_mem *mem = ectx.mem;
+    ectx.mem = new pure_mem;
+    ectx.mem->next = mem;
+    ectx.mem->p = ectx.mem->x;
+    x = ectx.mem->p++;
+    if (interp.stats_mem) ectx.memctr = 0;
   }
   x->refc = 1;
   x->xp = 0;
@@ -721,9 +746,10 @@ static inline pure_expr *new_ref_expr()
 static inline void free_expr(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
-  x->xp = interp.exps;
-  interp.exps = x;
-  interp.freectr++;
+  pure_ectx& ectx = interp.ectx();
+  x->xp = ectx.exps;
+  ectx.exps = x;
+  ectx.freectr++;
   MEMDEBUG_FREE(x)
 }
 
@@ -731,6 +757,7 @@ static inline
 pure_expr *pure_new_internal(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   assert(x && "pure_new: null expression");
   assert((x->refc==0 || !x->xp) && "pure_new: corrupt expression data");
 #if DEBUG>2
@@ -741,11 +768,11 @@ pure_expr *pure_new_internal(pure_expr *x)
 #endif
   if (x->refc++ == 0) {
     // remove x from the list of temporaries
-    if (interp.tmps == x)
-      interp.tmps = x->xp;
+    if (ectx.tmps == x)
+      ectx.tmps = x->xp;
     else {
       // walk the list to find the place where x has to be unlinked
-      pure_expr *tmps = interp.tmps;
+      pure_expr *tmps = ectx.tmps;
       while (tmps && tmps->xp != x) tmps = tmps->xp;
       assert(tmps);
       tmps->xp = x->xp;
@@ -807,7 +834,7 @@ static inline void pure_new_vect(const size_t n, pure_expr **xs)
     rc = 0;
   else {
     interpreter& interp = *interpreter::g_interp;
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = interp.ectx().tmps;
     pure_expr *first = xs[0], *last = xs[n-1];
     rc = peek(tmps, first, last);
   }
@@ -836,7 +863,7 @@ static inline void pure_new_vect2(const size_t n, const size_t m,
     rc = 0;
   else {
     interpreter& interp = *interpreter::g_interp;
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = interp.ectx().tmps;
     pure_expr *first = xs[0], *last = xs[(n-1)*stride+m-1];
     rc = peek(tmps, first, last);
   }
@@ -861,15 +888,22 @@ static void pure_free_clos(pure_expr *x)
        << (x->data.clos->local?"local":"global") << " closure "
        << x << " (" << (void*)x << "), refc = " << x->refc << endl;
 #endif
+  // Drop this closure's count on *refp before deleting the Env, and decide
+  // here who frees refp. If no Env references it any more (its
+  // release_refp() already ran, e.g. because FMap::clear() cleared it while
+  // closures were still alive), the refp is orphaned and we free it now.
+  // Otherwise the Env's release_refp() frees it, possibly during the delete
+  // below, so refp must not be touched after that.
+  uint32_t *clos_refp = (uint32_t*)x->data.clos->refp;
+  if (clos_refp) {
+    assert(*clos_refp > 0);
+    if (--(*clos_refp) == 0)
+      interpreter::g_interp->try_free_refp(clos_refp);
+  }
   if (x->data.clos->ep) {
     Env *env = (Env*)x->data.clos->ep;
     assert(env->refc > 0);
     if (--env->refc == 0) delete env;
-  }
-  if (x->data.clos->refp) {
-    uint32_t *refp = (uint32_t*)x->data.clos->refp;
-    assert(*refp > 0);
-    --(*refp);
   }
   if (x->data.clos->env) {
     for (size_t i = 0; i < x->data.clos->m; i++)
@@ -1054,13 +1088,14 @@ pure_unref_internal(pure_expr *x)
   assert(x->refc > 0 && "pure_unref: unreferenced expression");
   if (--x->refc == 0 && !x->xp) {
     interpreter& interp = *interpreter::g_interp;
+    pure_ectx& ectx = interp.ectx();
     // check whether x is already on the tmps list
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = ectx.tmps;
     while (tmps && tmps != x) tmps = tmps->xp;
     if (!tmps) {
       // put x on the tmps list again
-      x->xp = interp.tmps;
-      interp.tmps = x;
+      x->xp = ectx.tmps;
+      ectx.tmps = x;
     }
   }
 }
@@ -1164,12 +1199,12 @@ pure_expr *pure_symbol(int32_t tag)
     else
       lab = "$"+sym.s;
     // Create a global variable bound to the symbol for now.
-    v.v = interpreter::global_variable
+    v.v = interp.global_variable
       (interp.module, interp.ExprPtrTy, false,
        llvm::GlobalVariable::InternalLinkage,
        llvm::ConstantPointerNull::get(interp.ExprPtrTy),
        lab.c_str());
-    interp.JIT->addGlobalMapping(v.v, &v.x);
+    interp.define_symbol(v.v->getName().str(), &v.x);
     v.x = pure_new_internal(pure_const(tag));
     // Since we just created this variable, it doesn't have any closure bound
     // to it yet, so it's safe to just return the symbol as is.
@@ -1184,7 +1219,7 @@ pure_expr *pure_symbol(int32_t tag)
       // external wrapper function itself.
       const ExternInfo& info = it->second;
       size_t n = info.argtypes.size();
-      void *f = interp.JIT->getPointerToFunction(info.f);
+      void *f = interp.lookup_symbol(info.f->getName().str());
       if (f) {
 	if (n == 0) {
 	  // Parameterless external, do a direct call.
@@ -1212,36 +1247,37 @@ pure_expr *pure_symbol(int32_t tag)
   assert(_e);						\
   pure_expr*& e = *_e;					\
   interpreter& interp = *interpreter::g_interp;		\
-  pure_aframe *ex = interp.push_aframe(interp.sstk_sz);	\
-  pure_expr *old_tmps = interp.tmps; interp.tmps = 0;	\
+  pure_ectx& ectx = interp.ectx();			\
+  pure_aframe *ex = interp.push_aframe(ectx, ectx.sstk_sz);	\
+  pure_expr *old_tmps = ectx.tmps; ectx.tmps = 0;	\
   if (setjmp(ex->jmp)) {				\
     size_t sz = ex->sz;					\
     e = ex->e;						\
-    interp.pop_aframe();				\
+    interp.pop_aframe(ectx);				\
     if (e) pure_new_internal(e);			\
-    pure_expr *tmps = interp.tmps;			\
+    pure_expr *tmps = ectx.tmps;			\
     while (tmps) {					\
       pure_expr *next = tmps->xp;			\
       pure_freenew(tmps);				\
       tmps = next;					\
     }							\
-    interp.tmps = old_tmps;				\
-    for (size_t i = interp.sstk_sz; i-- > sz; )		\
-      if (interp.sstk[i] && interp.sstk[i]->refc > 0)	\
-	pure_free_internal(interp.sstk[i]);		\
-    interp.sstk_sz = sz;				\
+    ectx.tmps = old_tmps;				\
+    for (size_t i = ectx.sstk_sz; i-- > sz; )		\
+      if (ectx.sstk[i] && ectx.sstk[i]->refc > 0)	\
+	pure_free_internal(ectx.sstk[i]);		\
+    ectx.sstk_sz = sz;				\
     pure_unref_internal(e);				\
     return 0;						\
   } else {						\
     pure_expr *res = x;					\
-    interp.pop_aframe();				\
-    pure_expr *tmps = interp.tmps;			\
+    interp.pop_aframe(ectx);				\
+    pure_expr *tmps = ectx.tmps;			\
     while (tmps) {					\
       pure_expr *next = tmps->xp;			\
       if (tmps != res) pure_freenew(tmps);		\
       tmps = next;					\
     }							\
-    interp.tmps = old_tmps;				\
+    ectx.tmps = old_tmps;				\
     res->refc++; pure_unref_internal(res);		\
     e = NULL;						\
     return res;						\
@@ -3325,12 +3361,36 @@ int pure_pointer_tag(const char *s)
     name.clear();
     for (; *s; ++s) if (!isspace(*s)) name.append(1, *s);
   }
-  // If the type is valid Pure syntax, normalize it a bit.
-  try {
-    llvm_const_Type *ty = interp.named_type(name);
-    assert(ty);
-    name = interp.type_name(ty);
-  } catch (err &e) {
+  // Normalize the type name.  With opaque pointers (LLVM 15+)
+  // type_name() maps every pointer type to "void*", which would
+  // collapse distinct named pointer tags (e.g. FILE*, char*).  So for
+  // pointer types we normalize the base-type string directly,
+  // matching the aliases that named_type() recognises.
+  if (name.size() > 0 && name[name.size()-1] == '*') {
+    size_t pos = name.find_last_not_of('*');
+    if (pos != string::npos) {
+      string ptr = name.substr(pos+1);
+      string base = name.substr(0, pos+1);
+      if (base == "int8")
+        base = "char";
+      else if (base == "int16")
+        base = "short";
+      else if (base == "int32")
+        base = "int";
+#if SIZEOF_LONG==8
+      else if (base == "int64")
+        base = "long";
+#endif
+      name = base + ptr;
+    }
+  } else {
+    // For non-pointer types, validate and normalize via LLVM types.
+    try {
+      llvm::Type *ty = interp.named_type(name);
+      assert(ty);
+      name = interp.type_name(ty);
+    } catch (err &e) {
+    }
   }
   if (name == "void*") return 0; // generic pointer
   map<string,int>::iterator it = interp.pointer_tags.find(name);
@@ -3691,6 +3751,19 @@ static string unixize(const string& s)
 extern "C"
 pure_interp *pure_create_interp(int argc, char *argv[])
 {
+  // RAII guard over the compile lock, so every return path below (including
+  // the ~16 early error returns) releases it. Interpreter creation parses,
+  // generates code, and mutates process-global state (the shared symbol
+  // table, the LLVM/ORC machinery, and the thread-local g_interp during
+  // expression teardown in prelude/script loading), so two threads creating
+  // interpreters concurrently would otherwise race and crash. The lock is
+  // recursive, so the nested run()/init() calls that also take it are fine.
+  // Concurrent creation serializes here; evaluation of already-created
+  // interpreters on other threads still runs in parallel.
+  struct create_lock_guard {
+    create_lock_guard() { pure_compile_lock(); }
+    ~create_lock_guard() { pure_compile_unlock(); }
+  } _create_guard;
   if (interpreter::g_interp) interpreter::g_interp->save_context();
   // This is pretty much the same as pure.cc:main(), except that some options
   // are ignored and there's no user interaction.
@@ -3916,12 +3989,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       break;
     }
   }
-#if USE_FASTCC && !LLVM31
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  if (interp.use_fastcc) llvm::GuaranteedTailCallOpt = true;
-#endif
-  interp.init_jit_mode();
+  // Tail call optimization is now set via TargetMachine in interpreter::init()
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
@@ -4009,7 +4077,44 @@ void pure_delete_interp(pure_interp *interp)
 {
   assert(interp);
   interpreter *_interp = (interpreter*)interp;
+  // The interpreter teardown chain (~interpreter -> ~Env ->
+  // free_function_code, and expression destructors) operates on the
+  // interpreter that is active on this thread via the thread-local
+  // g_interp. A host may delete an interpreter from a thread on which it
+  // was never made active (g_interp null or pointing at a different
+  // instance), so make the target active for the duration of destruction
+  // and restore the previous active interpreter afterwards. Without this,
+  // free_function_code runs with a null interpreter and crashes.
+  // Tearing down the interpreter's definitions frees compiler data that
+  // is shared between interpreters (the expression hash table in expr.cc,
+  // the LLVM context), so it is serialized like interpreter creation.
+  pure_compile_lock();
+  interpreter *s_interp = interpreter::g_interp;
+  if (s_interp == _interp) s_interp = 0;
+  interpreter::g_interp = _interp;
   delete _interp;
+  interpreter::g_interp = s_interp;
+  if (s_interp) s_interp->restore_context();
+  pure_compile_unlock();
+}
+
+/* Shadow-stack accessor for JIT-generated code. Generated code used to
+   read the shadow-stack
+   pointer from a process-global LLVM variable ($$sstk$$) that
+   interpreter::init_llvm_target() bound, via define_symbol, to the
+   address of a single interpreter member. That member is gone --
+   sstk now lives in pure_ectx, looked up per (interpreter, thread) via
+   interpreter::ectx() -- so generated code instead calls this function,
+   which resolves to the calling thread's own shadow stack for whatever
+   interpreter is currently active on this thread (interpreter::g_interp,
+   itself thread-local). This is one extra indirect call
+   per shadow-stack access site (vref()/envptr() in interpreter.cc); it
+   is what lets one interpreter's compiled code run correctly on several
+   threads at once, which a single shared global could never do. */
+extern "C"
+pure_expr **pure_get_sstk(void)
+{
+  return interpreter::g_interp->ectx().sstk;
 }
 
 extern "C"
@@ -4020,29 +4125,83 @@ void pure_switch_interp(pure_interp *interp)
     if (interpreter::g_interp) interpreter::g_interp->save_context();
     interpreter::g_interp = (interpreter*)interp;
     if (interpreter::g_interp) interpreter::g_interp->restore_context();
-  }
-  /* Check our base pointer to see whether it still looks valid. If we're
-     wildly off from the calculated base pointer, chances are that we're being
-     invoked from a new context with its own stack. In this case we update the
-     base pointer and proceed with fingers crossed. XXXFIXME: This is only
-     guesswork. A better way to deal with this situation would be to turn
-     interpreter::baseptr into a thread-local variable, but this isn't cheap
-     and we want the switching between interpreters to be as efficient as
-     possible. */
-  long d = &base - interpreter::baseptr;
-  if (d < -100000 || d > 100000) interpreter::baseptr = &base;
+  } else
+    // Already active by address; it may still be a new interpreter that
+    // took the place of a deleted one, so check the cached arena's id.
+    interpreter::g_interp.check();
+  /* baseptr is now thread-local, so a fresh thread (or a fiber with its
+     own stack) that has not yet run this interpreter starts with a null
+     baseptr; initialize it to the current frame. We also refresh it if the
+     current frame is wildly far from the saved base, which indicates we
+     were resumed on a different stack. */
+  long d = interpreter::baseptr ? (&base - interpreter::baseptr) : 0;
+  if (!interpreter::baseptr || d < -100000 || d > 100000)
+    interpreter::baseptr = &base;
 }
 
 #include <pthread.h>
 
-// Global interpreter lock. This is evil, but may be needed in multithreaded
-// code as long as the internals of the Pure interpreter are not thread-safe.
-static pthread_mutex_t GIL = PTHREAD_MUTEX_INITIALIZER;
+/* GIL removal.
+
+   The old global interpreter lock is gone. The active interpreter and the
+   C-stack context (g_interp, baseptr, brkflag, brkmask) are now
+   thread-local, so distinct interpreters on distinct threads never contend
+   for them. pure_lock_interp/pure_unlock_interp now take that
+   interpreter's *own* recursive lock, serializing only reentrant access to
+   the same interpreter -- exactly what modules such as pure-lv2 and
+   pure-plugr need (one lock per plugin instance instead of one lock for
+   the whole process).
+
+   A separate global compile lock guards the LLVM/ORC-JIT machinery, which
+   remains process-global (one LLVMContext shared across interpreters); it
+   is taken only during code generation and symbol resolution, never on the
+   evaluation hot path. */
+
+static pthread_mutex_t g_compile_lock;
+static pthread_once_t g_compile_lock_once = PTHREAD_ONCE_INIT;
+
+static void init_compile_lock(void)
+{
+  pthread_mutexattr_t attr;
+  pthread_mutexattr_init(&attr);
+  /* Recursive: the parse region holds this lock and codegen inside it
+     re-enters via lookup_symbol/define_symbol. */
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init(&g_compile_lock, &attr);
+  pthread_mutexattr_destroy(&attr);
+}
+
+extern "C" void pure_compile_lock()
+{
+  pthread_once(&g_compile_lock_once, init_compile_lock);
+  pthread_mutex_lock(&g_compile_lock);
+}
+
+extern "C" void pure_compile_unlock()
+{
+  pthread_mutex_unlock(&g_compile_lock);
+}
+
+// Track, per thread, which interpreter's per-interpreter lock this thread
+// currently holds via pure_lock_interp -- a stack, since pure_lock_interp
+// may be called again (reentrantly, or for a different interpreter)
+// before the matching pure_unlock_interp. This is what lets
+// pure_unlock_interp follow its documented contract of taking the *saved*
+// (previously active) interpreter as its argument -- to switch context
+// back to -- while still unlocking the interpreter that was actually
+// locked, which is not generally the same object. (A bug in the original
+// implementation unlocked the argument instead of the held lock; since
+// pure_lock_interp's own contract is to return the *previous* active
+// interpreter, which is commonly NULL on a fresh thread, that silently
+// skipped the unlock entirely.)
+#define locked_interp_stack (rt_tls->locked_interp_stack)
 
 extern "C"
 pure_interp *pure_lock_interp(pure_interp *interp)
 {
-  pthread_mutex_lock(&GIL);
+  interpreter *_interp = (interpreter*)interp;
+  if (_interp) pthread_mutex_lock(&_interp->lock);
+  locked_interp_stack.push_back(_interp);
   pure_interp *s_interp = pure_current_interp();
   pure_switch_interp(interp);
   return s_interp;
@@ -4053,14 +4212,19 @@ pure_interp *pure_unlock_interp(pure_interp *interp)
 {
   pure_interp *s_interp = pure_current_interp();
   pure_switch_interp(interp);
-  pthread_mutex_unlock(&GIL);
+  interpreter *_interp = 0;
+  if (!locked_interp_stack.empty()) {
+    _interp = locked_interp_stack.back();
+    locked_interp_stack.pop_back();
+  }
+  if (_interp) pthread_mutex_unlock(&_interp->lock);
   return s_interp;
 }
 
 extern "C"
 pure_interp *pure_current_interp()
 {
-  return (pure_interp*)interpreter::g_interp;
+  return (pure_interp*)(interpreter*)interpreter::g_interp;
 }
 
 extern "C"
@@ -4173,11 +4337,7 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
     add_path(interp.librarydirs, unixize(env));
-#if USE_FASTCC && !LLVM31
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  llvm::GuaranteedTailCallOpt = true;
-#endif
+  // Tail call optimization is now set via TargetMachine in interpreter::init()
   // scan the command line options
   list<string> myargs;
   if (argv && argc>0)
@@ -5652,10 +5812,11 @@ static inline void *get_funptr(pure_expr *x)
     if (g != interp.globalfuns.end()) {
       llvm::Function *f = g->second.f, *h = g->second.h;
       assert(h);
-      if (f != h) interp.JIT->getPointerToFunction(f);
-      x->data.clos->fp = interp.JIT->getPointerToFunction(h);
+      if (f != h) interp.lookup_symbol(f->getName().str());
+      x->data.clos->fp = interp.lookup_symbol(h->getName().str());
 #if DEBUG>1
-      std::cerr << "JIT " << h->getNameStr() << " -> " << x->data.clos->fp << '\n';
+      std::cerr << "JIT " << h->getName().str() << " -> "
+                << x->data.clos->fp << '\n';
 #endif
     }
   }
@@ -5694,11 +5855,12 @@ static pure_expr *trampoline(interpreter& interp,
 			     pure_expr *x, void *fp, uint32_t n, uint32_t m,
 			     pure_expr **argv)
 {
+  pure_ectx& ectx = interp.ectx();
   pure_expr *ret;
-  pure_aframe *ex = interp.astk;
+  pure_aframe *ex = ectx.astk;
   uint32_t env = 0;
   bool fini = false;
-  if (ex && ex->count && ex->sz == interp.sstk_sz) {
+  if (ex && ex->count && ex->sz == ectx.sstk_sz) {
     // tail call
     if (ex->count++ >= TRAMPOLINE_SIZE) {
       // exceeded the size of the trampoline, so rewind the stack (this is
@@ -5712,7 +5874,7 @@ static pure_expr *trampoline(interpreter& interp,
   }
   // create a new trampoline for handling tail calls
   fini = true;
-  ex = interp.push_aframe(interp.sstk_sz);
+  ex = interp.push_aframe(ectx, ectx.sstk_sz);
   ex->count = 1;
   if (setjmp(ex->jmp)) {
     // landing pad of tail call
@@ -5727,9 +5889,9 @@ static pure_expr *trampoline(interpreter& interp,
   } else {
     // construct a stack frame for a function call with parameters
     {
-      size_t sz = interp.sstk_sz;
-      resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
-      pure_expr **sstk = interp.sstk;
+      size_t sz = ectx.sstk_sz;
+      resize_sstk(ectx.sstk, ectx.sstk_cap, sz, n+m+1);
+      pure_expr **sstk = ectx.sstk;
       if (m>0) env = sz+n+1;
       sstk[sz++] = 0;
       for (size_t j = 0; j < n; j++)
@@ -5739,7 +5901,7 @@ static pure_expr *trampoline(interpreter& interp,
 	assert(x->data.clos->env[j]->refc > 0);
 	x->data.clos->env[j]->refc++;
       }
-      interp.sstk_sz = sz;
+      ectx.sstk_sz = sz;
     }
     // also keep track of the function object on the activation stack so that
     // it can be garbage-collected if we hit an exception
@@ -5757,7 +5919,7 @@ static pure_expr *trampoline(interpreter& interp,
     }
     ex->e = 0;
   }
-  if (fini) interp.pop_aframe();
+  if (fini) interp.pop_aframe(ectx);
   return ret;
 }
 
@@ -5799,15 +5961,16 @@ pure_expr *pure_force(pure_expr *x)
     // parameterless anonymous closure (thunk)
     pure_expr *ret;
     interpreter& interp = *interpreter::g_interp;
+    pure_ectx& ectx = interp.ectx();
     void *fp = x->data.clos->fp;
     size_t m = x->data.clos->m;
     uint32_t env = 0;
     assert(fp && x->refc > 0);
     // construct a stack frame for the function call
     if (m>0 || !interp.debugging) {
-      size_t sz = interp.sstk_sz;
-      resize_sstk(interp.sstk, interp.sstk_cap, sz, m+1);
-      pure_expr **sstk = interp.sstk;
+      size_t sz = ectx.sstk_sz;
+      resize_sstk(ectx.sstk, ectx.sstk_cap, sz, m+1);
+      pure_expr **sstk = ectx.sstk;
       env = sz+1;
       sstk[sz++] = 0;
       for (size_t j = 0; j < m; j++) {
@@ -5819,14 +5982,14 @@ pure_expr *pure_force(pure_expr *x)
       cerr << "++ stack: (sz = " << sz << ")\n";
       for (size_t i = 0; i < sz; i++) {
 	pure_expr *x = sstk[i];
-	if (i == interp.sstk_sz) cerr << "** pushed:\n";
+	if (i == ectx.sstk_sz) cerr << "** pushed:\n";
 	if (x)
 	  cerr << i << ": " << (void*)x << ": " << x << '\n';
 	else
 	  cerr << i << ": " << "** frame **\n";
       }
 #endif
-      interp.sstk_sz = sz;
+      ectx.sstk_sz = sz;
     }
 #if DEBUG>1
     cerr << "pure_force: calling " << x << " -> " << fp << endl;
@@ -5971,9 +6134,10 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   }
   // saturated call; execute it now
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   size_t m = f->data.clos->m;
   uint32_t env = 0;
-  static pure_expr *argv[MAXARGS];
+  pure_expr **argv = ectx.apply_argv;
   assert(n <= MAXARGS && "pure_apply: function call exceeds maximum #args");
   assert(fp && (f->data.clos->local || m == 0));
   // collect arguments
@@ -5992,13 +6156,13 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   if (!interp.checks) { checkall(test); }
   // first push the function object on the shadow stack so that it's
   // garbage-collected in case of an exception
-  resize_sstk(interp.sstk, interp.sstk_cap, interp.sstk_sz, n+m+2);
-  interp.sstk[interp.sstk_sz++] = f0;
+  resize_sstk(ectx.sstk, ectx.sstk_cap, ectx.sstk_sz, n+m+2);
+  ectx.sstk[ectx.sstk_sz++] = f0;
   // construct a stack frame for the function call
   {
-    size_t sz = interp.sstk_sz;
-    resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
-    pure_expr **sstk = interp.sstk;
+    size_t sz = ectx.sstk_sz;
+    resize_sstk(ectx.sstk, ectx.sstk_cap, sz, n+m+1);
+    pure_expr **sstk = ectx.sstk;
     if (m>0) env = sz+n+1;
     sstk[sz++] = 0;
     for (size_t j = 0; j < n; j++)
@@ -6012,14 +6176,14 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
     cerr << "++ stack: (sz = " << sz << ")\n";
     for (size_t i = 0; i < sz; i++) {
       pure_expr *x = sstk[i];
-      if (i == interp.sstk_sz) cerr << "** pushed:\n";
+      if (i == ectx.sstk_sz) cerr << "** pushed:\n";
       if (x)
 	cerr << i << ": " << (void*)x << ": " << x << '\n';
       else
 	cerr << i << ": " << "** frame **\n";
     }
 #endif
-    interp.sstk_sz = sz;
+    ectx.sstk_sz = sz;
   }
 #if DEBUG>1
   cerr << "pure_apply: calling " << f0 << " -> " << fp << endl;
@@ -6043,7 +6207,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
     bool keep = m>0 && ret->refc>0;
     if (keep) ret->refc++;
     // pop the function object from the shadow stack
-    pure_free_internal(interp.sstk[--interp.sstk_sz]);
+    pure_free_internal(ectx.sstk[--ectx.sstk_sz]);
     if (keep) pure_unref_internal(ret);
   }
   return ret;
@@ -6082,12 +6246,13 @@ void pure_throw(pure_expr* e)
 {
   interpreter::brkflag = 0;
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   // get rid of indirect call frames
-  while (interp.astk && interp.astk->count) {
-    if (interp.astk->e) pure_free_internal(interp.astk->e);
-    interp.pop_aframe();
+  while (ectx.astk && ectx.astk->count) {
+    if (ectx.astk->e) pure_free_internal(ectx.astk->e);
+    interp.pop_aframe(ectx);
   }
-  if (!interp.astk) {
+  if (!ectx.astk) {
     if (e)
       cerr << "throw: unhandled exception '" << e << "'\n";
     else
@@ -6103,8 +6268,8 @@ For further help and information about Pure please try the 'help' command in\n\
 the interpreter or visit https://agraef.github.io/pure-lang.\n\n";
     abort(); // no exception handler, bail out
   } else {
-    interp.astk->e = e;
-    longjmp(interp.astk->jmp, 1);
+    ectx.astk->e = e;
+    longjmp(ectx.astk->jmp, 1);
   }
 }
 
@@ -6154,6 +6319,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
   if (x->tag >= 0 && x->data.clos && x->data.clos->n == 0 &&
       (fp = get_funptr(x)) != 0) {
     interpreter& interp = *interpreter::g_interp;
+    pure_ectx& ectx = interp.ectx();
 #if DEBUG>1
     cerr << "pure_catch: calling " << x << " -> " << fp << endl;
 #endif
@@ -6161,13 +6327,13 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
     size_t m = x->data.clos->m;
     assert(fp && (x->data.clos->local || m == 0));
     pure_expr **env = 0;
-    size_t oldsz = interp.sstk_sz, old_di_sz = 0;
+    size_t oldsz = ectx.sstk_sz, old_di_sz = 0;
     if (interp.debugging) old_di_sz = interp.debug_info.size();
     if (m>0 || !interp.debugging) {
       // construct a stack frame
       size_t sz = oldsz;
-      resize_sstk(interp.sstk, interp.sstk_cap, sz, m+1);
-      pure_expr **sstk = interp.sstk; env = sstk+sz+1;
+      resize_sstk(ectx.sstk, ectx.sstk_cap, sz, m+1);
+      pure_expr **sstk = ectx.sstk; env = sstk+sz+1;
       sstk[sz++] = 0;
       for (size_t j = 0; j < m; j++) {
 	sstk[sz++] = x->data.clos->env[j];
@@ -6177,29 +6343,29 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       cerr << "++ stack: (sz = " << sz << ")\n";
       for (size_t i = 0; i < sz; i++) {
 	pure_expr *x = sstk[i];
-	if (i == interp.sstk_sz) cerr << "** pushed:\n";
+	if (i == ectx.sstk_sz) cerr << "** pushed:\n";
 	if (x)
 	  cerr << i << ": " << (void*)x << ": " << x << '\n';
 	else
 	  cerr << i << ": " << "** frame **\n";
       }
 #endif
-      interp.sstk_sz = sz;
+      ectx.sstk_sz = sz;
     }
     checkstk(test);
     // Push an exception.
-    pure_aframe *ex = interp.push_aframe(oldsz);
+    pure_aframe *ex = interp.push_aframe(ectx, oldsz);
     // Save old temporaries.
-    pure_expr *old_tmps = interp.tmps; interp.tmps = 0;
+    pure_expr *old_tmps = ectx.tmps; ectx.tmps = 0;
     // Call the function now. Catch exceptions generated by the runtime.
     if (setjmp(ex->jmp)) {
       // caught an exception
       size_t sz = ex->sz;
       pure_expr *e = ex->e;
-      interp.pop_aframe();
+      interp.pop_aframe(ectx);
       if (e) pure_new_internal(e);
       // collect new garbage
-      pure_expr *tmps = interp.tmps;
+      pure_expr *tmps = ectx.tmps;
       while (tmps) {
 	pure_expr *next = tmps->xp;
 #if DEBUG>2
@@ -6209,11 +6375,11 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	tmps = next;
       }
       // restore the old list of temporaries
-      interp.tmps = old_tmps;
-      for (size_t i = interp.sstk_sz; i-- > sz; )
-	if (interp.sstk[i] && interp.sstk[i]->refc > 0)
-	  pure_free_internal(interp.sstk[i]);
-      interp.sstk_sz = sz;
+      ectx.tmps = old_tmps;
+      for (size_t i = ectx.sstk_sz; i-- > sz; )
+	if (ectx.sstk[i] && ectx.sstk[i]->refc > 0)
+	  pure_free_internal(ectx.sstk[i]);
+      ectx.sstk_sz = sz;
       if (interp.debugging) {
 	if (!interp.debug_info.empty()) {
 	  DebugInfo& d = interp.debug_info.back();
@@ -6254,18 +6420,18 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       interp.brkmask = 0;
       if (env)
 	// pass environment
-	res = ((pure_expr*(*)(uint32_t))fp)(env-interp.sstk);
+	res = ((pure_expr*(*)(uint32_t))fp)(env-ectx.sstk);
       else
 	// parameterless call
 	res = ((pure_expr*(*)())fp)();
       // check for pending signals
       checkall(test);
       // normal return
-      interp.pop_aframe();
+      interp.pop_aframe(ectx);
       /* Collect any new garbage that might have accumulated during the
 	 call. Normally there shouldn't be any, but it might be that some
 	 badly written external function does this. */
-      pure_expr *tmps = interp.tmps;
+      pure_expr *tmps = ectx.tmps;
       while (tmps) {
 	pure_expr *next = tmps->xp;
 	if (tmps != res) {
@@ -6277,7 +6443,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	tmps = next;
       }
       // restore the old list of temporaries
-      interp.tmps = old_tmps;
+      ectx.tmps = old_tmps;
       assert(res);
       res->refc++;
       pure_free_internal(h); pure_free_internal(x);
@@ -6299,6 +6465,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
   assert(_e);
   pure_expr*& e = *_e;
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   // Cast the function pointer to the right type (takes no arguments, returns
   // a pure_expr*), so we can call it as a native function.
   pure_expr *(*fp)() = (pure_expr*(*)())f;
@@ -6307,17 +6474,17 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
 #endif
   MEMDEBUG_INIT
   // Push an exception.
-  pure_aframe *ex = interp.push_aframe(interp.sstk_sz);
+  pure_aframe *ex = interp.push_aframe(ectx, ectx.sstk_sz);
   // Save old temporaries.
-  pure_expr *old_tmps = interp.tmps; interp.tmps = 0;
+  pure_expr *old_tmps = ectx.tmps; ectx.tmps = 0;
   // Call the function now. Catch exceptions generated by the runtime.
-  size_t oldsz = interp.sstk_sz;
+  size_t oldsz = ectx.sstk_sz;
   if (!interp.debugging) pure_push_args(0, 0);
   if (setjmp(ex->jmp)) {
     // caught an exception
     size_t sz = ex->sz;
     e = ex->e;
-    if (!interp.astk->prev && interp.debugging) {
+    if (!ectx.astk->prev && interp.debugging) {
       if (interp.debug_info.empty())
 	interp.bt.clear();
       else {
@@ -6327,10 +6494,10 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
 	interp.bt = out.str();
       }
     }
-    interp.pop_aframe();
+    interp.pop_aframe(ectx);
     if (e) pure_new_internal(e);
     // collect new garbage
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = ectx.tmps;
     while (tmps) {
       pure_expr *next = tmps->xp;
 #if DEBUG>2
@@ -6340,11 +6507,11 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
       tmps = next;
     }
     // restore the old list of temporaries
-    interp.tmps = old_tmps;
-    for (size_t i = interp.sstk_sz; i-- > sz; )
-      if (interp.sstk[i] && interp.sstk[i]->refc > 0)
-	pure_free_internal(interp.sstk[i]);
-    interp.sstk_sz = sz;
+    ectx.tmps = old_tmps;
+    for (size_t i = ectx.sstk_sz; i-- > sz; )
+      if (ectx.sstk[i] && ectx.sstk[i]->refc > 0)
+	pure_free_internal(ectx.sstk[i]);
+    ectx.sstk_sz = sz;
 #if DEBUG>1
     if (e)
       cerr << "pure_invoke: exception " << (void*)e << " (refc = " << e->refc
@@ -6355,14 +6522,14 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
   } else {
     pure_expr *res = fp();
     // normal return
-    interp.pop_aframe();
+    interp.pop_aframe(ectx);
     MEMDEBUG_SUMMARY(res)
     assert(res);
     res->refc++;
     /* Collect any new garbage that might have accumulated during the
        call. Normally there shouldn't be any, but it might be that some badly
        written external function does this. */
-    pure_expr *tmps = interp.tmps;
+    pure_expr *tmps = ectx.tmps;
     while (tmps) {
       pure_expr *next = tmps->xp;
       if (tmps != res) {
@@ -6374,12 +6541,12 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
       tmps = next;
     }
     // restore the old list of temporaries
-    interp.tmps = old_tmps;
+    ectx.tmps = old_tmps;
     pure_unref_internal(res);
-    if (interp.sstk_sz > oldsz) {
+    if (ectx.sstk_sz > oldsz) {
       // The called function didn't clean up our stack frame, do it now.
-      assert(interp.sstk_sz == oldsz+1);
-      interp.sstk_sz = oldsz;
+      assert(ectx.sstk_sz == oldsz+1);
+      ectx.sstk_sz = oldsz;
     }
     return res;
   }
@@ -6422,9 +6589,10 @@ uint32_t pure_push_args(uint32_t n, uint32_t m, ...)
 {
   va_list ap;
   interpreter& interp = *interpreter::g_interp;
-  size_t sz = interp.sstk_sz;
-  resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
-  pure_expr **sstk = interp.sstk; uint32_t env = (m>0)?sz+n+1:0;
+  pure_ectx& ectx = interp.ectx();
+  size_t sz = ectx.sstk_sz;
+  resize_sstk(ectx.sstk, ectx.sstk_cap, sz, n+m+1);
+  pure_expr **sstk = ectx.sstk; uint32_t env = (m>0)?sz+n+1:0;
   // mark the beginning of this frame
   sstk[sz++] = 0;
   pure_expr **frame = sstk+sz;
@@ -6448,14 +6616,14 @@ uint32_t pure_push_args(uint32_t n, uint32_t m, ...)
   cerr << "++ stack: (sz = " << sz << ")\n";
   for (size_t i = 0; i < sz; i++) {
     pure_expr *x = sstk[i];
-    if (i == interp.sstk_sz) cerr << "** pushed:\n";
+    if (i == ectx.sstk_sz) cerr << "** pushed:\n";
     if (x)
       cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
 #endif
-  interp.sstk_sz = sz;
+  ectx.sstk_sz = sz;
   // return a pointer to the environment:
   return env;
 }
@@ -6464,9 +6632,10 @@ uint32_t pure_push_args(uint32_t n, uint32_t m, ...)
 static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args)
 {
   interpreter& interp = *interpreter::g_interp;
-  size_t sz = interp.sstk_sz;
-  resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
-  pure_expr **sstk = interp.sstk; uint32_t env = (m>0)?sz+n+1:0;
+  pure_ectx& ectx = interp.ectx();
+  size_t sz = ectx.sstk_sz;
+  resize_sstk(ectx.sstk, ectx.sstk_cap, sz, n+m+1);
+  pure_expr **sstk = ectx.sstk; uint32_t env = (m>0)?sz+n+1:0;
   // mark the beginning of this frame
   sstk[sz++] = 0;
   pure_expr **frame = sstk+sz;
@@ -6488,14 +6657,14 @@ static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args)
   cerr << "++ stack: (sz = " << sz << ")\n";
   for (size_t i = 0; i < sz; i++) {
     pure_expr *x = sstk[i];
-    if (i == interp.sstk_sz) cerr << "** pushed:\n";
+    if (i == ectx.sstk_sz) cerr << "** pushed:\n";
     if (x)
       cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
 #endif
-  interp.sstk_sz = sz;
+  ectx.sstk_sz = sz;
   // return a pointer to the environment:
   return env;
 }
@@ -6504,8 +6673,9 @@ extern "C"
 void pure_pop_args(pure_expr *x, uint32_t n, uint32_t m)
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr **sstk = interp.sstk;
-  size_t sz = interp.sstk_sz;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr **sstk = ectx.sstk;
+  size_t sz = ectx.sstk_sz;
 #if !defined(NDEBUG) || SSTK_DEBUG
   size_t oldsz = sz;
 #endif
@@ -6532,15 +6702,16 @@ void pure_pop_args(pure_expr *x, uint32_t n, uint32_t m)
       pure_free_internal(x);
   };
   if (x) pure_unref_internal(x);
-  interp.sstk_sz = sz;
+  ectx.sstk_sz = sz;
 }
 
 extern "C"
 void pure_pop_tail_args(pure_expr *x, uint32_t n, uint32_t m)
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr **sstk = interp.sstk;
-  size_t sz, lastsz = interp.sstk_sz, oldsz = lastsz;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr **sstk = ectx.sstk;
+  size_t sz, lastsz = ectx.sstk_sz, oldsz = lastsz;
   while (lastsz > 0 && sstk[--lastsz]) ;
   assert(lastsz < oldsz && !sstk[lastsz]);
   sz = lastsz-(n+m+1);
@@ -6568,16 +6739,17 @@ void pure_pop_tail_args(pure_expr *x, uint32_t n, uint32_t m)
   };
   if (x) pure_unref_internal(x);
   memmove(sstk+sz, sstk+lastsz, (oldsz-lastsz)*sizeof(pure_expr*));
-  interp.sstk_sz -= n+m+1;
+  ectx.sstk_sz -= n+m+1;
 }
 
 extern "C"
 void pure_push_arg(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
-  size_t sz = interp.sstk_sz;
-  resize_sstk(interp.sstk, interp.sstk_cap, sz, 2);
-  pure_expr** sstk = interp.sstk;
+  pure_ectx& ectx = interp.ectx();
+  size_t sz = ectx.sstk_sz;
+  resize_sstk(ectx.sstk, ectx.sstk_cap, sz, 2);
+  pure_expr** sstk = ectx.sstk;
   sstk[sz++] = 0; sstk[sz++] = x;
   if (x->refc > 0)
     x->refc++;
@@ -6587,14 +6759,14 @@ void pure_push_arg(pure_expr *x)
   cerr << "++ stack: (sz = " << sz << ")\n";
   for (size_t i = 0; i < sz; i++) {
     pure_expr *x = sstk[i];
-    if (i == interp.sstk_sz) cerr << "** pushed:\n";
+    if (i == ectx.sstk_sz) cerr << "** pushed:\n";
     if (x)
       cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
 #endif
-  interp.sstk_sz = sz;
+  ectx.sstk_sz = sz;
 }
 
 extern "C"
@@ -6604,14 +6776,15 @@ void pure_pop_arg(pure_expr *y)
   pure_pop_args(y, 1, 0);
 #else
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *x = interp.sstk[interp.sstk_sz-1];
+  pure_ectx& ectx = interp.ectx();
+  pure_expr *x = ectx.sstk[ectx.sstk_sz-1];
   if (y) y->refc++;
   if (x->refc > 1)
     x->refc--;
   else
     pure_free_internal(x);
   if (y) pure_unref_internal(y);
-  interp.sstk_sz -= 2;
+  ectx.sstk_sz -= 2;
 #endif
 }
 
@@ -6622,10 +6795,11 @@ void pure_pop_tail_arg(pure_expr *y)
   pure_pop_tail_args(y, 1, 0);
 #else
   interpreter& interp = *interpreter::g_interp;
-  pure_expr **sstk = interp.sstk;
-  size_t lastsz = interp.sstk_sz, oldsz = lastsz;
+  pure_ectx& ectx = interp.ectx();
+  pure_expr **sstk = ectx.sstk;
+  size_t lastsz = ectx.sstk_sz, oldsz = lastsz;
   while (lastsz > 0 && sstk[--lastsz]) ;
-  pure_expr *x = interp.sstk[lastsz-1];
+  pure_expr *x = ectx.sstk[lastsz-1];
   if (y) y->refc++;
   if (x->refc > 1)
     x->refc--;
@@ -6633,7 +6807,7 @@ void pure_pop_tail_arg(pure_expr *y)
     pure_free_internal(x);
   if (y) pure_unref_internal(y);
   memmove(sstk+lastsz-2, sstk+lastsz, (oldsz-lastsz)*sizeof(pure_expr*));
-  interp.sstk_sz -= 2;
+  ectx.sstk_sz -= 2;
 #endif
 }
 
@@ -6768,10 +6942,11 @@ static string printx(pure_expr *x, size_t n)
 
 static void get_vars(interpreter& interp, list<DebugInfo>::reverse_iterator kt)
 {
+  pure_ectx& ectx = interp.ectx();
   // find the arguments and environment of this call and all subsequent calls
   // on the shadow stack
-  pure_expr **sstk = interp.sstk;
-  size_t sz = interp.sstk_sz;
+  pure_expr **sstk = ectx.sstk;
+  size_t sz = ectx.sstk_sz;
   list<DebugInfo>::reverse_iterator it = interp.debug_info.rbegin(),
     end = interp.debug_info.rend();
   do {
@@ -6814,7 +6989,7 @@ static void print_vars(ostream& out, interpreter& interp, DebugInfo& d)
     // right now, so we need to make up our own.
     for (uint32_t i = 0; i < d.e->n; i++) {
       char buf[100];
-      sprintf(buf, "x%u", i+1);
+      snprintf(buf, sizeof(buf), "x%u", i+1);
       assert(d.args[i]);
       vals[buf] = d.args[i];
     }
@@ -6860,7 +7035,7 @@ static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
     // right now, so we need to make up our own.
     for (uint32_t i = 0; i < d.e->n; i++) {
       char buf[100];
-      sprintf(buf, "::x%u", i+1);
+      snprintf(buf, sizeof(buf), "::x%u", i+1);
       symbol *sym = interp.symtab.sym(buf);
       if (sym) vals[sym->f] = d.args[i];
     }
@@ -7009,11 +7184,12 @@ static const bool yes_or_no(const string& msg)
 static void pure_debug_backtrace(ostream& out)
 {
   interpreter& interp = *interpreter::g_interp;
+  pure_ectx& ectx = interp.ectx();
   list<DebugInfo>::iterator it = interp.debug_info.begin(),
     end = interp.debug_info.end();
   if (it == end) return;
-  size_t save_sz = interp.sstk_sz;
-  interp.sstk_sz = interp.debug_info.back().sz;
+  size_t save_sz = ectx.sstk_sz;
+  ectx.sstk_sz = interp.debug_info.back().sz;
   get_vars(interp, interp.debug_info.rend());
   for (; it != end; ++it) {
     DebugInfo& d = *it;
@@ -7031,7 +7207,7 @@ static void pure_debug_backtrace(ostream& out)
     }
     print_vars(out, interp, d);
   }
-  interp.sstk_sz = save_sz;
+  ectx.sstk_sz = save_sz;
 }
 
 extern "C"
@@ -7044,7 +7220,7 @@ void pure_debug_rule(void *_e, void *_r)
   if (!r) {
     // push a new activation record
     interp.debug_info.push_back(DebugInfo(interp.debug_info.size()+1,
-					  interp.sstk_sz, e));
+					  interp.ectx().sstk_sz, e));
     if (e->tag <= 0 ||
 	interp.externals.find(e->tag) == interp.externals.end())
       return;
@@ -7594,8 +7770,14 @@ pure_expr *pure_double_colvect(double from, double to, double step)
    examples/sort.c, massaged slightly to be reentrant, to handle exceptions,
    and to also support Pure matrices. */
 
-static pure_expr* cmp_p; // TLD
-static unsigned cmp_pno; // TLD
+/* Comparator context for the C qsort() interface below. qsort()'s
+   comparator takes no user pointer, so the predicate and mode are passed
+   through these. They are thread-local: two threads sorting concurrently
+   (now possible without the GIL) must not clobber each other's context.
+   The save/restore nesting in the callers still handles reentrancy within
+   one thread. */
+#define cmp_p (rt_tls->cmp_p)
+#define cmp_pno (rt_tls->cmp_pno)
 
 static inline int sgn(int x)
 {
@@ -8331,7 +8513,8 @@ pure_expr *string_concat(const char* s, const char *t)
 {
   assert(s && t);
   size_t p = strlen(s), q = strlen(t);
-  char *buf = new char[p+q+1];
+  char *buf = (char*)malloc(p+q+1);
+  if (!buf) return 0;
   strcpy(buf, s); strcpy(buf+p, t);
   pure_expr *x = new_expr();
   x->tag = EXPR::STR;
@@ -8358,7 +8541,9 @@ pure_expr *string_concat_list(pure_expr *xs)
   }
   if (!is_nil(ys)) return 0;
   // allocate the result string
-  char *buf = new char[n+1]; buf[0] = 0;
+  char *buf = (char*)malloc(n+1);
+  if (!buf) return 0;
+  buf[0] = 0;
   // concatenate
   ys = xs; n = 0;
   while (is_cons(ys, z, zs) && z->tag == EXPR::STR) {
@@ -8392,7 +8577,9 @@ pure_expr *string_join(const char *delim, pure_expr *xs)
   }
   if (!is_nil(ys)) return 0;
   // allocate the result string
-  char *buf = new char[n+1]; buf[0] = 0;
+  char *buf = (char*)malloc(n+1);
+  if (!buf) return 0;
+  buf[0] = 0;
   // concatenate
   ys = xs; n = k = 0;
   while (is_cons(ys, z, zs) && z->tag == EXPR::STR) {
@@ -8453,7 +8640,8 @@ pure_expr *string_substr(const char* s, uint32_t pos, uint32_t size)
   assert(s);
   const char *p = u8strcharpos(s, pos), *q = u8strcharpos(p, size);
   size_t n = q-p;
-  char *buf = new char[n+1];
+  char *buf = (char*)malloc(n+1);
+  if (!buf) return 0;
   strncpy(buf, p, n); buf[n] = 0;
   pure_expr *x = new_expr();
   x->tag = EXPR::STR;
@@ -9191,7 +9379,12 @@ pure_expr *del_constdef(pure_expr *x)
 
 static char *swap_endian(char* s, const int nbytes)
 {
-  static char t[16];
+  // Thread-local: this is a pure byte-swap scratchpad with no
+  // persistence across calls (every caller dereferences the result
+  // immediately), so it doesn't belong in pure_ectx -- but it was
+  // `static`, meaning two threads swapping endianness concurrently
+  // raced on it.
+  char *t = rt_tls->swap_buf;
   switch (nbytes) {
   case 2:
     t[0]=*(s+1);
@@ -13017,7 +13210,12 @@ int64_t pure_mktime(struct tm *tm)
 extern "C"
 char *pure_strftime(const char *format, struct tm *tm)
 {
-  static char buf[1024];
+  // Thread-local: the Pure extern declaration for this returns a copied
+  // string (see lib/system.pure), so nothing retains this buffer past
+  // the call -- but it was `static`, racing two threads formatting
+  // times concurrently.
+  // Kept off the TLS segment (see PURE_TLS_HOT in util.hh).
+  char *buf = rt_tls->strftime_buf;
   if (!strftime(buf, 1024, format, tm))
     /* The interface to strftime is rather brain-damaged since it returns zero
        both in case of a buffer overflow and when the resulting string is
@@ -13091,7 +13289,7 @@ double pure_nanosleep(double t)
     unsigned long nsecs;
     struct timespec req, rem;
     fp = modf(t, &ip);
-    if (ip > LONG_MAX) { ip = (double)LONG_MAX; fp = 0.0; }
+    if (ip > (double)LONG_MAX) { ip = (double)LONG_MAX; fp = 0.0; }
     secs = (unsigned long)ip;
     nsecs = (unsigned long)(fp*1e9);
     req.tv_sec = secs; req.tv_nsec = nsecs;
@@ -14625,7 +14823,7 @@ void pure_regex_vars(void)
   // This sets the pcre_version variable if the runtime is built with PCRE
   // support.
   char buf[100];
-  sprintf(buf, "%d.%d", PCRE_MAJOR, PCRE_MINOR);
+  snprintf(buf, sizeof(buf), "%d.%d", PCRE_MAJOR, PCRE_MINOR);
   df(interp, "pcre_version",	pure_cstring_dup(buf));
 #endif
   // regcomp flags
@@ -16835,7 +17033,7 @@ struct index_entry_t {
   size_t i; // field index in vector
 };
 
-struct index_t {
+struct record_index {
   size_t n, k; // total record size and number of index entries
   index_entry_t *ix; // pointer to index data
 };
@@ -16870,26 +17068,26 @@ static int indexcmps(const void *m1, const void *m2)
 
 static void free_record(void *q)
 {
-  index_t *idx = (index_t*)q;
+  record_index *idx = (record_index*)q;
   if (idx->ix) free(idx->ix);
   free(q);
 }
 
-static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
+static bool is_record(pure_expr *x, pure_expr** &data, record_index* &idx)
 {
   if (x->tag == EXPR::MATRIX) {
     gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
     const size_t n1 = m->size1, n2 = m->size2;
     if (m->q) {
       data = m->data;
-      idx = (index_t*)m->q;
+      idx = (record_index*)m->q;
       return true;
     } else if (n1 <= 1 || n2 <= 1) {
       size_t n = n1*n2;
       data = m->data;
       if (n > 0) {
 	// Allocate the index.
-	idx = (index_t*)malloc(sizeof(index_t));
+	idx = (record_index*)malloc(sizeof(record_index));
 	if (!idx) return false;
 	idx->ix = (index_entry_t*)malloc(n*sizeof(index_entry_t));
 	if (!idx->ix) {
@@ -16926,7 +17124,7 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
 	  idx->k = k;
 	}
       } else {
-	idx = (index_t*)malloc(sizeof(index_t));
+	idx = (record_index*)malloc(sizeof(record_index));
 	if (!idx) return false;
 	idx->n = idx->k = 0;
 	idx->ix = 0;
@@ -16939,7 +17137,7 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
     return false;
 }
 
-static bool record_lookup(pure_expr **data, index_t *idx,
+static bool record_lookup(pure_expr **data, record_index *idx,
 			  pure_expr *x, size_t &i)
 {
   if (x->tag <= 0 && x->tag != EXPR::STR) return false;
@@ -16953,7 +17151,7 @@ static bool record_lookup(pure_expr **data, index_t *idx,
     return false;
 }
 
-static bool record_lookup(pure_expr **data, index_t *idx,
+static bool record_lookup(pure_expr **data, record_index *idx,
 			  pure_expr *x, pure_expr* &y)
 {
   if (x->tag <= 0 && x->tag != EXPR::STR) return false;
@@ -16975,7 +17173,7 @@ static bool record_lookup(pure_expr **data, index_t *idx,
 bool record_check(pure_expr *x)
 {
   pure_expr **data;
-  index_t *idx;
+  record_index *idx;
   return is_record(x, data, idx);
 }
 
@@ -16983,7 +17181,7 @@ extern "C"
 bool record_member(pure_expr *x, pure_expr *y)
 {
   pure_expr **data;
-  index_t *idx;
+  record_index *idx;
   if (is_record(x, data, idx)) {
     size_t i;
     return record_lookup(data, idx, y, i);
@@ -16995,7 +17193,7 @@ extern "C"
 pure_expr* record_elem_at(pure_expr *x, pure_expr *y)
 {
   pure_expr **data;
-  index_t *idx;
+  record_index *idx;
   if (is_record(x, data, idx)) {
     pure_expr *z;
     if (record_lookup(data, idx, y, z))
@@ -17010,7 +17208,7 @@ extern "C"
 pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
 {
   pure_expr **data;
-  index_t *idx;
+  record_index *idx;
   if (is_record(x, data, idx)) {
     interpreter& interp = *interpreter::g_interp;
     gsl_matrix_symbolic *m;
@@ -17057,7 +17255,7 @@ extern "C"
 pure_expr* record_delete(pure_expr *x, pure_expr *y)
 {
   pure_expr **data;
-  index_t *idx;
+  record_index *idx;
   if (is_record(x, data, idx)) {
     size_t i;
     if (!record_lookup(data, idx, y, i)) return x;
@@ -17085,7 +17283,7 @@ extern "C"
 pure_expr* record_pack(pure_expr *x)
 {
   pure_expr **data;
-  index_t *idx;
+  record_index *idx;
   if (is_record(x, data, idx)) {
     const size_t n = idx->n, k = idx->k;
     if (n == k) {
@@ -17379,7 +17577,7 @@ struct MetaGlue {
 // not to break compatibility with older Faust2 versions. Eventually, the
 // global data should be replaced with the first member of the glue data
 // structure.
-static FaustMeta *__faust_metadata; // TLD
+#define __faust_metadata (rt_tls->faust_metadata)
 #if FAUST_NEW_META
 static void declareMetaGlue(void *data, const char* key, const char* value)
 #else
@@ -17649,32 +17847,32 @@ void faust_free_ui(void *p)
    faust_float_ui or faust_double_ui, and return it as a Pure expression. This
    is analogous to the faust_info routine in the pure-faust module. */
 
-static struct stack_elem_t {
-  int i, n;
-  pure_expr **xv;
-} *stack = NULL; // TLD
-
-static int astacksz = 0, stacksz = 0; // TLD
+/* Scratch state for the Faust UI-description walker (faust_make_info),
+   used within a single call. Thread-local so concurrent Faust processing
+   on different threads does not corrupt a shared stack. */
+#define elem_stack (rt_tls->elem_stack)
+#define astacksz (rt_tls->astacksz)
+#define stacksz (rt_tls->stacksz)
 
 static void clear()
 {
   for (int i = 0; i < stacksz; i++)
-    if (stack[i].xv) free(stack[i].xv);
-  free(stack); stack = NULL; astacksz = stacksz = 0;
+    if (elem_stack[i].xv) free(elem_stack[i].xv);
+  free(elem_stack); elem_stack = NULL; astacksz = stacksz = 0;
 }
 
 static int push(int i, int n, pure_expr **xv)
 {
   if (stacksz+1 >= astacksz) {
     stack_elem_t *stack1 =
-      (stack_elem_t*)realloc(stack, (astacksz+100)*sizeof(stack_elem_t));
+      (stack_elem_t*)realloc(elem_stack, (astacksz+100)*sizeof(stack_elem_t));
     if (!stack1) return 0;
-    stack = stack1;
+    elem_stack = stack1;
     astacksz += 100;
   }
-  stack[stacksz].i = i;
-  stack[stacksz].n = n;
-  stack[stacksz].xv = xv;
+  elem_stack[stacksz].i = i;
+  elem_stack[stacksz].n = n;
+  elem_stack[stacksz].xv = xv;
   stacksz++;
   return 1;
 }
@@ -17683,9 +17881,9 @@ static int pop(int &i, int &n, pure_expr **&xv)
 {
   if (stacksz <= 0) return 0;
   stacksz--;
-  i = stack[stacksz].i;
-  n = stack[stacksz].n;
-  xv = stack[stacksz].xv;
+  i = elem_stack[stacksz].i;
+  n = elem_stack[stacksz].n;
+  xv = elem_stack[stacksz].xv;
   return 1;
 }
 

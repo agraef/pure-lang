@@ -16,8 +16,8 @@ ifneq "$(findstring -darwin,$(host))" ""
 shared = -dynamiclib
 endif
 
-# 64 bit, needs -fPIC flag
-ifneq "$(findstring x86_64-,$(host))" ""
+# ELF platforms need -fPIC for shared libraries
+ifeq "$(findstring -darwin,$(host))$(findstring -mingw,$(host))$(findstring -cygwin,$(host))" ""
 PIC = -fPIC
 endif
 

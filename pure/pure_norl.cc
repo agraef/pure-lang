@@ -489,12 +489,7 @@ main(int argc, char *argv[])
       break;
     }
   }
-#if USE_FASTCC && !LLVM31
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  if (interp.use_fastcc) llvm::GuaranteedTailCallOpt = true;
-#endif
-  interp.init_jit_mode();
+  // Tail call optimization is now set via TargetMachine in interpreter::init()
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))

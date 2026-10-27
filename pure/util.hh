@@ -23,6 +23,38 @@
 #include <string.h>
 #include <string>
 
+/* TLS model for the runtime's hot per-thread state (see the comment on
+   interpreter::g_interp). Platforms without ELF initial-exec TLS fall back
+   to the compiler's default model.
+
+   initial-exec puts libpure's whole TLS segment in the static TLS block.
+   When a host dlopen()s libpure (a PostgreSQL extension, a Pd external, an
+   LV2 plugin), that block has only a small reserve for it: 128 bytes by
+   default on FreeBSD (LD_STATIC_TLS_EXTRA), 512 on glibc
+   (glibc.rtld.optional_static_tls). So libpure keeps only a few words of
+   state in TLS and puts everything else in per_thread<T> objects (below),
+   which take one pointer of TLS each. test/dlopen.c checks the size. */
+#if defined(__ELF__) && (defined(__GNUC__) || defined(__clang__))
+#define PURE_TLS_HOT __attribute__((tls_model("initial-exec")))
+#else
+#define PURE_TLS_HOT
+#endif
+
+/* A T for each thread, allocated on first use and destroyed when the
+   thread exits. Declare one as
+     static PURE_TLS_HOT thread_local per_thread<T> x;
+   and use x.get() (or x->member). Costs one pointer of TLS. */
+template <class T> class per_thread {
+  T *p = nullptr;
+public:
+  constexpr per_thread() = default;
+  per_thread(const per_thread&) = delete;
+  per_thread& operator=(const per_thread&) = delete;
+  ~per_thread() { delete p; p = nullptr; }
+  T& get() { if (__builtin_expect(!p, 0)) p = new T(); return *p; }
+  T *operator->() { return &get(); }
+};
+
 /* Exception handling utility class. */
 
 class err {

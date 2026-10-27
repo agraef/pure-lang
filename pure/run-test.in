@@ -20,10 +20,15 @@ export PURE_INCLUDE="$srcdir/test"
 
 # A few tests may produce varying results with different locales,
 # so we have to make sure that we set up a neutral environment here.
-# LC_ALL=C should do the job on Linux and other glibc-based systems.
-# Other systems might require some work.
+# The test logs contain UTF-8 (test089), so use C.UTF-8 where the system
+# has it. Plain C makes some iconv implementations (FreeBSD's) replace
+# non-ASCII characters with '?' on output; glibc passes them through.
 #
-export LC_ALL=C
+if locale -a 2>/dev/null | grep -qi '^c\.utf-\?8$'; then
+  export LC_ALL=C.UTF-8
+else
+  export LC_ALL=C
+fi
 
 : ${level:=7}
 
