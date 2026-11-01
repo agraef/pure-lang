@@ -1231,3 +1231,31 @@ well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows. The only limitation is that the binaries in this package
 still are for x86 (32 bit) only right now, but these do work fine on all
 recent 64 bit flavors of Windows (tested on Windows 7, 8 and 10).
+
+Pure can also be built with Microsoft Visual C++ (Visual Studio 2022, MSVC
+14.4x, x64), using the CMake build in CMakeLists.txt instead of configure.
+The libraries come from vcpkg (https://vcpkg.io), installed with::
+
+  vcpkg install --triplet x64-windows gmp mpfr libiconv pthreads tre dirent readline-win32
+
+LLVM must be built with the DLL C runtime (/MD), like the vcpkg libraries;
+the libraries in the official LLVM Windows release use the static one (/MT)
+and cannot be linked into libpure.dll. Configure LLVM with
+``-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL`` and install its libraries
+and headers. flex and bison are taken from winflexbison. In a Visual Studio
+x64 command prompt::
+
+  cmake -G Ninja -S pure -B build -DCMAKE_BUILD_TYPE=Release ^
+    -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ^
+    -DLLVM_DIR=C:/llvm/lib/cmake/llvm -DCMAKE_INSTALL_PREFIX=C:/pure
+  cmake --build build
+  ctest --test-dir build
+  cmake --install build
+
+The ctest run is the equivalent of ``make check``, ``make check-embed`` and
+``make check-dlopen``. Set ``PURE_TOOL_PREFIX`` to the directory of an LLVM
+installation with llc, opt and clang (with a trailing slash) if the LLVM you
+link against has no tools; they are needed for inline code. Only Release
+(or RelWithDebInfo) builds are supported. The batch compiler (``pure -c``)
+still drives gcc and does not work with the MSVC build yet. Pure built this
+way reports the host ``x86_64-pc-windows-msvc``.

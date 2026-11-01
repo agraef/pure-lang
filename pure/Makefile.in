@@ -72,6 +72,7 @@ PCRE_CFLAGS = @PCRE_CFLAGS@
 # Needed to get the pthreads library on some systems.
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+DL_LIBS = @DL_LIBS@
 # FIXME: This isn't used right now.
 PTHREAD_CC = @PTHREAD_CC@
 
@@ -189,6 +190,13 @@ endif
 PIC = @PIC@
 shared = @shared@
 
+# Keep libpure from exporting its LLVM symbols, so it cannot interpose on a
+# different LLVM linked into the same process (PostgreSQL's llvmjit, say).
+# configure sets this to the version-script flags where the linker supports
+# them (ELF, GNU-style), and leaves it empty otherwise (mingw, darwin, a
+# linker without --version-script). See libpure.ver.
+hide_llvm = @HIDE_LLVM@
+
 soname = -Wl,-soname,$(libpure_soname)
 LD_LIB_PATH = @LD_LIB_PATH@
 
@@ -229,7 +237,7 @@ Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_norl.cc \
 pure_main.c pure.1 pure.txt install-docs.sh run-tests.in \
-run-test.in pure.pc.in etc/pure-mode.el.in etc/flycheck-pure.el \
+run-test.in pure.pc.in libpure.ver etc/pure-mode.el.in etc/flycheck-pure.el \
 etc/pure.* etc/pure-*.xml etc/pure-highlight.lang \
 debian/* \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
@@ -242,13 +250,13 @@ examples/ats_list_demo/Makefile examples/ats_list_demo/*.pure \
 examples/ats_list_demo/*/*/*.*ats \
 texmacs/packages/*.ts texmacs/plugins/pure/doc/*.tm \
 texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure \
-lib/*.pure test/*.pure test/*.log test/*.blob
+lib/*.pure test/*.pure test/*.log test/*.blob test/dlopen.c test/embed.c test/safe.c
 # These need special editing (see dist target, datesubst below).
 SEDFILES = INSTALL
 
 .PHONY: all elc clean realclean depend install uninstall install-docs \
 install-el install-elc uninstall-el uninstall-elc \
-strip dist distcheck cleanlogs logs check config
+strip dist distcheck cleanlogs logs check config check-no-llvm-exports check-safe
 
 # compilation
 
@@ -263,7 +271,7 @@ pure$(EXE): pure.o $(OBJECT)
 endif
 
 $(libpure): $(OBJECT)
-	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) $(OBJECT) $(PCRE_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PTHREAD_LIBS)
+	$(CXX) $(shared) $(soname) $(hide_llvm) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) $(OBJECT) $(PCRE_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PTHREAD_LIBS)
 ifneq ($(libpure), $(libpure_soname))
 	ln -sf $(libpure) $(libpure_soname)
 endif
@@ -337,7 +345,7 @@ install.txt: INSTALL
 # cleaning
 
 clean:
-	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc etc/flycheck-pure.elc texmacs/plugins/pure/*/*~
+	rm -f *~ *.bak pure$(EXE) test/embed$(EXE) test/dlopen$(EXE) test/safe$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc etc/flycheck-pure.elc texmacs/plugins/pure/*/*~
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -597,6 +605,64 @@ endif
 
 check: pure
 	./run-tests $(rtflags)
+
+# Embedding contract test: libpure called from a C host (see test/embed.c).
+# It runs in test/embed.d/run, next to a decoy copy of libpure in
+# test/embed.d/lib, to check that libpure does not load a second copy of
+# itself by name.
+check-embed: test/embed$(EXE)
+	mkdir -p test/embed.d/lib test/embed.d/run
+	cp $(libpure) test/embed.d/lib/$(libpure_soname)
+	cd test/embed.d/run && \
+	LD_LIBRARY_PATH=$(abspath .):$$LD_LIBRARY_PATH \
+	DYLD_LIBRARY_PATH=$(abspath .):$$DYLD_LIBRARY_PATH \
+	PURELIB=$(abspath $(srcdir)/lib) ../../embed$(EXE)
+	rm -f test/embed.d/lib/$(libpure_soname)
+	rmdir test/embed.d/lib test/embed.d/run test/embed.d
+
+test/embed$(EXE): test/embed.c runtime.h $(libpure)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PTHREAD_CFLAGS) -I$(srcdir) -o $@ \
+	$(srcdir)/test/embed.c $(LDFLAGS) -L. -l$(libpure_name) $(PTHREAD_LIBS)
+
+# Load libpure with dlopen, as plugin hosts do, and check that its TLS
+# segment fits the static TLS reserve (see test/dlopen.c). Also check that the
+# LLVM symbols are hidden, so libpure cannot interpose on a host's own LLVM.
+check-dlopen: test/dlopen$(EXE) $(libpure) check-no-llvm-exports
+	PURELIB=$(srcdir)/lib ./test/dlopen$(EXE) ./$(libpure)
+
+# Fail if libpure re-exports any LLVM symbol (see libpure.ver). Only meaningful
+# where the symbols are hidden (ELF with a version-script-capable linker) and
+# where nm is available; skip otherwise rather than fail.
+check-no-llvm-exports: $(libpure)
+	@if test -z "$(hide_llvm)"; then \
+	  echo "check-no-llvm-exports: skipped (LLVM symbols not hidden on this host)"; \
+	elif ! command -v nm >/dev/null 2>&1; then \
+	  echo "check-no-llvm-exports: skipped (nm not found)"; \
+	else \
+	  n=`nm -D --defined-only $(libpure) 2>/dev/null | grep -E '[0-9]llvm|LLVM' | wc -l`; \
+	  if test "$$n" -ne 0; then \
+	    echo "check-no-llvm-exports: FAIL: libpure exports $$n LLVM symbol(s):" >&2; \
+	    nm -D --defined-only $(libpure) 2>/dev/null | grep -E '[0-9]llvm|LLVM' | head >&2; \
+	    exit 1; \
+	  fi; \
+	  echo "check-no-llvm-exports: ok (0 LLVM symbols exported)"; \
+	fi
+
+test/dlopen$(EXE): test/dlopen.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PTHREAD_CFLAGS) -o $@ \
+	$(srcdir)/test/dlopen.c $(LDFLAGS) $(DL_LIBS) $(PTHREAD_LIBS)
+
+# Safe (sandbox) mode: a host creates a --safe interpreter, loads the modules
+# it trusts, arms the sandbox, and then untrusted Pure code cannot reach out of
+# the language (see test/safe.c and the safe-mode notes in runtime.h).
+check-safe: test/safe$(EXE)
+	LD_LIBRARY_PATH=$(abspath .):$$LD_LIBRARY_PATH \
+	DYLD_LIBRARY_PATH=$(abspath .):$$DYLD_LIBRARY_PATH \
+	PURELIB=$(abspath $(srcdir)/lib) ./test/safe$(EXE)
+
+test/safe$(EXE): test/safe.c runtime.h $(libpure)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PTHREAD_CFLAGS) -I$(srcdir) -o $@ \
+	$(srcdir)/test/safe.c $(LDFLAGS) -L. -l$(libpure_name) $(PTHREAD_LIBS)
 
 recheck: pure
 	./run-tests -f $(rtflags)

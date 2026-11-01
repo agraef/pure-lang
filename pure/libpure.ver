@@ -1,0 +1,24 @@
+/* libpure.ver -- linker version script for the ELF build of libpure.
+ *
+ * libpure JIT-compiles Pure with LLVM. A host that embeds libpure may itself
+ * link a DIFFERENT LLVM (PostgreSQL's llvmjit links the system libLLVM). When
+ * libpure exports its C++ template instances over LLVM types (such as
+ * std::_Sp_counted_ptr_inplace<llvm::orc::ThreadSafeContext::State, ...>), the
+ * dynamic linker binds the host's LLVM references to libpure's copies, and the
+ * process crashes when one LLVM tears down objects the other built.
+ *
+ * libpure's own public ABI is large and not all pure_*: Pure programs declare
+ * many runtime functions extern and the JIT resolves them against libpure's
+ * exports (hash, same, the matrix_*, pointer_*, string_*, faust_* and genrand_*
+ * families, the type predicates, ...). So this hides symbols by what they are,
+ * not by an allowlist: anything whose name mentions the llvm namespace (the
+ * Itanium mangling "<len>llvm", e.g. "4llvm", "11llvm"), and the LLVM C API
+ * (LLVM..., always upper case). Pure's own symbols such as
+ * pure_active_llvm_context are spelled with a lower-case "_llvm_" and so do
+ * not match; the pure_* API and the C runtime entry points stay visible.
+ */
+{
+  local:
+    *[0-9]llvm*;
+    LLVM*;
+};

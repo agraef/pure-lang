@@ -99,14 +99,6 @@ Type 'help' in the interpreter for more help.\n"
 #define LICENSE \
 "(Type 'help' for help, 'help copying' for license information.)\n"
 
-static void sig_handler(int sig)
-{
-#ifdef MUST_REINSTALL_SIGHANDLERS
-  signal(sig, sig_handler);
-#endif
-  interpreter::brkflag = sig;
-}
-
 static void my_exit_handler()
 {
   /* Add any finalizations to be executed at exit time here. */
@@ -219,8 +211,10 @@ main(int argc, char *argv[])
 #endif
   list<string> libnames;
   string llcopts;
-  // This is used in advisory stack checks.
-  interpreter::baseptr = &base;
+  // This is used in advisory stack checks. The base is libpure's
+  // per-thread state; on Windows the program cannot reach libpure's
+  // thread-local variables directly, so set it through the runtime API.
+  pure_set_stack_limit(&base, 0);
   // We always ignore SIGPIPE by default.
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
@@ -489,12 +483,7 @@ main(int argc, char *argv[])
       break;
     }
   }
-#if USE_FASTCC && !LLVM31
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  if (interp.use_fastcc) llvm::GuaranteedTailCallOpt = true;
-#endif
-  interp.init_jit_mode();
+  // Tail call optimization is now set via TargetMachine in interpreter::init()
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
@@ -588,24 +577,25 @@ main(int argc, char *argv[])
      termination signals (except SIGKILL which is unmaskable). These are
      mapped to Pure exceptions of the form 'signal SIG', so that they can be
      caught with 'catch' or safely return us to the interpreter's interactive
-     command line. */
+     command line. The runtime's handler (pure_trap) sets the interrupt
+     flag that compiled code checks. */
 #ifdef SIGHUP
-  signal(SIGHUP, sig_handler);
+  pure_trap(1, SIGHUP);
 #endif
 #ifdef SIGINT
-  signal(SIGINT, sig_handler);
+  pure_trap(1, SIGINT);
 #endif
 #ifdef SIGALRM
-  signal(SIGALRM, sig_handler);
+  pure_trap(1, SIGALRM);
 #endif
 #ifdef SIGTERM
-  signal(SIGTERM, sig_handler);
+  pure_trap(1, SIGTERM);
 #endif
 #ifdef SIGUSR1
-  signal(SIGUSR1, sig_handler);
+  pure_trap(1, SIGUSR1);
 #endif
 #ifdef SIGUSR2
-  signal(SIGUSR2, sig_handler);
+  pure_trap(1, SIGUSR2);
 #endif
 #ifdef _WIN32
   InstallSignalHandler();

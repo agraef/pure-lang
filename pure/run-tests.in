@@ -47,17 +47,19 @@ if test 0 -ne $usage; then
   exit 1
 fi >&2
 
+# No 'local' here: it is not POSIX, and the /bin/sh of illumos and Solaris
+# (ksh93) does not have it.
 pathops()
 {
-  local mode=$1 arg=$2
+  _mode=$1 _arg=$2
 
-  local _fname="${arg##*/}"
-  local _bname="${_fname%.*}"
-  local _diff="$outdir/$_bname.diff"
-  local _tmp="$_diff.$$"
-  local _log="$testdir/$_bname.log"
+  _fname="${_arg##*/}"
+  _bname="${_fname%.*}"
+  _diff="$outdir/$_bname.diff"
+  _tmp="$_diff.$$"
+  _log="$testdir/$_bname.log"
 
-  case "$mode" in
+  case "$_mode" in
   -A) fname="$_fname" \
       bname="$_bname" \
       diff="$_diff" \

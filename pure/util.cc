@@ -55,8 +55,10 @@
 #ifndef HAVE_MKSTEMP
 
 #include <fcntl.h>
+#ifndef _S_IREAD
 #define _S_IREAD 256
 #define _S_IWRITE 128
+#endif
 
 extern "C"
 int mkstemp(char *tmpl)
@@ -123,7 +125,13 @@ typedef int nl_item;
 
 static char *my_nl_langinfo(nl_item item)
 {
-  static char buf[16];
+  // Thread-local: the returned pointer is only ever used immediately by
+  // the caller (strcmp/iconv_open), never retained, so this doesn't
+  // need pure_ectx -- but it was `static`, racing concurrent string
+  // conversions on platforms that reach this fallback (no
+  // nl_langinfo(), i.e. not glibc/most Linux; see default_encoding()
+  // below).
+  static thread_local char buf[16];
   char *l, *p;
   
   if (item != MYCODESET)
@@ -204,15 +212,45 @@ static char *my_nl_langinfo(nl_item item)
    the cache in an automatic fashion. */
 
 #define NCACHE 10
-static char *lastalloc[NCACHE], *lastfree[NCACHE];
-static size_t lastlen[NCACHE];
-static int lasti = 0;
+// Thread-local: this cache backs
+// every Pure string value's alloc/free (pure_free_internal/the string
+// constructors in runtime.cc route through my_strdup/my_strfree, and
+// MY_STRDUP above is unconditionally defined, so this is not an
+// optional fallback -- it is always on the hot path). A process-wide
+// `static` here meant two threads freeing or allocating Pure strings
+// concurrently raced on lastalloc/lastfree/lasti, and worst case could
+// hand the SAME cached buffer to two different threads at once --
+// a double-free/use-after-free generator, not just a performance bug.
+// Each thread gets its own small cache; the round-robin reuse
+// optimization this file describes still works exactly as before,
+// just scoped per-thread instead of process-wide.
+// The cache is kept off the TLS segment (see PURE_TLS_HOT in util.hh).
+// Freed strings it still holds are released when the thread exits.
+struct strcache {
+  char *lastalloc[NCACHE] = {}, *lastfree[NCACHE] = {};
+  size_t lastlen[NCACHE] = {};
+  int lasti = 0;
+  ~strcache() { for (int i = 0; i < NCACHE; i++) free(lastfree[i]); }
+};
+static PURE_TLS_HOT thread_local per_thread<strcache> strcache_tls;
+
+// ictowcs' iconv descriptor (see there). At file scope, like strcache_tls:
+// as a function-local static, GCC gives it a TLS guard variable of its own.
+struct ic_t {
+  iconv_t ic = (iconv_t)-1;
+  ~ic_t() { if (ic != (iconv_t)-1) iconv_close(ic); }
+};
+static PURE_TLS_HOT thread_local per_thread<ic_t> myic_tls;
 
 //#define DEBUG_CACHE
 
 char *my_strdup(const char *s)
 {
   if (!s) return 0;
+  strcache& c = strcache_tls.get();
+  char **lastalloc = c.lastalloc, **lastfree = c.lastfree;
+  size_t *lastlen = c.lastlen;
+  int& lasti = c.lasti;
   size_t l = strlen(s);
   for (int i = 0; i < NCACHE; i++)
     if (lastfree[i] && lastlen[i] >= l) {
@@ -243,6 +281,8 @@ char *my_strdup(const char *s)
 void my_strfree(char *s)
 {
   if (!s) return;
+  strcache& c = strcache_tls.get();
+  char **lastalloc = c.lastalloc, **lastfree = c.lastfree;
   for (int i = 0; i < NCACHE; i++)
     if (s == lastalloc[i]) {
 #ifdef DEBUG_CACHE
@@ -549,7 +589,8 @@ char *default_encoding()
 #ifdef _WIN32
   /* Always use the OEM codepage on Windows. */
   unsigned cp = GetOEMCP();
-  static char buf[20];
+  // Thread-local for the same reason as my_nl_langinfo above.
+  static thread_local char buf[20];
   if (cp == 65001)
     // codepage 65001 is UTF-8
     strcpy(buf, "UTF-8");
@@ -843,17 +884,23 @@ my_fromutf8(const char *s, char *codeset)
 static inline wchar_t *
 ictowcs(wchar_t *t, char *s)
 {
-  static iconv_t myic[2] = { (iconv_t)-1, (iconv_t)-1 };
-  if (myic[1] == (iconv_t)-1)
-    myic[1] = iconv_open("WCHAR_T", "UTF-8");
-  if (myic[1] == (iconv_t)-1)
+  // Thread-local: iconv_t descriptors are not safe to share across
+  // threads (POSIX requires the caller to serialize access to a given
+  // descriptor, or use one per thread) -- a process-wide `static` here
+  // was undefined behavior the moment two threads converted UTF-8 to
+  // wchar_t concurrently, independent of any Pure-level memory-safety
+  // concern.
+  iconv_t& myic = myic_tls->ic;
+  if (myic == (iconv_t)-1)
+    myic = iconv_open("WCHAR_T", "UTF-8");
+  if (myic == (iconv_t)-1)
     return NULL;
   else {
     size_t l = strlen(s);
     char *inbuf = s; wchar_t *outbuf = t;
     size_t inbytes = l, outbytes = l*sizeof(wchar_t);
 
-    if (myiconv(myic[1], &inbuf, &inbytes, (char**)&outbuf, &outbytes) ==
+    if (myiconv(myic, &inbuf, &inbytes, (char**)&outbuf, &outbytes) ==
 	(size_t)-1)
       return NULL;
     /* terminate the output string */
@@ -928,9 +975,9 @@ pchar(char *s, long c, char d)
       return (s);
     } else {
       if (d != 0 && isxdigit(d))
-	sprintf(s, "\\(0x%lx)", c);
+	snprintf(s, 128, "\\(0x%lx)", c);
       else
-	sprintf(s, "\\0x%lx", c);
+	snprintf(s, 128, "\\0x%lx", c);
       return (s);
     }
   }
@@ -1106,7 +1153,7 @@ char *parsestr(const char *s, char*& err)
       const char *v = u8strind(u, 1);
       c[0] = '\\'; strncpy(c+1, u, v-u); c[v-u+1] = 0;
       char *e = fromutf8(c);
-      sprintf(msg, "syntax error, invalid character escape '%s'", e);
+      snprintf(msg, sizeof(msg), "syntax error, invalid character escape '%s'", e);
       free(e);
       err = msg;
     }
@@ -1521,7 +1568,7 @@ my_formatd (char        *buffer,
 	format_char == 'g' || format_char == 'G'))
     return NULL;
 
-  sprintf (buffer, format, d);
+  snprintf (buffer, 128, format, d);
 
   locale_data = localeconv ();
   decimal_point = locale_data->decimal_point;
