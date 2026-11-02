@@ -380,7 +380,6 @@ static void print(unsigned col, string& text)
   delete[] s;
 }
 
-extern "C"
 int main(int argc, char *argv[])
 {
   prog = *argv++;

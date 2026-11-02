@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Native build dependencies (manual tracking)
+  # Note: Dependabot doesn't support C/C++ build systems directly,
+  # but we can track container base images if we add Docker support
+
+  # Documentation for manual dependency updates:
+  # - LLVM: Track releases at https://github.com/llvm/llvm-project/releases
+  # - GMP: https://gmplib.org/
+  # - MPFR: https://www.mpfr.org/
+  # - Readline: https://tiswww.case.edu/php/chet/readline/rltop.html

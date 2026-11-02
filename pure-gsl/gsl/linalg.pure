@@ -1,0 +1,51 @@
+/* gsl/linalg.pure -- Cholesky (and triangular-solve) bindings for pure-gsl.
+ *
+ * NEW FILE proposed for the pure-gsl module. Add `linalg` to the module list
+ * in gsl.pure (next to `matrix`), and the C wrappers below to gsl.c.
+ *
+ * Rationale: pure-gsl today exposes SVD and least-squares fit but no
+ * Cholesky/triangular solve. A direct solve of a small SPD system A x = b is
+ * the common in-database kernel (e.g. the MAP/Newton fits in pg.ddx.io's
+ * commit model, K < 20, solved many times per daily refit). Doing it in pure
+ * Pure over Pure lists is O(n^4)-ish and ~1 s at K=18; a thin binding to
+ * gsl_linalg_cholesky_* runs it at C speed (sub-ms), which is what makes Pure
+ * competitive with PL/pgSQL for this shape.
+ *
+ * All matrices are Pure double matrices (dmatrix). The routines do not mutate
+ * their inputs: they copy, factor the copy, and return a new matrix.
+ */
+
+using gsl;
+using namespace gsl;
+
+namespace gsl;
+namespace gsl::linalg;
+
+private extern expr* wrap_gsl_linalg_cholesky_decomp(dmatrix* A);
+private extern expr* wrap_gsl_linalg_cholesky_solve(dmatrix* L, dmatrix* b);
+
+public
+  cholesky
+  cholesky_solve;
+
+/* .. function:: cholesky  a::matrix
+
+      Cholesky decomposition of a symmetric positive-definite matrix ``a``.
+      Returns the lower-triangular factor ``L`` such that ``a == L*transpose L``
+      as a new double matrix (the upper triangle is zeroed). Throws
+      ``gsl::linalg::not_spd`` if ``a`` is not positive-definite.
+
+   .. function:: cholesky_solve  a::matrix  b::matrix
+
+      Solve ``a*x == b`` for a symmetric positive-definite ``a`` (n-by-n) and a
+      right-hand side ``b`` (an n-vector, i.e. a 1-by-n or n-by-1 matrix).
+      Returns ``x`` as an n-vector (1-by-n matrix). Equivalent to
+      ``cholesky a`` followed by the triangular solves, but done in one GSL
+      call. Throws ``gsl::linalg::not_spd`` if ``a`` is not SPD.
+*/
+
+cholesky a::matrix        = wrap_gsl_linalg_cholesky_decomp (dmatrix a);
+cholesky_solve a::matrix b::matrix
+                          = wrap_gsl_linalg_cholesky_solve (dmatrix a) (dmatrix b);
+
+namespace;
