@@ -476,3 +476,55 @@ pure_expr* wrap_gsl_multifit_linear(gsl_matrix* X, gsl_matrix* y)
   return pure_listl(3, pure_matrix_columnsv(X->size1, cx),
 		    pure_double_matrix(cov), pure_double(chisq));
 }
+
+/* --- Cholesky / SPD solve (gsl/linalg.pure) ------------------------------ */
+
+/* Cholesky decomposition: A (SPD, n x n) -> L (lower-triangular), returned as
+ * a new Pure double matrix with the strict upper triangle zeroed. A is not
+ * modified. Throws gsl::linalg::not_spd on a non-positive-definite input.
+ * gsl_set_error_handler_off() is already in effect module-wide, so GSL
+ * returns a status rather than aborting. */
+pure_expr *wrap_gsl_linalg_cholesky_decomp(gsl_matrix *A)
+{
+  size_t n = A->size1;
+  gsl_matrix *L = gsl_matrix_alloc(n, n);
+  gsl_matrix_memcpy(L, A);
+  int status = gsl_linalg_cholesky_decomp1(L);
+  if (status) {
+    gsl_matrix_free(L);
+    pure_throw(pure_symbol(pure_sym("gsl::linalg::not_spd")));
+    return 0;
+  }
+  for (size_t i = 0; i < n; i++)
+    for (size_t j = i + 1; j < n; j++)
+      gsl_matrix_set(L, i, j, 0.0);
+  return pure_double_matrix(L);         /* Pure takes ownership of L */
+}
+
+/* Solve A x = b for SPD A. b is an n-vector (a 1 x n or n x 1 matrix).
+ * Returns x as a 1 x n Pure double matrix. */
+pure_expr *wrap_gsl_linalg_cholesky_solve(gsl_matrix *A, gsl_matrix *b)
+{
+  size_t n = A->size1;
+  gsl_matrix *L = gsl_matrix_alloc(n, n);
+  gsl_matrix_memcpy(L, A);
+  int status = gsl_linalg_cholesky_decomp1(L);
+  if (status) {
+    gsl_matrix_free(L);
+    pure_throw(pure_symbol(pure_sym("gsl::linalg::not_spd")));
+    return 0;
+  }
+  gsl_vector_const_view bv =
+    (b->size1 == n) ? gsl_matrix_const_column(b, 0)
+                    : gsl_matrix_const_row(b, 0);
+  gsl_matrix *x = gsl_matrix_alloc(1, n);
+  gsl_vector_view xv = gsl_matrix_row(x, 0);
+  status = gsl_linalg_cholesky_solve(L, &bv.vector, &xv.vector);
+  gsl_matrix_free(L);
+  if (status) {
+    gsl_matrix_free(x);
+    pure_throw(pure_symbol(pure_sym("gsl::linalg::solve_failed")));
+    return 0;
+  }
+  return pure_double_matrix(x);
+}
